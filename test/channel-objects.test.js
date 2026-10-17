@@ -9,7 +9,7 @@ const { parseChannelPage } = require('../lib/loewe-client');
 const { MAX_CATALOG_BYTES } = require('../lib/channel-catalog');
 
 const VIEW = 'fastscan-integration-fixture';
-const DYNAMIC = /^channels\.(tv|radio)\.(?:service_[a-f0-9]{64}|\d+)(?:\.|$)/u;
+const DYNAMIC = /^channels\.(tv|radio)\.[A-Za-z0-9_]+(?:\.|$)/u;
 
 function deferred() {
     let resolve;
@@ -196,26 +196,24 @@ async function within(promise, message) {
     } finally { clearTimeout(timer); }
 }
 
-test('a mixed list creates one numeric folder per TV/radio position with names and descriptions', async t => {
+test('a mixed list creates one name-based folder per TV/radio service and preserves every position', async t => {
     const h = await harness(t);
     await query(h, [entry('first', '1'), entry('first', '100'), entry('first', '1000'), entry('second', '2'), entry('radio', '100', 'audio')]);
-    assert.equal(h.runtime.channelObjects.services.size, 5);
+    assert.equal(h.runtime.channelObjects.services.size, 3);
     const first = service(h, 'first');
     const radio = service(h, 'radio', 'audio');
     assert.match(first.id, /^channels\.tv\./u);
     assert.match(radio.id, /^channels\.radio\./u);
     assert.ok(h.adapter.objects.has('channels.tv'));
     assert.ok(h.adapter.objects.has('channels.radio'));
-    assert.equal(first.id, 'channels.tv.1');
-    assert.equal(radio.id, 'channels.radio.100');
-    assert.equal(h.adapter.objects.get(first.id).common.name, 'Fixture first');
+    assert.equal(first.id, 'channels.tv.Fixture_first');
+    assert.equal(radio.id, 'channels.radio.Fixture_radio');
+    assert.equal(h.adapter.objects.get(first.id).common.name, '1');
     assert.equal(h.adapter.objects.get(first.id).common.desc, 'Fixture first');
-    assert.deepEqual(JSON.parse(state(h, `${first.id}.numbers`).val), ['1']);
-    for (const number of [1, 100, 1000]) {
-        const id = `channels.tv.${number}`;
-        assert.equal(state(h, `${id}.number`).val, number);
-        assert.equal(state(h, `${id}.locator`).val, `channel://${number}:ch-first:sl-fixture`);
-    }
+    assert.deepEqual(JSON.parse(state(h, `${first.id}.numbers`).val), ['1', '100', '1000']);
+    assert.equal(state(h, `${first.id}.number`).val, 1);
+    assert.equal(state(h, `${first.id}.locator`).val, 'channel://1:ch-first:sl-fixture');
+    assert.deepEqual(JSON.parse(state(h, `${first.id}.locators`).val), [1, 100, 1000].map(number => `channel://${number}:ch-first:sl-fixture`));
     assert.equal(state(h, `${radio.id}.number`).val, 100);
     assert.equal(state(h, `${first.id}.epg.status`).val, 'notImplemented');
     assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
@@ -259,7 +257,7 @@ test('upgrade from 0.1.2 builds sender objects from channels.items without conta
     assert.equal(h.runtime.channelObjects.services.size, 2);
     assert.equal(state(h, `${service(h, 'first').id}.select`).val, false);
     assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
-    assert.equal(JSON.parse(state(h, 'channels.catalog').val).schemaVersion, 2);
+    assert.equal(JSON.parse(state(h, 'channels.catalog').val).schemaVersion, 3);
 });
 
 test('restart restores cache/native service identities and clears saved true buttons without replaying them', async t => {
@@ -309,7 +307,7 @@ test('native restoration with a saved or live partial first page preserves unque
         }
         assert.equal(service(restarted, 'radio', 'audio').available, true);
         assert.equal(service(restarted, 'archived'), undefined);
-        assert.equal(restarted.adapter.objects.has('channels.tv.4'), false);
+        assert.equal(restarted.adapter.objects.has('channels.tv.Fixture_archived'), false);
     }
 });
 
@@ -334,7 +332,8 @@ test('only complete responses delete absent managed positions and filtered queri
     assert.equal(service(h, 'radio', 'audio').available, true);
     assert.equal(h.adapter.objects.has(oldButton), false);
     assert.equal(state(h, oldButton), undefined);
-    assert.equal(h.adapter.objects.has('channels.tv.1'), false, 'The moved service must leave its former position.');
+    assert.equal(h.adapter.objects.has('channels.tv.Fixture_first'), true, 'Moving a service must preserve its folder ID.');
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_first').common.name, '7');
     const before = h.client.calls.length;
     await h.runtime.handleStateChange(`${h.adapter.namespace}.${oldButton}`, { val: true, ack: false });
     assert.equal(h.client.calls.length, before);
@@ -499,58 +498,207 @@ function installLegacy(adapter, services, cache = true) {
     }
 }
 
-test('a renamed or reused position replaces its metadata and locator, and a move removes the former folder', async t => {
+function numericService(uuid, number, itemClass = 'video') {
+    return { ...legacyService(uuid, [number], itemClass), id: `channels.${itemClass === 'video' ? 'tv' : 'radio'}.${number}` };
+}
+
+function installNumeric(adapter, services, cache = true) {
+    installLegacy(adapter, services, cache);
+    for (const service of services) {
+        const root = adapter.objects.get(service.id);
+        root.native.schemaVersion = 2;
+        root.native.channelService.schemaVersion = 2;
+        root.common.name = service.name;
+        for (const [id, object] of adapter.objects) {
+            if (id.startsWith(`${service.id}.`)) object.native.managedBy = 'loewe-tv-channel-catalog';
+        }
+    }
+    if (cache) {
+        const saved = adapter.states.get('channels.catalog');
+        saved.val = JSON.stringify({ ...JSON.parse(saved.val), schemaVersion: 2 });
+    }
+}
+
+test('numeric 0.1.4 caches and native roots migrate to stable service names without losing duplicate positions', async t => {
+    const previous = [numericService('first', 1), numericService('first', 100), numericService('first', 1000),
+        numericService('radio', 100, 'audio')];
+    for (const cache of [true, false]) {
+        const h = await harness(t, adapter => installNumeric(adapter, previous, cache));
+        assert.equal(h.runtime.channelObjects.services.size, 2);
+        assert.equal(h.client.calls.length, 0);
+        assert.equal(h.adapter.objects.get('channels.tv.Fixture_first').common.name, '1');
+        assert.deepEqual(JSON.parse(state(h, 'channels.tv.Fixture_first.numbers').val), ['1', '100', '1000']);
+        assert.equal(h.adapter.objects.get('channels.radio.Fixture_radio').common.name, '100');
+        for (const old of previous) {
+            assert.equal(h.adapter.objects.has(old.id), false);
+            assert.equal(state(h, `${old.id}.select`), undefined);
+        }
+        await write(h, 'channels.tv.Fixture_first.select', true);
+        assert.deepEqual(h.client.calls, [{ method: 'zap', args: ['channel://1:ch-first:sl-fixture'] }]);
+    }
+});
+
+test('current named native objects outrank stale numeric caches and retain collision IDs after restart', async t => {
+    const original = await harness(t);
+    const sharedName = uuid => ({ ...entry(uuid, uuid === 'first' ? '7' : '8'), '@_shortInfo': 'Shared HD' });
+    await query(original, [sharedName('first'), sharedName('second')]);
+    const expected = new Map([...original.runtime.channelObjects.services.values()].map(value => [value.mediaItemUuid, value]));
+    const restarted = await harness(t, adapter => {
+        adapter.objects = structuredClone(original.adapter.objects);
+        installNumeric(adapter, [numericService('first', 1), numericService('first', 100), numericService('second', 2)]);
+    });
+    for (const uuid of ['first', 'second']) {
+        const restored = service(restarted, uuid);
+        assert.equal(restored.id, expected.get(uuid).id);
+        assert.deepEqual(restored.positions, expected.get(uuid).positions);
+        assert.equal(restarted.adapter.objects.get(restored.id).common.name, String(expected.get(uuid).number));
+    }
+    assert.equal(restarted.runtime.channelObjects.services.size, 2);
+    assert.equal(restarted.client.calls.length, 0);
+});
+
+test('an old active catalogue cannot reactivate a retired named native root', async t => {
+    const original = await harness(t);
+    await query(original, [entry('first')]);
+    const oldCache = structuredClone(state(original, 'channels.catalog'));
+    original.adapter.objects.set('channels.tv.Fixture_first.note', { type: 'state', common: { type: 'string' }, native: {} });
+    await query(original, []);
+    const restarted = await harness(t, adapter => {
+        adapter.objects = structuredClone(original.adapter.objects);
+        adapter.states.set('channels.catalog', oldCache);
+    });
+    assert.equal(restarted.runtime.channelObjects.services.size, 0);
+    assert.equal(restarted.adapter.objects.get('channels.tv.Fixture_first').native.channelRetired, true);
+    assert.equal(restarted.adapter.objects.get('channels.tv.Fixture_first.select').common.write, false);
+    assert.equal(restarted.client.calls.length, 0);
+});
+
+test('a newer unavailable native occupant blocks a stale active numeric-cache occupant of that position', async t => {
+    const original = await harness(t);
+    await query(original, [{ ...entry('new'), '@_locator': '' }]);
+    assert.equal(service(original, 'new').available, false);
+    const restarted = await harness(t, adapter => {
+        adapter.objects = structuredClone(original.adapter.objects);
+        installNumeric(adapter, [numericService('old', 1)]);
+    });
+    assert.equal(service(restarted, 'new').available, false);
+    assert.equal(service(restarted, 'old').available, false);
+    await write(restarted, 'channels.tv.Fixture_old.select', true);
+    assert.equal(restarted.client.calls.some(call => call.method === 'zap'), false);
+    assert.match(state(restarted, 'info.lastError').val, /CHANNEL_UNAVAILABLE/u);
+});
+
+test('conflicting old numeric names cannot discard a fresh response queued during restoration', async t => {
+    const gate = deferred();
+    t.after(() => gate.resolve());
+    let readingCache = false;
+    const h = await harness(t, adapter => {
+        installNumeric(adapter, [numericService('first', 1),
+            { ...numericService('first', 100), name: 'An older partial name' }, numericService('radio', 100, 'audio')], false);
+        let restoring = false;
+        const getObjects = adapter.getAdapterObjectsAsync.bind(adapter);
+        adapter.getAdapterObjectsAsync = async () => {
+            restoring = true;
+            return getObjects();
+        };
+        const getState = adapter.getStateAsync.bind(adapter);
+        adapter.getStateAsync = async id => {
+            if (restoring && adapter.id(id) === 'channels.catalog') {
+                readingCache = true;
+                await gate.promise;
+            }
+            return getState(id);
+        };
+    }, { idle: false });
+    await until(() => readingCache, 'Expected startup to wait for its cache.');
+    h.runtime.channelObjects.acceptPage(parseChannelPage(channels([entry('first', '7')])), 'video');
+    gate.resolve();
+    await h.runtime.channelObjects.whenIdle();
+    assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
+    assert.equal(h.runtime.channelObjects.services.size, 2);
+    assert.equal(state(h, 'channels.tv.Fixture_first.number').val, 7);
+    assert.equal(service(h, 'radio', 'audio').available, true);
+    assert.equal(h.adapter.objects.has('channels.tv.1'), false);
+    assert.equal(h.adapter.objects.has('channels.tv.100'), false);
+    assert.ok(h.adapter.logs.some(log => /ungültige gespeicherte Senderobjekte/u.test(log.message)));
+    await write(h, 'channels.tv.Fixture_first.select', true);
+    assert.deepEqual(h.client.calls, [{ method: 'zap', args: ['channel://7:ch-first:sl-fixture'] }]);
+});
+
+test('sorting preserves station IDs, user configuration and the exact new selection locator', async t => {
     const h = await harness(t);
     await query(h, [entry('first'), entry('second', '2'), entry('radio', '100', 'audio')]);
-    h.adapter.objects.get('channels.tv.1').common.custom = { 'history.0': { enabled: true } };
+    const oldIds = new Map([...h.runtime.channelObjects.services.values()].map(value => [value.mediaItemUuid, value.id]));
+    h.adapter.objects.get('channels.tv.Fixture_first').common.custom = { 'history.0': { enabled: true } };
+    await query(h, [entry('second', '1'), entry('first', '7'), entry('radio', '200', 'audio')]);
+    for (const current of h.runtime.channelObjects.services.values()) assert.equal(current.id, oldIds.get(current.mediaItemUuid));
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_first').common.name, '7');
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_second').common.name, '1');
+    assert.equal(h.adapter.objects.get('channels.radio.Fixture_radio').common.name, '200');
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_first').common.desc, 'Fixture first');
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_first').common.custom['history.0'].enabled, true);
+    assert.equal(h.adapter.dynamicCalls.some(call => call.operation === 'delete'), false);
+    await write(h, 'channels.tv.Fixture_first.select', true);
+    await write(h, 'channels.tv.Fixture_second.select', true);
+    assert.deepEqual(h.client.calls.filter(call => call.method === 'zap').map(call => call.args), [
+        ['channel://7:ch-first:sl-fixture'], ['channel://1:ch-second:sl-fixture'],
+    ]);
+});
+
+test('an actual station rename changes its name ID and preserves a protected old folder disabled', async t => {
+    const h = await harness(t);
+    await query(h, [entry('first'), entry('second', '2')]);
+    h.adapter.objects.get('channels.tv.Fixture_first').common.custom = { 'history.0': { enabled: true } };
     const renamed = { ...entry('first', '4'), '@_shortInfo': 'Neuer Sendername HD' };
-    await query(h, [renamed, entry('replacement', '1'), entry('radio', '100', 'audio')]);
-    assert.equal(h.adapter.objects.get('channels.tv.4').common.name, 'Neuer Sendername HD');
-    assert.equal(h.adapter.objects.get('channels.tv.4').common.desc, 'Neuer Sendername HD');
-    assert.equal(state(h, 'channels.tv.1.mediaItemUuid').val, 'replacement');
-    assert.deepEqual(JSON.parse(state(h, 'channels.tv.1.locators').val), ['channel://1:ch-replacement:sl-fixture']);
-    assert.equal(h.adapter.objects.get('channels.tv.1').common.custom['history.0'].enabled, true);
-    assert.equal(h.adapter.objects.has('channels.tv.2'), false);
-    await write(h, 'channels.tv.1.select', true);
-    await write(h, 'channels.tv.4.select', true);
+    await query(h, [renamed, entry('replacement', '1')]);
+    assert.equal(h.adapter.objects.get('channels.tv.Neuer_Sendername_HD').common.name, '4');
+    assert.equal(h.adapter.objects.get('channels.tv.Neuer_Sendername_HD').common.desc, 'Neuer Sendername HD');
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_first').native.channelRetired, true);
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_first.select').common.write, false);
+    assert.equal(h.adapter.objects.has('channels.tv.Fixture_second'), false);
+    assert.equal(state(h, 'channels.tv.Fixture_replacement.mediaItemUuid').val, 'replacement');
+    await write(h, 'channels.tv.Fixture_replacement.select', true);
+    await write(h, 'channels.tv.Neuer_Sendername_HD.select', true);
     assert.deepEqual(h.client.calls.filter(call => call.method === 'zap').map(call => call.args), [
         ['channel://1:ch-replacement:sl-fixture'], ['channel://4:ch-first:sl-fixture'],
     ]);
 });
 
-test('v1 grouped cache and native folders migrate offline to all programme positions, removing old generated objects', async t => {
+test('v1 grouped cache and native folders migrate offline to name IDs and remove old generated objects', async t => {
     const legacy = [legacyService('first', [1, 100, 1000]), legacyService('radio', [100], 'audio')];
     for (const cache of [true, false]) {
         const h = await harness(t, adapter => installLegacy(adapter, legacy, cache));
-        assert.equal(h.runtime.channelObjects.services.size, 4);
+        assert.equal(h.runtime.channelObjects.services.size, 2);
         assert.equal(h.client.calls.length, 0);
-        for (const id of ['channels.tv.1', 'channels.tv.100', 'channels.tv.1000', 'channels.radio.100']) {
+        for (const id of ['channels.tv.Fixture_first', 'channels.radio.Fixture_radio']) {
             assert.ok(h.adapter.objects.has(id), id);
             assert.deepEqual(state(h, `${id}.select`), { val: false, ack: true });
-            assert.equal(h.adapter.objects.get(id).native.channelService.schemaVersion, 2);
+            assert.equal(h.adapter.objects.get(id).native.channelService.schemaVersion, 3);
         }
+        assert.deepEqual(JSON.parse(state(h, 'channels.tv.Fixture_first.numbers').val), ['1', '100', '1000']);
         for (const old of legacy) {
             assert.equal([...h.adapter.objects.keys()].some(id => id === old.id || id.startsWith(`${old.id}.`)), false);
             assert.equal([...h.adapter.states.keys()].some(id => id.startsWith(`${old.id}.`)), false);
         }
-        await write(h, 'channels.tv.1000.select', true);
-        assert.deepEqual(h.client.calls, [{ method: 'zap', args: ['channel://1000:ch-first:sl-fixture'] }]);
+        await write(h, 'channels.tv.Fixture_first.select', true);
+        assert.deepEqual(h.client.calls, [{ method: 'zap', args: ['channel://1:ch-first:sl-fixture'] }]);
     }
 });
 
-test('three conflicting legacy occupants cannot reactivate an ambiguous programme position during restoration', async t => {
+test('three conflicting legacy occupants remain unavailable until a fresh response resolves the position', async t => {
     const legacy = ['first', 'second', 'third'].map(uuid => legacyService(uuid, [1]));
     const h = await harness(t, adapter => installLegacy(adapter, legacy, false));
-    const restored = h.runtime.channelObjects.services.get('channels.tv.1');
-    assert.equal(restored.mediaItemUuid, 'first');
-    assert.equal(restored.available, false);
-    assert.equal(state(h, 'channels.tv.1.available').val, false);
+    for (const uuid of ['first', 'second', 'third']) {
+        const restored = service(h, uuid);
+        assert.equal(restored.available, false);
+        assert.equal(state(h, `${restored.id}.available`).val, false);
+        await write(h, `${restored.id}.select`, true);
+    }
     assert.ok(h.adapter.logs.some(log => log.level === 'warn' && /ungültige gespeicherte Senderobjekte/u.test(log.message)));
-    await write(h, 'channels.tv.1.select', true);
     assert.equal(h.client.calls.some(call => call.method === 'zap'), false);
     assert.match(state(h, 'info.lastError').val, /CHANNEL_UNAVAILABLE/u);
     await query(h, [entry('confirmed')]);
-    await write(h, 'channels.tv.1.select', true);
+    await write(h, 'channels.tv.Fixture_confirmed.select', true);
     assert.deepEqual(h.client.calls.filter(call => call.method === 'zap').at(-1).args, ['channel://1:ch-confirmed:sl-fixture']);
 });
 
@@ -580,56 +728,56 @@ test('damaged catalogue and raw caches cannot discard a valid live response queu
     h.runtime.channelObjects.acceptPage(parseChannelPage(channels([entry('live')])), '');
     gate.resolve();
     await h.runtime.channelObjects.whenIdle();
-    assert.equal(state(h, 'channels.tv.1.mediaItemUuid').val, 'live');
+    assert.equal(state(h, 'channels.tv.Fixture_live.mediaItemUuid').val, 'live');
     assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
     assert.equal(h.runtime.channelObjects.pending.length, 0);
     assert.equal(h.runtime.channelObjects.appliedSelectionEpoch, h.runtime.channelObjects.selectionEpoch);
     assert.ok(h.adapter.logs.filter(log => /INVALID_RESPONSE/u.test(log.message)).length >= 2);
-    await write(h, 'channels.tv.1.select', true);
+    await write(h, 'channels.tv.Fixture_live.select', true);
     assert.deepEqual(h.client.calls, [{ method: 'zap', args: ['channel://1:ch-live:sl-fixture'] }]);
 });
 
 test('removed folders containing custom settings, protected objects or user children remain disabled without resurrecting on restart', async t => {
     const h = await harness(t);
     await query(h, [entry('ordinary'), entry('custom', '2'), entry('protected', '3'), entry('user', '4')]);
-    h.adapter.objects.get('channels.tv.2.name').common.custom = { 'history.0': { enabled: true } };
-    h.adapter.objects.get('channels.tv.3').common.dontDelete = true;
-    h.adapter.objects.set('channels.tv.4.personalNote', { type: 'state', common: { name: 'My note', type: 'string' }, native: {} });
-    h.adapter.states.set('channels.tv.4.personalNote', { val: 'Keep me', ack: true });
+    h.adapter.objects.get('channels.tv.Fixture_custom.name').common.custom = { 'history.0': { enabled: true } };
+    h.adapter.objects.get('channels.tv.Fixture_protected').common.dontDelete = true;
+    h.adapter.objects.set('channels.tv.Fixture_user.personalNote', { type: 'state', common: { name: 'My note', type: 'string' }, native: {} });
+    h.adapter.states.set('channels.tv.Fixture_user.personalNote', { val: 'Keep me', ack: true });
     await query(h, []);
-    assert.equal(h.adapter.objects.has('channels.tv.1'), false);
-    for (const number of [2, 3, 4]) {
-        const id = `channels.tv.${number}`;
+    assert.equal(h.adapter.objects.has('channels.tv.Fixture_ordinary'), false);
+    for (const name of ['custom', 'protected', 'user']) {
+        const id = `channels.tv.Fixture_${name}`;
         assert.equal(h.adapter.objects.get(id).native.channelRetired, true);
         assert.equal(state(h, `${id}.available`).val, false);
         assert.equal(h.adapter.objects.get(`${id}.select`).common.write, false);
         assert.equal(h.runtime._objects.has(`${id}.select`), false);
     }
-    assert.equal(state(h, 'channels.tv.4.personalNote').val, 'Keep me');
+    assert.equal(state(h, 'channels.tv.Fixture_user.personalNote').val, 'Keep me');
     const restarted = await harness(t, adapter => {
         adapter.objects = structuredClone(h.adapter.objects);
         adapter.states = structuredClone(h.adapter.states);
     });
     assert.equal(restarted.runtime.channelObjects.services.size, 0);
     assert.equal(restarted.client.calls.length, 0);
-    assert.equal(state(restarted, 'channels.tv.4.personalNote').val, 'Keep me');
-    await query(restarted, [entry('replacement', '2')]);
-    assert.equal(restarted.adapter.objects.get('channels.tv.2').native.channelRetired, false);
-    assert.equal(restarted.adapter.objects.get('channels.tv.2.select').common.write, true);
-    assert.equal(restarted.adapter.objects.get('channels.tv.2.name').common.custom['history.0'].enabled, true);
+    assert.equal(state(restarted, 'channels.tv.Fixture_user.personalNote').val, 'Keep me');
+    await query(restarted, [entry('custom', '7')]);
+    assert.equal(restarted.adapter.objects.get('channels.tv.Fixture_custom').native.channelRetired, false);
+    assert.equal(restarted.adapter.objects.get('channels.tv.Fixture_custom.select').common.write, true);
+    assert.equal(restarted.adapter.objects.get('channels.tv.Fixture_custom.name').common.custom['history.0'].enabled, true);
 });
 
-test('an unowned child at a known v2 suffix is preserved as a user object when its station is removed', async t => {
+test('an unowned child at a known metadata suffix is preserved as a user object when its station is removed', async t => {
     const h = await harness(t);
     await query(h, [entry('first')]);
-    h.adapter.objects.set('channels.tv.1.name', { type: 'state', common: { name: 'Personal counter', type: 'number' }, native: {} });
-    h.adapter.states.set('channels.tv.1.name', { val: 42, ack: true });
+    h.adapter.objects.set('channels.tv.Fixture_first.name', { type: 'state', common: { name: 'Personal counter', type: 'number' }, native: {} });
+    h.adapter.states.set('channels.tv.Fixture_first.name', { val: 42, ack: true });
     await query(h, []);
-    assert.equal(h.adapter.objects.get('channels.tv.1').native.channelRetired, true);
-    assert.equal(h.adapter.objects.get('channels.tv.1.name').common.name, 'Personal counter');
-    assert.equal(state(h, 'channels.tv.1.name').val, 42);
-    assert.equal(h.adapter.objects.get('channels.tv.1.select').common.write, false);
-    assert.equal(h.runtime._objects.has('channels.tv.1.select'), false);
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_first').native.channelRetired, true);
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_first.name').common.name, 'Personal counter');
+    assert.equal(state(h, 'channels.tv.Fixture_first.name').val, 42);
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_first.select').common.write, false);
+    assert.equal(h.runtime._objects.has('channels.tv.Fixture_first.select'), false);
     assert.equal(h.adapter.dynamicCalls.some(call => call.operation === 'delete'), false);
 });
 
@@ -646,9 +794,9 @@ test('protected legacy folders are marked retired and cannot restore duplicate s
         adapter.objects = structuredClone(h.adapter.objects);
         adapter.states = structuredClone(h.adapter.states);
     });
-    assert.deepEqual([...restarted.runtime.channelObjects.services.keys()], ['channels.tv.1']);
-    assert.equal(state(restarted, 'channels.tv.1.mediaItemUuid').val, 'replacement');
-    assert.equal(restarted.adapter.objects.has('channels.tv.100'), false);
+    assert.deepEqual([...restarted.runtime.channelObjects.services.keys()], ['channels.tv.Fixture_replacement']);
+    assert.equal(state(restarted, 'channels.tv.Fixture_replacement.mediaItemUuid').val, 'replacement');
+    assert.equal(restarted.adapter.objects.has('channels.tv.Fixture_first'), false);
     assert.ok(restarted.adapter.objects.has(`${legacy.id}.personal`));
 });
 
@@ -658,7 +806,7 @@ test('a missing or failed cleanup inventory never authorizes deletions and a lat
     h.adapter.inventoryHook = async () => ({ rows: [] });
     await query(h, []);
     assert.equal(h.adapter.dynamicCalls.some(call => call.operation === 'delete'), false);
-    assert.ok(h.adapter.objects.has('channels.tv.1'));
+    assert.ok(h.adapter.objects.has('channels.tv.Fixture_first'));
     h.adapter.inventoryHook = async () => { throw Object.assign(new Error('Inventory unavailable'), { code: 'DATABASE' }); };
     await query(h, []);
     assert.equal(state(h, 'channels.catalogStatus').val, 'error');
@@ -667,7 +815,7 @@ test('a missing or failed cleanup inventory never authorizes deletions and a lat
     assert.ok(h.client.calls.some(call => call.method === 'key'));
     h.adapter.inventoryHook = null;
     await query(h, []);
-    assert.equal(h.adapter.objects.has('channels.tv.1'), false);
+    assert.equal(h.adapter.objects.has('channels.tv.Fixture_first'), false);
     assert.equal(state(h, 'channels.catalogStatus').val, 'empty');
 });
 
@@ -675,12 +823,12 @@ test('protection added after the cleanup inventory is respected before deleting 
     const h = await harness(t);
     await query(h, [entry('first')]);
     h.adapter.objectHook = async id => {
-        if (id === 'channels.tv.1.epg.status') h.adapter.objects.get(id).common.dontDelete = true;
+        if (id === 'channels.tv.Fixture_first.epg.status') h.adapter.objects.get(id).common.dontDelete = true;
     };
     await query(h, []);
-    assert.ok(h.adapter.objects.has('channels.tv.1.epg.status'));
-    assert.equal(h.adapter.objects.get('channels.tv.1').native.channelRetired, true);
-    assert.equal(h.adapter.objects.get('channels.tv.1.select').common.write, false);
+    assert.ok(h.adapter.objects.has('channels.tv.Fixture_first.epg.status'));
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_first').native.channelRetired, true);
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_first.select').common.write, false);
 });
 
 test('a queued selection cannot recreate its deleted state value in the button reset', async t => {
@@ -691,16 +839,16 @@ test('a queued selection cannot recreate its deleted state value in the button r
     h.client.keyHook = () => gate.promise;
     const home = write(h, 'remote.home', true);
     await until(() => h.client.calls.some(call => call.method === 'key'), 'Remote command did not start.');
-    const select = write(h, 'channels.tv.1.select', true);
+    const select = write(h, 'channels.tv.Fixture_first.select', true);
     h.runtime.channelObjects.acceptPage(parseChannelPage(channels([])), '');
     await h.runtime.channelObjects.whenIdle();
-    assert.equal(h.adapter.objects.has('channels.tv.1.select'), false);
-    assert.equal(state(h, 'channels.tv.1.select'), undefined);
+    assert.equal(h.adapter.objects.has('channels.tv.Fixture_first.select'), false);
+    assert.equal(state(h, 'channels.tv.Fixture_first.select'), undefined);
     gate.resolve();
     await Promise.all([home, select]);
     assert.equal(h.client.calls.some(call => call.method === 'zap'), false);
-    assert.equal(state(h, 'channels.tv.1.select'), undefined);
-    assert.equal(h.runtime._lastValues.has('channels.tv.1.select'), false);
+    assert.equal(state(h, 'channels.tv.Fixture_first.select'), undefined);
+    assert.equal(h.runtime._lastValues.has('channels.tv.Fixture_first.select'), false);
 });
 
 test('cleanup waits for an already started button reset before deleting its state', async t => {
@@ -708,7 +856,7 @@ test('cleanup waits for an already started button reset before deleting its stat
     await query(h, [entry('first')]);
     const gate = deferred();
     t.after(() => gate.resolve());
-    const button = 'channels.tv.1.select';
+    const button = 'channels.tv.Fixture_first.select';
     let resetting = false;
     h.adapter.stateHook = (id, value) => {
         if (id === button && value.val === false) {
@@ -725,7 +873,7 @@ test('cleanup waits for an already started button reset before deleting its stat
     await within(write(h, 'remote.home', true), 'The remote queue waited for a pending button reset.');
     gate.resolve();
     await Promise.all([select, h.runtime.channelObjects.whenIdle()]);
-    assert.equal(h.adapter.objects.has('channels.tv.1'), false);
+    assert.equal(h.adapter.objects.has('channels.tv.Fixture_first'), false);
     assert.equal(h.adapter.objects.has(button), false);
     assert.equal(state(h, button), undefined);
     assert.equal(h.runtime._lastValues.has(button), false);
@@ -738,7 +886,7 @@ test('a timed-out reset must really settle before cleanup or a newer occupant ca
     const gate = deferred();
     const reported = deferred();
     t.after(() => gate.resolve());
-    const button = 'channels.tv.1.select';
+    const button = 'channels.tv.Fixture_first.select';
     const database = h.runtime._database.bind(h.runtime);
     h.runtime._database = (operation, label, timeout) => database(operation, label,
         label === button || label.startsWith('Ausstehende Taster-Rücksetzungen ') ? 15 : timeout);
@@ -758,21 +906,21 @@ test('a timed-out reset must really settle before cleanup or a newer occupant ca
     assert.equal(h.adapter.dynamicCalls.some(call => call.operation === 'delete'), false);
     assert.ok(h.runtime.channelObjects.worker, 'The timed-out mutation must still occupy the object worker.');
     const callsAfterFailure = h.adapter.dynamicCalls.length;
-    await query(h, [entry('replacement')], { idle: false });
+    await query(h, [{ ...entry('replacement'), '@_shortInfo': 'Fixture first' }], { idle: false });
     await within(write(h, 'remote.home', true), 'The remote queue waited for a timed-out reset.');
     assert.equal(h.adapter.dynamicCalls.length, callsAfterFailure);
     h.adapter.stateHook = null;
     gate.resolve();
     await h.runtime.channelObjects.whenIdle();
-    assert.equal(state(h, 'channels.tv.1.mediaItemUuid').val, 'replacement');
-    assert.equal(state(h, 'channels.tv.1.epg.status').val, 'notImplemented');
+    assert.equal(state(h, 'channels.tv.Fixture_first.mediaItemUuid').val, 'replacement');
+    assert.equal(state(h, 'channels.tv.Fixture_first.epg.status').val, 'notImplemented');
     assert.deepEqual(state(h, button), { val: false, ack: true });
     assert.equal(h.runtime.channelObjects.resetWrites.size, 0);
     await write(h, button, true);
     assert.deepEqual(h.client.calls.filter(call => call.method === 'zap').at(-1).args, ['channel://1:ch-replacement:sl-fixture']);
 });
 
-test('a timed-out delete must settle before a newer occupant of the same position is materialized', async t => {
+test('a timed-out delete must settle before a new service using the same name ID is materialized', async t => {
     const h = await harness(t);
     await query(h, [entry('first')]);
     const gate = deferred();
@@ -780,21 +928,21 @@ test('a timed-out delete must settle before a newer occupant of the same positio
     t.after(() => gate.resolve());
     const database = h.runtime._database.bind(h.runtime);
     h.runtime._database = (operation, label, timeout) => database(operation, label, label.endsWith('entfernen') ? 15 : timeout);
-    h.adapter.dynamicHook = call => call.operation === 'delete' && call.id === 'channels.tv.1.epg.status' ? gate.promise : undefined;
+    h.adapter.dynamicHook = call => call.operation === 'delete' && call.id === 'channels.tv.Fixture_first.epg.status' ? gate.promise : undefined;
     h.adapter.stateHook = (id, value) => { if (id === 'channels.catalogStatus' && value.val === 'error') reported.resolve(); };
     await query(h, [], { idle: false });
     await within(reported.promise, 'The delete deadline was not reported.');
     const callsAfterFailure = h.adapter.dynamicCalls.length;
-    await query(h, [entry('replacement', '1')], { idle: false });
+    await query(h, [{ ...entry('replacement', '1'), '@_shortInfo': 'Fixture first' }], { idle: false });
     await write(h, 'remote.home', true);
     assert.equal(h.adapter.dynamicCalls.length, callsAfterFailure, 'New channel writes must wait for the outstanding delete.');
     assert.ok(h.client.calls.some(call => call.method === 'key'));
     h.adapter.dynamicHook = null;
     gate.resolve();
     await h.runtime.channelObjects.whenIdle();
-    assert.equal(state(h, 'channels.tv.1.mediaItemUuid').val, 'replacement');
-    assert.equal(state(h, 'channels.tv.1.epg.status').val, 'notImplemented');
-    await write(h, 'channels.tv.1.select', true);
+    assert.equal(state(h, 'channels.tv.Fixture_first.mediaItemUuid').val, 'replacement');
+    assert.equal(state(h, 'channels.tv.Fixture_first.epg.status').val, 'notImplemented');
+    await write(h, 'channels.tv.Fixture_first.select', true);
     assert.deepEqual(h.client.calls.filter(call => call.method === 'zap').at(-1).args, ['channel://1:ch-replacement:sl-fixture']);
 });
 

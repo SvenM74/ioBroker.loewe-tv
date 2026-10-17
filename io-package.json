@@ -4,8 +4,8 @@
     "version": "0.1.4",
     "news": {
       "0.1.4": {
-        "en": "Channel folders now use programme positions as IDs and channel names as labels and descriptions. Automatic complete channel-list synchronization, manual refresh and migration from grouped service folders preserve TV/radio separation and protect custom objects.",
-        "de": "Senderordner verwenden jetzt Programmplätze als IDs und Sendernamen als Bezeichnung und Beschreibung. Automatischer vollständiger Senderabgleich, manueller Aktualisierungstaster und Migration der bisherigen Dienstordner erhalten die Trennung von TV und Radio und schützen eigene Objekte."
+        "en": "Channel folders use channel names as IDs and the preferred programme position as their label, keeping IDs stable when channels are sorted. Duplicate positions are grouped by service. Automatic complete synchronization, manual refresh and migration from numeric or hashed folders preserve TV/radio separation and protect custom objects.",
+        "de": "Senderordner verwenden Sendernamen als IDs und den bevorzugten Programmplatz als Bezeichnung. Beim Umsortieren bleiben die IDs erhalten; mehrfache Plätze desselben Dienstes werden zusammengefasst. Automatischer vollständiger Abgleich, manueller Aktualisierungstaster und Migration von Nummern- oder Hash-Ordnern erhalten die Trennung von TV und Radio und schützen eigene Objekte."
       },
       "0.1.3": {
         "en": "Separate TV and radio channel objects with selection buttons, stable service IDs, grouped programme positions and per-channel EPG placeholders. Actual channel-list response from bild 7.55 (SL420, V5.4.6.0) documented; EPG import and recording automation remain planned.",

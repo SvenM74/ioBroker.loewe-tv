@@ -124,7 +124,7 @@ class FakeClient extends EventEmitter {
                 '@_startIndex': String(start), '@_totalResults': '1', '@_returnedResults': start === 0 ? '1' : '0',
                 ...(start === 0 ? { ResultItemReference: {
                     '@_mediaItemUuid': 'fixture-service-1', '@_shortInfo': 'Fixture TV',
-                    '@_locator': 'channel://fixture/service-1', '@_caption': '001', '@_itemClass': 'video',
+                    '@_locator': 'channel://001:ch-fixture-service-1:sl-fixture', '@_caption': '001', '@_itemClass': 'video',
                 } } : {}),
             },
         }));
@@ -401,12 +401,52 @@ for (const savedView of [undefined, '   ']) {
         const [entry] = JSON.parse(h.adapter.states.get('channels.entries').val);
         assert.equal(entry.name, 'Fixture TV');
         assert.equal(entry.caption, '001');
-        assert.equal(entry.locator, 'channel://fixture/service-1');
+        assert.equal(entry.locator, 'channel://001:ch-fixture-service-1:sl-fixture');
         assert.equal(h.adapter.states.get('channels.totalNumber').val, 1);
         assert.equal(h.adapter.states.get('channels.nextStart').val, -1);
         assert.equal(h.adapter.states.get('channels.lastError').val, '');
     });
 }
+
+test('named channel buttons use registered targets and track the real pending reset write', async t => {
+    const h = await harness(t, { pollInterval: 0 });
+    await write(h, 'channels.getChannels', true);
+    await h.runtime.channelObjects.whenIdle();
+    const button = 'channels.tv.Fixture_TV.select';
+    const locator = 'channel://001:ch-fixture-service-1:sl-fixture';
+    assert.ok(h.adapter.objects.has(button), 'A real channel reply must create the named button.');
+
+    // A matching path or a user-edited metadata value cannot authorize a zap.
+    await write(h, 'channels.tv.Selbst_angelegt.select', true);
+    await write(h, 'channels.tv.Fixture_TV.locator', 'channel://999:ch-other:sl-fixture');
+    await h.runtime.handleStateChange(`loewe-tv.0.${button}`, { val: true, ack: true });
+    await write(h, button, false);
+    assert.equal(calls(h.client, 'zap').length, 0);
+
+    const reply = deferred();
+    const reset = deferred();
+    t.after(() => { reply.resolve(response('ZapToMedia')); reset.resolve(); });
+    h.client.hooks.zap = () => reply.promise;
+    const setState = h.adapter.setStateAsync.bind(h.adapter);
+    h.adapter.setStateAsync = async (id, state) => {
+        if (id === button && state.val === false) await reset.promise;
+        return setState(id, state);
+    };
+    const selection = write(h, button, true);
+    await waitUntil(() => calls(h.client, 'zap').length === 1, 'The named channel selection was not dispatched.');
+    assert.deepEqual(calls(h.client, 'zap')[0].args, [locator]);
+    assert.deepEqual(h.adapter.states.get(button), { val: true, ack: false });
+
+    reply.resolve(response('ZapToMedia'));
+    await waitUntil(() => h.runtime.channelObjects.resetWrites.get(button)?.size === 1,
+        'The named button reset must remain tracked until setStateAsync really settles.');
+    assert.deepEqual(h.adapter.states.get(button), { val: true, ack: false });
+    reset.resolve();
+    await selection;
+    assert.deepEqual(h.adapter.states.get(button), { val: false, ack: true });
+    assert.equal(h.runtime.channelObjects.resetWrites.has(button), false);
+    assert.equal(calls(h.client, 'zap').length, 1);
+});
 
 test('list discovery uses its own offset and preserves an explicit favorite selection', async t => {
     const h = await harness(t, { pollInterval: 0 });

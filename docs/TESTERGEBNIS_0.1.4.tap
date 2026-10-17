@@ -1,1115 +1,1205 @@
 TAP version 13
-# Subtest: SL420 response creates one folder per programme position and separates TV from radio
-ok 1 - SL420 response creates one folder per programme position and separates TV from radio
+# Subtest: SL420 response groups service positions under named folders and separates TV from radio
+ok 1 - SL420 response groups service positions under named folders and separates TV from radio
   ---
-  duration_ms: 9.202039
+  duration_ms: 10.769985
   type: 'test'
   ...
-# Subtest: renaming and result order leave slot IDs intact while moving a station changes its folder
-ok 2 - renaming and result order leave slot IDs intact while moving a station changes its folder
+# Subtest: sorting a list changes positions and locators while IDs remain stable regardless of response order
+ok 2 - sorting a list changes positions and locators while IDs remain stable regardless of response order
   ---
-  duration_ms: 1.763165
+  duration_ms: 2.318225
   type: 'test'
   ...
-# Subtest: reusing a programme position atomically replaces UUID, name, locator and aliases
-ok 3 - reusing a programme position atomically replaces UUID, name, locator and aliases
+# Subtest: a real station rename changes its named ID without retaining a stale alias
+ok 3 - a real station rename changes its named ID without retaining a stale alias
   ---
-  duration_ms: 0.457145
+  duration_ms: 0.750085
   type: 'test'
   ...
-# Subtest: the same number and UUID are independent in TV/radio, and a list switch replaces list metadata
-ok 4 - the same number and UUID are independent in TV/radio, and a list switch replaces list metadata
+# Subtest: names become readable safe segments and reserve old numeric and hash folder formats
+ok 4 - names become readable safe segments and reserve old numeric and hash folder formats
   ---
-  duration_ms: 0.319418
+  duration_ms: 2.792366
   type: 'test'
   ...
-# Subtest: numeric folder IDs are canonical while the original caption and locator stay byte-for-byte intact
-ok 5 - numeric folder IDs are canonical while the original caption and locator stay byte-for-byte intact
+# Subtest: different services with the same cleaned name receive deterministic identity suffixes
+ok 5 - different services with the same cleaned name receive deterministic identity suffixes
   ---
-  duration_ms: 0.264456
+  duration_ms: 1.260069
   type: 'test'
   ...
-# Subtest: missing or nonnumeric captions can only fall back to a valid numeric channel locator
-ok 6 - missing or nonnumeric captions can only fall back to a valid numeric channel locator
+# Subtest: a new name collision cannot steal the existing base ID even with an earlier-sorting identity
+ok 6 - a new name collision cannot steal the existing base ID even with an earlier-sorting identity
   ---
-  duration_ms: 0.733728
+  duration_ms: 2.804474
   type: 'test'
   ...
-# Subtest: contradictory caption/locator numbers disable the old slot without choosing either number
-ok 7 - contradictory caption/locator numbers disable the old slot without choosing either number
+# Subtest: a validated collision suffix survives removal of its neighbour, cache restore and further full refreshes
+ok 7 - a validated collision suffix survives removal of its neighbour, cache restore and further full refreshes
   ---
-  duration_ms: 0.333789
+  duration_ms: 0.753139
   type: 'test'
   ...
-# Subtest: conflicting occupants of one slot are all rejected, independently of response order
-ok 8 - conflicting occupants of one slot are all rejected, independently of response order
+# Subtest: TV and radio identities and folder namespaces are independent and switching lists resets old content
+ok 8 - TV and radio identities and folder namespaces are independent and switching lists resets old content
   ---
-  duration_ms: 0.599397
+  duration_ms: 0.446108
   type: 'test'
   ...
-# Subtest: leading-zero collisions and conflicting labels are diagnosed even for one service UUID
-ok 9 - leading-zero collisions and conflicting labels are diagnosed even for one service UUID
+# Subtest: without UUID, the locator service components group positions and remain stable after sorting
+ok 9 - without UUID, the locator service components group positions and remain stable after sorting
   ---
-  duration_ms: 0.26075
+  duration_ms: 1.049293
   type: 'test'
   ...
-# Subtest: exactly repeated references are deduplicated without becoming an ambiguous slot
-ok 10 - exactly repeated references are deduplicated without becoming an ambiguous slot
+# Subtest: selection uses the lowest valid position and retains all original captions and locators
+ok 10 - selection uses the lowest valid position and retains all original captions and locators
   ---
-  duration_ms: 0.302213
+  duration_ms: 0.676544
   type: 'test'
   ...
-# Subtest: partial refreshes retain unobserved positions even when collected ranges add up to a full list
-ok 11 - partial refreshes retain unobserved positions even when collected ranges add up to a full list
+# Subtest: nonnumeric or unsafe positions are not invented from names, array indexes or arbitrary URLs
+ok 11 - nonnumeric or unsafe positions are not invented from names, array indexes or arbitrary URLs
   ---
-  duration_ms: 0.778455
+  duration_ms: 0.321882
   type: 'test'
   ...
-# Subtest: a complete TV-only refresh preserves radio and a complete radio-only refresh preserves TV
-ok 12 - a complete TV-only refresh preserves radio and a complete radio-only refresh preserves TV
+# Subtest: a partial move replaces the observed service positions instead of selecting a stale smaller number
+ok 12 - a partial move replaces the observed service positions instead of selecting a stale smaller number
   ---
-  duration_ms: 0.316184
+  duration_ms: 0.72705
   type: 'test'
   ...
-# Subtest: an empty complete filtered response removes only that type and a combined response clears both
-ok 13 - an empty complete filtered response removes only that type and a combined response clears both
+# Subtest: a partially observed replacement disables an old occupant and retains unrelated services
+ok 13 - a partially observed replacement disables an old occupant and retains unrelated services
   ---
-  duration_ms: 0.227511
+  duration_ms: 0.58688
   type: 'test'
   ...
-# Subtest: unknown types and missing identities are skipped without guessing TV or removing other positions
-ok 14 - unknown types and missing identities are skipped without guessing TV or removing other positions
+# Subtest: a partial replacement can keep an unaffected confirmed alternative position of the old service
+ok 14 - a partial replacement can keep an unaffected confirmed alternative position of the old service
   ---
-  duration_ms: 0.302743
+  duration_ms: 0.689864
   type: 'test'
   ...
-# Subtest: a response that ignores the requested type filter cannot falsely retire existing channels
-ok 15 - a response that ignores the requested type filter cannot falsely retire existing channels
+# Subtest: moving B onto A in a partial reply updates B and disables the previous A target
+ok 15 - moving B onto A in a partial reply updates B and disables the previous A target
   ---
-  duration_ms: 0.408572
+  duration_ms: 0.533409
   type: 'test'
   ...
-# Subtest: a missing UUID is usable only with a validated channel locator for its programme position
-ok 16 - a missing UUID is usable only with a validated channel locator for its programme position
+# Subtest: contradictory caption and locator numbers disable both claimed old positions
+ok 16 - contradictory caption and locator numbers disable both claimed old positions
   ---
-  duration_ms: 0.200871
+  duration_ms: 1.6212
   type: 'test'
   ...
-# Subtest: known UUIDs with unusable locators remain visible but unavailable
-ok 17 - known UUIDs with unusable locators remain visible but unavailable
+# Subtest: conflicting occupants are rejected independently of response order and radio remains separate
+ok 17 - conflicting occupants are rejected independently of response order and radio remains separate
   ---
-  duration_ms: 0.336344
+  duration_ms: 0.54691
   type: 'test'
   ...
-# Subtest: a valid and an unidentified reference at the same number cannot silently choose the valid one
-ok 18 - a valid and an unidentified reference at the same number cannot silently choose the valid one
+# Subtest: leading-zero slot collisions and inconsistent names of one service are rejected
+ok 18 - leading-zero slot collisions and inconsistent names of one service are rejected
   ---
-  duration_ms: 0.167651
+  duration_ms: 0.414191
   type: 'test'
   ...
-# Subtest: repeated and overlapping partial pages do not duplicate stored references
-ok 19 - repeated and overlapping partial pages do not duplicate stored references
+# Subtest: exact repeated references are deduplicated without making a slot ambiguous
+ok 19 - exact repeated references are deduplicated without making a slot ambiguous
   ---
-  duration_ms: 0.426238
+  duration_ms: 0.203796
   type: 'test'
   ...
-# Subtest: changing totals or hashes starts a fresh page collection without interpreting absence as deletion
-ok 20 - changing totals or hashes starts a fresh page collection without interpreting absence as deletion
+# Subtest: collected partial ranges never imply reconciliation and only a full live reply removes missing services
+ok 20 - collected partial ranges never imply reconciliation and only a full live reply removes missing services
   ---
-  duration_ms: 0.216895
+  duration_ms: 1.045698
   type: 'test'
   ...
-# Subtest: v2 caches round-trip and only compact known properties are restored
-ok 21 - v2 caches round-trip and only compact known properties are restored
+# Subtest: complete filtered replies remove only the matching medium and a combined empty reply clears both
+ok 21 - complete filtered replies remove only the matching medium and a combined empty reply clears both
   ---
-  duration_ms: 0.344807
+  duration_ms: 4.6967
   type: 'test'
   ...
-# Subtest: restoring slot records recomputes selection fields and rejects mismatched IDs or grouped v2 positions
-ok 22 - restoring slot records recomputes selection fields and rejects mismatched IDs or grouped v2 positions
+# Subtest: unknown types, missing identities and ignored type filters cannot retire existing services
+ok 22 - unknown types, missing identities and ignored type filters cannot retire existing services
   ---
-  duration_ms: 0.322663
+  duration_ms: 0.427892
   type: 'test'
   ...
-# Subtest: version-1 grouped records migrate to separate slots and preserve explicit unavailable status
-ok 23 - version-1 grouped records migrate to separate slots and preserve explicit unavailable status
+# Subtest: missing UUIDs require valid locators while known UUIDs may remain visible but unavailable
+ok 23 - missing UUIDs require valid locators while known UUIDs may remain visible but unavailable
   ---
-  duration_ms: 2.119614
+  duration_ms: 0.722633
   type: 'test'
   ...
-# Subtest: a full version-1 catalogue migrates with TV/radio numbering, then round-trips as version 2
-ok 24 - a full version-1 catalogue migrates with TV/radio numbering, then round-trips as version 2
+# Subtest: an unidentified reference at the same position invalidates an otherwise valid new occupant
+ok 24 - an unidentified reference at the same position invalidates an otherwise valid new occupant
   ---
-  duration_ms: 0.590404
+  duration_ms: 1.048481
   type: 'test'
   ...
-# Subtest: legacy migration validates hashes and refuses ambiguous or unnumbered old slots
-ok 25 - legacy migration validates hashes and refuses ambiguous or unnumbered old slots
+# Subtest: repeated and overlapping pages retain only one copy of each stored raw range
+ok 25 - repeated and overlapping pages retain only one copy of each stored raw range
   ---
-  duration_ms: 1.173707
+  duration_ms: 1.658275
   type: 'test'
   ...
-# Subtest: archived slots remain unavailable after restore until an unambiguous live observation
-ok 26 - archived slots remain unavailable after restore until an unambiguous live observation
+# Subtest: changing totals or hash starts a new raw page collection without treating absence as deletion
+ok 26 - changing totals or hash starts a new raw page collection without treating absence as deletion
   ---
-  duration_ms: 0.244856
+  duration_ms: 0.271107
   type: 'test'
   ...
-# Subtest: untrusted caches reject malformed records, mixed lists, duplicate slots and unsupported versions
-ok 27 - untrusted caches reject malformed records, mixed lists, duplicate slots and unsupported versions
+# Subtest: schema-3 caches round-trip while unknown properties and streaming metadata are omitted
+ok 27 - schema-3 caches round-trip while unknown properties and streaming metadata are omitted
   ---
-  duration_ms: 0.454932
+  duration_ms: 0.413209
   type: 'test'
   ...
-# Subtest: merging never mutates a caller-owned page or previously saved catalogue
-ok 28 - merging never mutates a caller-owned page or previously saved catalogue
+# Subtest: normalization recomputes selection fields and validates IDs, collisions and availability
+ok 28 - normalization recomputes selection fields and validates IDs, collisions and availability
   ---
-  duration_ms: 0.32093
+  duration_ms: 0.483495
   type: 'test'
   ...
-# Subtest: explicit byte, entry and page limits reject oversized data without truncation, including migration
-ok 29 - explicit byte, entry and page limits reject oversized data without truncation, including migration
+# Subtest: version-1 groups retain their positions while migrating from validated hashes to readable names
+ok 29 - version-1 groups retain their positions while migrating from validated hashes to readable names
   ---
-  duration_ms: 21.220104
+  duration_ms: 1.990444
+  type: 'test'
+  ...
+# Subtest: version-2 numbered folders are validated against their position and grouped into services
+ok 30 - version-2 numbered folders are validated against their position and grouped into services
+  ---
+  duration_ms: 1.070214
+  type: 'test'
+  ...
+# Subtest: migration handles duplicate names without merging different services and conservatively preserves restrictions
+ok 31 - migration handles duplicate names without merging different services and conservatively preserves restrictions
+  ---
+  duration_ms: 1.036323
+  type: 'test'
+  ...
+# Subtest: legacy migration rejects altered hashes, ambiguous old slots and invalid fallback service groups
+ok 32 - legacy migration rejects altered hashes, ambiguous old slots and invalid fallback service groups
+  ---
+  duration_ms: 1.191015
+  type: 'test'
+  ...
+# Subtest: archived services remain unavailable after restore until a valid live observation
+ok 33 - archived services remain unavailable after restore until a valid live observation
+  ---
+  duration_ms: 0.563275
+  type: 'test'
+  ...
+# Subtest: untrusted caches reject malformed records, mixed lists, duplicate identities and duplicate active positions
+ok 34 - untrusted caches reject malformed records, mixed lists, duplicate identities and duplicate active positions
+  ---
+  duration_ms: 0.707961
+  type: 'test'
+  ...
+# Subtest: grouping helpers preserve prior schema-3 collision IDs and reject invalid identity assignments
+ok 35 - grouping helpers preserve prior schema-3 collision IDs and reject invalid identity assignments
+  ---
+  duration_ms: 0.565257
+  type: 'test'
+  ...
+# Subtest: merging never mutates caller-owned pages or existing caches
+ok 36 - merging never mutates caller-owned pages or existing caches
+  ---
+  duration_ms: 0.27379
+  type: 'test'
+  ...
+# Subtest: byte, entry and page limits reject oversized data without truncation, including migrations
+ok 37 - byte, entry and page limits reject oversized data without truncation, including migrations
+  ---
+  duration_ms: 39.088552
   type: 'test'
   ...
 # Subtest: invalid page metadata is rejected before any catalogue can be replaced
-ok 30 - invalid page metadata is rejected before any catalogue can be replaced
+ok 38 - invalid page metadata is rejected before any catalogue can be replaced
   ---
-  duration_ms: 0.397315
+  duration_ms: 0.4202
   type: 'test'
   ...
-# Subtest: folder name and description contain the station name and each slot owns its select button and EPG
-ok 31 - folder name and description contain the station name and each slot owns its select button and EPG
+# Subtest: folder ID contains the station name, common name is its preferred position, and description keeps its label
+ok 39 - folder ID contains the station name, common name is its preferred position, and description keeps its label
   ---
-  duration_ms: 0.573799
+  duration_ms: 0.980409
   type: 'test'
   ...
-# Subtest: a mixed list creates one numeric folder per TV/radio position with names and descriptions
-ok 32 - a mixed list creates one numeric folder per TV/radio position with names and descriptions
+# Subtest: a mixed list creates one name-based folder per TV/radio service and preserves every position
+ok 40 - a mixed list creates one name-based folder per TV/radio service and preserves every position
   ---
-  duration_ms: 45.912176
+  duration_ms: 46.353267
   type: 'test'
   ...
 # Subtest: select sends only the exact stored locator for boolean true with ack false and resets the button
-ok 33 - select sends only the exact stored locator for boolean true with ack false and resets the button
+ok 41 - select sends only the exact stored locator for boolean true with ack false and resets the button
   ---
-  duration_ms: 17.547405
+  duration_ms: 13.179897
   type: 'test'
   ...
 # Subtest: a failed channel selection resets the momentary button and reports the transport error
-ok 34 - a failed channel selection resets the momentary button and reports the transport error
+ok 42 - a failed channel selection resets the momentary button and reports the transport error
   ---
-  duration_ms: 14.183448
+  duration_ms: 13.666427
   type: 'test'
   ...
 # Subtest: upgrade from 0.1.2 builds sender objects from channels.items without contacting the TV
-ok 35 - upgrade from 0.1.2 builds sender objects from channels.items without contacting the TV
+ok 43 - upgrade from 0.1.2 builds sender objects from channels.items without contacting the TV
   ---
-  duration_ms: 10.948364
+  duration_ms: 18.186844
   type: 'test'
   ...
 # Subtest: restart restores cache/native service identities and clears saved true buttons without replaying them
-ok 36 - restart restores cache/native service identities and clears saved true buttons without replaying them
+ok 44 - restart restores cache/native service identities and clears saved true buttons without replaying them
   ---
-  duration_ms: 19.493579
+  duration_ms: 32.858972
   type: 'test'
   ...
 # Subtest: native restoration with a saved or live partial first page preserves unqueried positions
-ok 37 - native restoration with a saved or live partial first page preserves unqueried positions
+ok 45 - native restoration with a saved or live partial first page preserves unqueried positions
   ---
-  duration_ms: 43.682327
+  duration_ms: 68.622926
   type: 'test'
   ...
 # Subtest: only complete responses delete absent managed positions and filtered queries preserve the other type
-ok 38 - only complete responses delete absent managed positions and filtered queries preserve the other type
+ok 46 - only complete responses delete absent managed positions and filtered queries preserve the other type
   ---
-  duration_ms: 30.506339
+  duration_ms: 29.85214
   type: 'test'
   ...
 # Subtest: switching lists deletes obsolete folders and cancels queued selections of the former list
-ok 39 - switching lists deletes obsolete folders and cancels queued selections of the former list
+ok 47 - switching lists deletes obsolete folders and cancels queued selections of the former list
   ---
-  duration_ms: 14.099341
+  duration_ms: 15.027117
   type: 'test'
   ...
 # Subtest: slow sender object creation does not block the remote-control command queue
-ok 40 - slow sender object creation does not block the remote-control command queue
+ok 48 - slow sender object creation does not block the remote-control command queue
   ---
-  duration_ms: 307.917871
+  duration_ms: 332.367522
   type: 'test'
   ...
-# 372 synthetic services, persisted catalogue 271539 bytes, limit 491520 bytes.
+# 372 synthetic services, persisted catalogue 286047 bytes, limit 491520 bytes.
 # Subtest: stop prevents new sender object/database operations after already started calls settle
-ok 41 - stop prevents new sender object/database operations after already started calls settle
+ok 49 - stop prevents new sender object/database operations after already started calls settle
   ---
-  duration_ms: 4.905055
+  duration_ms: 5.579984
   type: 'test'
   ...
 # Subtest: sender materialization limits concurrent dynamic database calls to two
-ok 42 - sender materialization limits concurrent dynamic database calls to two
+ok 50 - sender materialization limits concurrent dynamic database calls to two
   ---
-  duration_ms: 6.558751
+  duration_ms: 9.723646
   type: 'test'
   ...
 # Subtest: a database failure aborts the current materialization batch and the next query can recover
-ok 43 - a database failure aborts the current materialization batch and the next query can recover
+ok 51 - a database failure aborts the current materialization batch and the next query can recover
   ---
-  duration_ms: 6.502026
+  duration_ms: 17.807775
   type: 'test'
   ...
-# Subtest: a renamed or reused position replaces its metadata and locator, and a move removes the former folder
-ok 44 - a renamed or reused position replaces its metadata and locator, and a move removes the former folder
+# Subtest: numeric 0.1.4 caches and native roots migrate to stable service names without losing duplicate positions
+ok 52 - numeric 0.1.4 caches and native roots migrate to stable service names without losing duplicate positions
   ---
-  duration_ms: 16.785524
+  duration_ms: 23.720098
   type: 'test'
   ...
-# Subtest: v1 grouped cache and native folders migrate offline to all programme positions, removing old generated objects
-ok 45 - v1 grouped cache and native folders migrate offline to all programme positions, removing old generated objects
+# Subtest: current named native objects outrank stale numeric caches and retain collision IDs after restart
+ok 53 - current named native objects outrank stale numeric caches and retain collision IDs after restart
   ---
-  duration_ms: 25.795065
+  duration_ms: 21.196274
   type: 'test'
   ...
-# Subtest: three conflicting legacy occupants cannot reactivate an ambiguous programme position during restoration
-ok 46 - three conflicting legacy occupants cannot reactivate an ambiguous programme position during restoration
+# Subtest: an old active catalogue cannot reactivate a retired named native root
+ok 54 - an old active catalogue cannot reactivate a retired named native root
   ---
-  duration_ms: 8.733998
+  duration_ms: 11.46106
+  type: 'test'
+  ...
+# Subtest: a newer unavailable native occupant blocks a stale active numeric-cache occupant of that position
+ok 55 - a newer unavailable native occupant blocks a stale active numeric-cache occupant of that position
+  ---
+  duration_ms: 22.201912
+  type: 'test'
+  ...
+# Subtest: conflicting old numeric names cannot discard a fresh response queued during restoration
+ok 56 - conflicting old numeric names cannot discard a fresh response queued during restoration
+  ---
+  duration_ms: 11.458452
+  type: 'test'
+  ...
+# Subtest: sorting preserves station IDs, user configuration and the exact new selection locator
+ok 57 - sorting preserves station IDs, user configuration and the exact new selection locator
+  ---
+  duration_ms: 16.169273
+  type: 'test'
+  ...
+# Subtest: an actual station rename changes its name ID and preserves a protected old folder disabled
+ok 58 - an actual station rename changes its name ID and preserves a protected old folder disabled
+  ---
+  duration_ms: 8.949916
+  type: 'test'
+  ...
+# Subtest: v1 grouped cache and native folders migrate offline to name IDs and remove old generated objects
+ok 59 - v1 grouped cache and native folders migrate offline to name IDs and remove old generated objects
+  ---
+  duration_ms: 24.025686
+  type: 'test'
+  ...
+# Subtest: three conflicting legacy occupants remain unavailable until a fresh response resolves the position
+ok 60 - three conflicting legacy occupants remain unavailable until a fresh response resolves the position
+  ---
+  duration_ms: 12.883683
   type: 'test'
   ...
 # Subtest: damaged catalogue and raw caches cannot discard a valid live response queued during restoration
-ok 47 - damaged catalogue and raw caches cannot discard a valid live response queued during restoration
+ok 61 - damaged catalogue and raw caches cannot discard a valid live response queued during restoration
   ---
-  duration_ms: 7.400111
+  duration_ms: 5.882659
   type: 'test'
   ...
 # Subtest: removed folders containing custom settings, protected objects or user children remain disabled without resurrecting on restart
-ok 48 - removed folders containing custom settings, protected objects or user children remain disabled without resurrecting on restart
+ok 62 - removed folders containing custom settings, protected objects or user children remain disabled without resurrecting on restart
   ---
-  duration_ms: 30.622619
+  duration_ms: 24.954619
   type: 'test'
   ...
-# Subtest: an unowned child at a known v2 suffix is preserved as a user object when its station is removed
-ok 49 - an unowned child at a known v2 suffix is preserved as a user object when its station is removed
+# Subtest: an unowned child at a known metadata suffix is preserved as a user object when its station is removed
+ok 63 - an unowned child at a known metadata suffix is preserved as a user object when its station is removed
   ---
-  duration_ms: 7.318438
+  duration_ms: 7.463849
   type: 'test'
   ...
 # Subtest: protected legacy folders are marked retired and cannot restore duplicate services on restart
-ok 50 - protected legacy folders are marked retired and cannot restore duplicate services on restart
+ok 64 - protected legacy folders are marked retired and cannot restore duplicate services on restart
   ---
-  duration_ms: 19.071376
+  duration_ms: 26.829009
   type: 'test'
   ...
 # Subtest: a missing or failed cleanup inventory never authorizes deletions and a later refresh retries cleanup
-ok 51 - a missing or failed cleanup inventory never authorizes deletions and a later refresh retries cleanup
+ok 65 - a missing or failed cleanup inventory never authorizes deletions and a later refresh retries cleanup
   ---
-  duration_ms: 7.11943
+  duration_ms: 8.466081
   type: 'test'
   ...
 # Subtest: protection added after the cleanup inventory is respected before deleting that state
-ok 52 - protection added after the cleanup inventory is respected before deleting that state
+ok 66 - protection added after the cleanup inventory is respected before deleting that state
   ---
-  duration_ms: 6.05085
+  duration_ms: 5.475558
   type: 'test'
   ...
 # Subtest: a queued selection cannot recreate its deleted state value in the button reset
-ok 53 - a queued selection cannot recreate its deleted state value in the button reset
+ok 67 - a queued selection cannot recreate its deleted state value in the button reset
   ---
-  duration_ms: 12.785434
+  duration_ms: 14.754699
   type: 'test'
   ...
 # Subtest: cleanup waits for an already started button reset before deleting its state
-ok 54 - cleanup waits for an already started button reset before deleting its state
+ok 68 - cleanup waits for an already started button reset before deleting its state
   ---
-  duration_ms: 7.843896
+  duration_ms: 7.413324
   type: 'test'
   ...
 # Subtest: a timed-out reset must really settle before cleanup or a newer occupant can proceed
-ok 55 - a timed-out reset must really settle before cleanup or a newer occupant can proceed
+ok 69 - a timed-out reset must really settle before cleanup or a newer occupant can proceed
   ---
-  duration_ms: 23.46808
+  duration_ms: 25.257637
   type: 'test'
   ...
-# Subtest: a timed-out delete must settle before a newer occupant of the same position is materialized
-ok 56 - a timed-out delete must settle before a newer occupant of the same position is materialized
+# Subtest: a timed-out delete must settle before a new service using the same name ID is materialized
+ok 70 - a timed-out delete must settle before a new service using the same name ID is materialized
   ---
-  duration_ms: 23.725826
+  duration_ms: 34.139118
   type: 'test'
   ...
 # Subtest: stop during cleanup prevents further database calls after the current delete settles
-ok 57 - stop during cleanup prevents further database calls after the current delete settles
+ok 71 - stop during cleanup prevents further database calls after the current delete settles
   ---
-  duration_ms: 17.735696
+  duration_ms: 6.651751
   type: 'test'
   ...
 # Subtest: channel refresh configuration defaults to five minutes and accepts only zero or 60 to 86400 seconds
-ok 58 - channel refresh configuration defaults to five minutes and accepts only zero or 60 to 86400 seconds
+ok 72 - channel refresh configuration defaults to five minutes and accepts only zero or 60 to 86400 seconds
   ---
-  duration_ms: 2.488987
+  duration_ms: 3.290913
   type: 'test'
   ...
 # Subtest: startup and interval refresh the complete mixed list without changing manual page parameters
-ok 59 - startup and interval refresh the complete mixed list without changing manual page parameters
+ok 73 - startup and interval refresh the complete mixed list without changing manual page parameters
   ---
-  duration_ms: 18.978007
+  duration_ms: 19.698359
   type: 'test'
   ...
 # Subtest: disabled automatic refresh sends nothing, while the explicit complete-refresh button still works
-ok 60 - disabled automatic refresh sends nothing, while the explicit complete-refresh button still works
+ok 74 - disabled automatic refresh sends nothing, while the explicit complete-refresh button still works
   ---
-  duration_ms: 7.651557
+  duration_ms: 13.137344
   type: 'test'
   ...
 # Subtest: empty view selects a TV-reported list with a shared overall deadline
-ok 61 - empty view selects a TV-reported list with a shared overall deadline
+ok 75 - empty view selects a TV-reported list with a shared overall deadline
   ---
-  duration_ms: 11.86118
+  duration_ms: 10.394012
   type: 'test'
   ...
 # Subtest: repeated refresh requests share one in-flight scan
-ok 62 - repeated refresh requests share one in-flight scan
+ok 76 - repeated refresh requests share one in-flight scan
   ---
-  duration_ms: 7.920841
+  duration_ms: 8.405541
   type: 'test'
   ...
 # Subtest: multi-page scans validate two complete reads and let remote commands run between pages
-ok 63 - multi-page scans validate two complete reads and let remote commands run between pages
+ok 77 - multi-page scans validate two complete reads and let remote commands run between pages
   ---
-  duration_ms: 24.331874
+  duration_ms: 54.528552
   type: 'test'
   ...
 # Subtest: a changing list is rejected even when the TV always returns hash 4294967295
-ok 64 - a changing list is rejected even when the TV always returns hash 4294967295
+ok 78 - a changing list is rejected even when the TV always returns hash 4294967295
   ---
-  duration_ms: 18.364028
+  duration_ms: 12.854781
   type: 'test'
   ...
 # Subtest: a changed total or a repeated first page aborts pagination without publishing partial data
-ok 65 - a changed total or a repeated first page aborts pagination without publishing partial data
+ok 79 - a changed total or a repeated first page aborts pagination without publishing partial data
   ---
-  duration_ms: 11.285318
+  duration_ms: 13.033819
   type: 'test'
   ...
 # Subtest: unknown totals and unknown media types cannot authorize removal of existing channel objects
-ok 66 - unknown totals and unknown media types cannot authorize removal of existing channel objects
+ok 80 - unknown totals and unknown media types cannot authorize removal of existing channel objects
   ---
-  duration_ms: 9.206771
+  duration_ms: 9.407252
   type: 'test'
   ...
 # Subtest: a confirmed empty complete list is handed to reconciliation once
-ok 67 - a confirmed empty complete list is handed to reconciliation once
+ok 81 - a confirmed empty complete list is handed to reconciliation once
   ---
-  duration_ms: 2.424581
+  duration_ms: 3.707768
   type: 'test'
   ...
 # Subtest: a transport error preserves the old catalogue and retries only at the configured interval
-ok 68 - a transport error preserves the old catalogue and retries only at the configured interval
+ok 82 - a transport error preserves the old catalogue and retries only at the configured interval
   ---
-  duration_ms: 26.653655
+  duration_ms: 12.56122
   type: 'test'
   ...
 # Subtest: an unsupported channel response keeps a working connection and does not provoke repeated reconnect refreshes
-ok 69 - an unsupported channel response keeps a working connection and does not provoke repeated reconnect refreshes
+ok 83 - an unsupported channel response keeps a working connection and does not provoke repeated reconnect refreshes
   ---
-  duration_ms: 21.661075
+  duration_ms: 23.231827
   type: 'test'
   ...
 # Subtest: an unsupported channel-list overview keeps a working connection without reconnect refresh loops
-ok 70 - an unsupported channel-list overview keeps a working connection without reconnect refresh loops
+ok 84 - an unsupported channel-list overview keeps a working connection without reconnect refresh loops
   ---
-  duration_ms: 13.586454
+  duration_ms: 4.278323
   type: 'test'
   ...
 # Subtest: channel-list discovery preserves genuine transport and session failures
-ok 71 - channel-list discovery preserves genuine transport and session failures
+ok 85 - channel-list discovery preserves genuine transport and session failures
   ---
-  duration_ms: 30.444716
+  duration_ms: 25.539935
   type: 'test'
   ...
 # Subtest: an offline polled TV waits for a real reconnect and ordinary later polls do not restart the scan
-ok 72 - an offline polled TV waits for a real reconnect and ordinary later polls do not restart the scan
+ok 86 - an offline polled TV waits for a real reconnect and ordinary later polls do not restart the scan
   ---
-  duration_ms: 5.208078
+  duration_ms: 3.676451
   type: 'test'
   ...
 # Subtest: a staged view edit preserves the existing refresh timer and sends nothing until explicitly refreshed
-ok 73 - a staged view edit preserves the existing refresh timer and sends nothing until explicitly refreshed
+ok 87 - a staged view edit preserves the existing refresh timer and sends nothing until explicitly refreshed
   ---
-  duration_ms: 10.545901
+  duration_ms: 2.938145
   type: 'test'
   ...
 # Subtest: a view edit while reading discards the old snapshot and waits for the regular interval before reading the new list
-ok 74 - a view edit while reading discards the old snapshot and waits for the regular interval before reading the new list
+ok 88 - a view edit while reading discards the old snapshot and waits for the regular interval before reading the new list
   ---
-  duration_ms: 4.598967
+  duration_ms: 3.341839
   type: 'test'
   ...
 # Subtest: a newer manual channel query cannot be overwritten by an older automatic snapshot
-ok 75 - a newer manual channel query cannot be overwritten by an older automatic snapshot
+ok 89 - a newer manual channel query cannot be overwritten by an older automatic snapshot
   ---
-  duration_ms: 18.468739
+  duration_ms: 11.341802
   type: 'test'
   ...
 # Subtest: stopping while a page is pending prevents publication and removes all refresh timers
-ok 76 - stopping while a page is pending prevents publication and removes all refresh timers
+ok 90 - stopping while a page is pending prevents publication and removes all refresh timers
   ---
-  duration_ms: 6.663718
+  duration_ms: 3.70222
   type: 'test'
   ...
 # Subtest: a TV returning tiny pages cannot cause an unbounded pagination loop
-ok 77 - a TV returning tiny pages cannot cause an unbounded pagination loop
+ok 91 - a TV returning tiny pages cannot cause an unbounded pagination loop
   ---
-  duration_ms: 6.359653
+  duration_ms: 3.605355
   type: 'test'
   ...
 # Subtest: entry count and catalogue byte limits reject oversized snapshots before publication
-ok 78 - entry count and catalogue byte limits reject oversized snapshots before publication
+ok 92 - entry count and catalogue byte limits reject oversized snapshots before publication
   ---
-  duration_ms: 12.130223
+  duration_ms: 6.648937
   type: 'test'
   ...
 # Subtest: the overall deadline prevents further pages after a delayed reply
-ok 79 - the overall deadline prevents further pages after a delayed reply
+ok 93 - the overall deadline prevents further pages after a delayed reply
   ---
-  duration_ms: 14.688734
+  duration_ms: 11.983784
   type: 'test'
   ...
 # Subtest: list discovery reads actual SL2xx+ views and never chooses AV as the TV list
-ok 80 - list discovery reads actual SL2xx+ views and never chooses AV as the TV list
+ok 94 - list discovery reads actual SL2xx+ views and never chooses AV as the TV list
   ---
-  duration_ms: 9.284672
+  duration_ms: 6.284141
   type: 'test'
   ...
 # Subtest: discovery handles single list elements and chooses a populated favourite over an empty network list
-ok 81 - discovery handles single list elements and chooses a populated favourite over an empty network list
+ok 95 - discovery handles single list elements and chooses a populated favourite over an empty network list
   ---
-  duration_ms: 0.596774
+  duration_ms: 0.899718
   type: 'test'
   ...
 # Subtest: list SYNC and NONE status is kept without inventing a default list or retrying
-ok 82 - list SYNC and NONE status is kept without inventing a default list or retrying
+ok 96 - list SYNC and NONE status is kept without inventing a default list or retrying
   ---
-  duration_ms: 2.616348
+  duration_ms: 3.544033
   type: 'test'
   ...
 # Subtest: channel attributes are normalized without deriving locator or channel number from the UUID
-ok 83 - channel attributes are normalized without deriving locator or channel number from the UUID
+ok 97 - channel attributes are normalized without deriving locator or channel number from the UUID
   ---
-  duration_ms: 2.652643
+  duration_ms: 0.963093
   type: 'test'
   ...
 # Subtest: older reference-only pages retain their UUID and leave unavailable metadata empty
-ok 84 - older reference-only pages retain their UUID and leave unavailable metadata empty
+ok 98 - older reference-only pages retain their UUID and leave unavailable metadata empty
   ---
-  duration_ms: 0.6678
+  duration_ms: 0.978217
   type: 'test'
   ...
 # Subtest: empty and unknown-length pages do not suggest an endless next-page loop
-ok 85 - empty and unknown-length pages do not suggest an endless next-page loop
+ok 99 - empty and unknown-length pages do not suggest an endless next-page loop
   ---
-  duration_ms: 1.050664
+  duration_ms: 0.816474
   type: 'test'
   ...
 # Subtest: wrong response shapes and incomplete pages fail clearly instead of appearing as empty channel lists
-ok 86 - wrong response shapes and incomplete pages fail clearly instead of appearing as empty channel lists
+ok 100 - wrong response shapes and incomplete pages fail clearly instead of appearing as empty channel lists
   ---
-  duration_ms: 1.356551
+  duration_ms: 2.022682
   type: 'test'
   ...
 # Subtest: channel requests accept documented TV/radio filters, trim pasted views and keep each request bounded
-ok 87 - channel requests accept documented TV/radio filters, trim pasted views and keep each request bounded
+ok 101 - channel requests accept documented TV/radio filters, trim pasted views and keep each request bounded
   ---
-  duration_ms: 2.171372
+  duration_ms: 3.019046
   type: 'test'
   ...
 # Subtest: channel and list page requests forward the shared deadline to the bounded SOAP transport
-ok 88 - channel and list page requests forward the shared deadline to the bounded SOAP transport
+ok 102 - channel and list page requests forward the shared deadline to the bounded SOAP transport
   ---
-  duration_ms: 0.784335
+  duration_ms: 3.289812
   type: 'test'
   ...
 # Subtest: malformed NUL padding is rejected without quadratic suffix matching
-ok 89 - malformed NUL padding is rejected without quadratic suffix matching
+ok 103 - malformed NUL padding is rejected without quadratic suffix matching
   ---
-  duration_ms: 8.98232
+  duration_ms: 10.240081
   type: 'test'
   ...
 # Subtest: the input size limit includes trailing NUL bytes for strings as well as buffers
-ok 90 - the input size limit includes trailing NUL bytes for strings as well as buffers
+ok 104 - the input size limit includes trailing NUL bytes for strings as well as buffers
   ---
-  duration_ms: 10.867362
+  duration_ms: 14.94606
   type: 'test'
   ...
 # Subtest: large asynchronous parsing yields and preserves the synchronous parser result
-ok 91 - large asynchronous parsing yields and preserves the synchronous parser result
+ok 105 - large asynchronous parsing yields and preserves the synchronous parser result
   ---
-  duration_ms: 255.391651
+  duration_ms: 262.363302
   type: 'test'
   ...
 # Subtest: asynchronous parsing retains strict XML checks across chunk boundaries
-ok 92 - asynchronous parsing retains strict XML checks across chunk boundaries
+ok 106 - asynchronous parsing retains strict XML checks across chunk boundaries
   ---
-  duration_ms: 8.032387
+  duration_ms: 6.788797
   type: 'test'
   ...
 # Subtest: HTTP total deadline remains effective while a large valid reply is being parsed
-ok 93 - HTTP total deadline remains effective while a large valid reply is being parsed
+ok 107 - HTTP total deadline remains effective while a large valid reply is being parsed
   ---
-  duration_ms: 31.778043
+  duration_ms: 27.892542
   type: 'test'
   ...
 # Subtest: close can interrupt response parsing without another TV operation
-ok 94 - close can interrupt response parsing without another TV operation
+ok 108 - close can interrupt response parsing without another TV operation
   ---
-  duration_ms: 23.53518
+  duration_ms: 21.136505
   type: 'test'
   ...
 # Subtest: Wake-on-LAN repeats use the real matching subnet mask and deduplicate destinations
-ok 95 - Wake-on-LAN repeats use the real matching subnet mask and deduplicate destinations
+ok 109 - Wake-on-LAN repeats use the real matching subnet mask and deduplicate destinations
   ---
-  duration_ms: 5.24951
+  duration_ms: 4.336161
   type: 'test'
   ...
 # Subtest: Wake-on-LAN respects a custom broadcast and does not guess a hostname subnet
-ok 96 - Wake-on-LAN respects a custom broadcast and does not guess a hostname subnet
+ok 110 - Wake-on-LAN respects a custom broadcast and does not guess a hostname subnet
   ---
-  duration_ms: 0.790424
+  duration_ms: 0.648442
   type: 'test'
   ...
 # Subtest: unavailable network-interface enumeration leaves the global WOL destination usable
-ok 97 - unavailable network-interface enumeration leaves the global WOL destination usable
+ok 111 - unavailable network-interface enumeration leaves the global WOL destination usable
   ---
-  duration_ms: 0.418747
+  duration_ms: 0.340991
   type: 'test'
   ...
 # Subtest: invalid Wake-on-LAN repeat options do not create a socket
-ok 98 - invalid Wake-on-LAN repeat options do not create a socket
+ok 112 - invalid Wake-on-LAN repeat options do not create a socket
   ---
-  duration_ms: 0.698797
+  duration_ms: 0.525568
   type: 'test'
   ...
 # Subtest: an already cancelled Wake-on-LAN signal rejects before a socket is created
-ok 99 - an already cancelled Wake-on-LAN signal rejects before a socket is created
+ok 113 - an already cancelled Wake-on-LAN signal rejects before a socket is created
   ---
-  duration_ms: 0.356804
+  duration_ms: 0.304507
   type: 'test'
   ...
 # Subtest: cancelling Wake-on-LAN between rounds closes the socket and prevents all later packets
-ok 100 - cancelling Wake-on-LAN between rounds closes the socket and prevents all later packets
+ok 114 - cancelling Wake-on-LAN between rounds closes the socket and prevents all later packets
   ---
-  duration_ms: 72.879075
+  duration_ms: 72.57879
   type: 'test'
   ...
 # Subtest: close cancels scheduled Wake-on-LAN repetitions
-ok 101 - close cancels scheduled Wake-on-LAN repetitions
+ok 115 - close cancels scheduled Wake-on-LAN repetitions
   ---
-  duration_ms: 70.95498
+  duration_ms: 71.435927
   type: 'test'
   ...
 # Subtest: the total Wake-on-LAN deadline cancels later repetition timers
-ok 102 - the total Wake-on-LAN deadline cancels later repetition timers
+ok 116 - the total Wake-on-LAN deadline cancels later repetition timers
   ---
-  duration_ms: 85.352618
+  duration_ms: 86.605829
   type: 'test'
   ...
 # Subtest: text has one total deadline across successful characters and the last pending HTTP request
-ok 103 - text has one total deadline across successful characters and the last pending HTTP request
+ok 117 - text has one total deadline across successful characters and the last pending HTTP request
   ---
-  duration_ms: 6.151221
+  duration_ms: 5.575678
   type: 'test'
   ...
 # Subtest: the text deadline includes a new access handshake
-ok 104 - the text deadline includes a new access handshake
+ok 118 - the text deadline includes a new access handshake
   ---
-  duration_ms: 5.208769
+  duration_ms: 1.785977
   type: 'test'
   ...
 # Subtest: a text wait can expire without cancelling an existing shared handshake or parallel WOL
-ok 105 - a text wait can expire without cancelling an existing shared handshake or parallel WOL
+ok 119 - a text wait can expire without cancelling an existing shared handshake or parallel WOL
   ---
-  duration_ms: 52.657683
+  duration_ms: 52.944968
   type: 'test'
   ...
 # Subtest: text timeout configuration cannot remove the 15-second maximum
-ok 106 - text timeout configuration cannot remove the 15-second maximum
+ok 120 - text timeout configuration cannot remove the 15-second maximum
   ---
-  duration_ms: 0.642212
+  duration_ms: 0.518888
   type: 'test'
   ...
 # Subtest: real HTTP carries the handshake, NUL-terminated commands and preserved TV identifiers
-ok 107 - real HTTP carries the handshake, NUL-terminated commands and preserved TV identifiers
+ok 121 - real HTTP carries the handshake, NUL-terminated commands and preserved TV identifiers
   ---
-  duration_ms: 55.65531
+  duration_ms: 46.912174
   type: 'test'
   ...
 # Subtest: real incomplete HTTP response hits the total deadline and leaves the event loop responsive
-ok 108 - real incomplete HTTP response hits the total deadline and leaves the event loop responsive
+ok 122 - real incomplete HTTP response hits the total deadline and leaves the event loop responsive
   ---
-  duration_ms: 113.844005
+  duration_ms: 118.379038
   type: 'test'
   ...
 # Subtest: real HTTP with an internal NUL run is rejected without the old regex stall
-ok 109 - real HTTP with an internal NUL run is rejected without the old regex stall
+ok 123 - real HTTP with an internal NUL run is rejected without the old regex stall
   ---
-  duration_ms: 15.281607
+  duration_ms: 16.945418
   type: 'test'
   ...
 # Subtest: real UDP delivers repeated WOL packets to an isolated loopback receiver
-ok 110 - real UDP delivers repeated WOL packets to an isolated loopback receiver
+ok 124 - real UDP delivers repeated WOL packets to an isolated loopback receiver
   ---
-  duration_ms: 25.642095
+  duration_ms: 28.51824
   type: 'test'
   ...
 # Subtest: WOL starts before slow progress reporting, followed by a bounded power-key call
-ok 111 - WOL starts before slow progress reporting, followed by a bounded power-key call
+ok 125 - WOL starts before slow progress reporting, followed by a bounded power-key call
   ---
-  duration_ms: 3.656715
+  duration_ms: 6.249669
   type: 'test'
   ...
 # Subtest: transient network, stale-session and gateway failures retry without another early WOL burst
-ok 112 - transient network, stale-session and gateway failures retry without another early WOL burst
+ok 126 - transient network, stale-session and gateway failures retry without another early WOL burst
   ---
-  duration_ms: 1.78265
+  duration_ms: 2.332787
   type: 'test'
   ...
 # Subtest: authentication, validation and unsupported-command failures are preserved without retry
-ok 113 - authentication, validation and unsupported-command failures are preserved without retry
+ok 127 - authentication, validation and unsupported-command failures are preserved without retry
   ---
-  duration_ms: 4.155723
+  duration_ms: 6.715842
   type: 'test'
   ...
 # Subtest: a TV that remains unavailable receives exactly one later WOL burst after the standby window
-ok 114 - a TV that remains unavailable receives exactly one later WOL burst after the standby window
+ok 128 - a TV that remains unavailable receives exactly one later WOL burst after the standby window
   ---
-  duration_ms: 3.514753
+  duration_ms: 3.536071
   type: 'test'
   ...
 # Subtest: overall deadline limits retries and shortens the last request and wait budgets
-ok 115 - overall deadline limits retries and shortens the last request and wait budgets
+ok 129 - overall deadline limits retries and shortens the last request and wait budgets
   ---
-  duration_ms: 0.904264
+  duration_ms: 0.551607
   type: 'test'
   ...
 # Subtest: a response completed beyond its request deadline is not accepted as a timely key delivery
-ok 116 - a response completed beyond its request deadline is not accepted as a timely key delivery
+ok 130 - a response completed beyond its request deadline is not accepted as a timely key delivery
   ---
-  duration_ms: 1.405174
+  duration_ms: 0.86754
   type: 'test'
   ...
 # Subtest: cancellation before starting never invokes a device hook
-ok 117 - cancellation before starting never invokes a device hook
+ok 131 - cancellation before starting never invokes a device hook
   ---
-  duration_ms: 0.355071
+  duration_ms: 0.363004
   type: 'test'
   ...
 # Subtest: cancellation during the first delay prevents the later power-key transmission
-ok 118 - cancellation during the first delay prevents the later power-key transmission
+ok 132 - cancellation during the first delay prevents the later power-key transmission
   ---
-  duration_ms: 12.946576
+  duration_ms: 10.811838
   type: 'test'
   ...
 # Subtest: cancellation from inside the WOL hook does not leave an unobserved rejected promise
-ok 119 - cancellation from inside the WOL hook does not leave an unobserved rejected promise
+ok 133 - cancellation from inside the WOL hook does not leave an unobserved rejected promise
   ---
-  duration_ms: 1.247709
+  duration_ms: 5.888527
   type: 'test'
   ...
 # Subtest: cancelling an in-flight key ignores its later rejection and never retries
-ok 120 - cancelling an in-flight key ignores its later rejection and never retries
+ok 134 - cancelling an in-flight key ignores its later rejection and never retries
   ---
-  duration_ms: 1.00166
+  duration_ms: 2.550914
   type: 'test'
   ...
 # Subtest: a hung WOL hook is stopped by the real overall timer without waiting for diagnostics
-ok 121 - a hung WOL hook is stopped by the real overall timer without waiting for diagnostics
+ok 135 - a hung WOL hook is stopped by the real overall timer without waiting for diagnostics
   ---
-  duration_ms: 27.980426
+  duration_ms: 25.414458
   type: 'test'
   ...
 # Subtest: a hung individual key attempt has a short timeout and its late rejection stays handled
-ok 122 - a hung individual key attempt has a short timeout and its late rejection stays handled
+ok 136 - a hung individual key attempt has a short timeout and its late rejection stays handled
   ---
-  duration_ms: 29.547438
+  duration_ms: 23.317759
   type: 'test'
   ...
 # Subtest: a hung success-progress hook cannot extend the overall deadline or trigger another key
-ok 123 - a hung success-progress hook cannot extend the overall deadline or trigger another key
+ok 137 - a hung success-progress hook cannot extend the overall deadline or trigger another key
   ---
-  duration_ms: 25.333382
+  duration_ms: 25.470282
   type: 'test'
   ...
 # Subtest: progress and WOL errors are terminal even when their code describes a network failure
-ok 124 - progress and WOL errors are terminal even when their code describes a network failure
+ok 138 - progress and WOL errors are terminal even when their code describes a network failure
   ---
-  duration_ms: 0.725056
+  duration_ms: 0.792168
   type: 'test'
   ...
 # Subtest: a rejected final diagnostic does not replace the original device failure or become unhandled
-ok 125 - a rejected final diagnostic does not replace the original device failure or become unhandled
+ok 139 - a rejected final diagnostic does not replace the original device failure or become unhandled
   ---
-  duration_ms: 8.168461
+  duration_ms: 0.997926
   type: 'test'
   ...
 # Subtest: deadline is checked between callbacks, before invoking the next device hook
-ok 126 - deadline is checked between callbacks, before invoking the next device hook
+ok 140 - deadline is checked between callbacks, before invoking the next device hook
   ---
-  duration_ms: 0.468632
+  duration_ms: 0.464807
   type: 'test'
   ...
 # Subtest: invalid timing and callback options fail before WOL is sent
-ok 127 - invalid timing and callback options fail before WOL is sent
+ok 141 - invalid timing and callback options fail before WOL is sent
   ---
-  duration_ms: 0.394881
+  duration_ms: 0.732748
   type: 'test'
   ...
 # Subtest: golden APK access/OK XML, 33 actions and verified remote alphabets
-ok 128 - golden APK access/OK XML, 33 actions and verified remote alphabets
+ok 142 - golden APK access/OK XML, 33 actions and verified remote alphabets
   ---
-  duration_ms: 14.282015
+  duration_ms: 10.486139
   type: 'test'
   ...
 # Subtest: invalid actions and injected/malformed XML are rejected before any network access
-ok 129 - invalid actions and injected/malformed XML are rejected before any network access
+ok 143 - invalid actions and injected/malformed XML are rejected before any network access
   ---
-  duration_ms: 7.133992
+  duration_ms: 5.358994
   type: 'test'
   ...
 # Subtest: response parser preserves namespaces-free string identifiers, attributes and Unicode
-ok 130 - response parser preserves namespaces-free string identifiers, attributes and Unicode
+ok 144 - response parser preserves namespaces-free string identifiers, attributes and Unicode
   ---
-  duration_ms: 1.379616
+  duration_ms: 1.248992
   type: 'test'
   ...
 # Subtest: XML nesting is bounded and unbound namespace prefixes or multiple roots are rejected
-ok 131 - XML nesting is bounded and unbound namespace prefixes or multiple roots are rejected
+ok 145 - XML nesting is bounded and unbound namespace prefixes or multiple roots are rejected
   ---
-  duration_ms: 1.532555
+  duration_ms: 5.414878
   type: 'test'
   ...
 # Subtest: XML element/attribute names cannot change object prototypes
-ok 132 - XML element/attribute names cannot change object prototypes
+ok 146 - XML element/attribute names cannot change object prototypes
   ---
-  duration_ms: 0.29405
+  duration_ms: 0.42689
   type: 'test'
   ...
 # Subtest: HTTP handshake sends exact endpoint, SOAP header, final NUL and UTF-8 byte lengths
-ok 133 - HTTP handshake sends exact endpoint, SOAP header, final NUL and UTF-8 byte lengths
+ok 147 - HTTP handshake sends exact endpoint, SOAP header, final NUL and UTF-8 byte lengths
   ---
-  duration_ms: 8.704944
+  duration_ms: 3.936782
   type: 'test'
   ...
 # Subtest: appendNul=false is honored independently of multibyte parameter text
-ok 134 - appendNul=false is honored independently of multibyte parameter text
+ok 148 - appendNul=false is honored independently of multibyte parameter text
   ---
-  duration_ms: 16.508114
+  duration_ms: 1.307129
   type: 'test'
   ...
 # Subtest: simultaneous first calls share one handshake and use the returned ClientId
-ok 135 - simultaneous first calls share one handshake and use the returned ClientId
+ok 149 - simultaneous first calls share one handshake and use the returned ClientId
   ---
-  duration_ms: 2.50453
+  duration_ms: 2.535901
   type: 'test'
   ...
 # Subtest: missing ClientId stops the original operation and permits a fresh later handshake
-ok 136 - missing ClientId stops the original operation and permits a fresh later handshake
+ok 150 - missing ClientId stops the original operation and permits a fresh later handshake
   ---
-  duration_ms: 2.589722
+  duration_ms: 3.804603
   type: 'test'
   ...
 # Subtest: volume scales sends exactly and keeps response values without silent clamping
-ok 137 - volume scales sends exactly and keeps response values without silent clamping
+ok 151 - volume scales sends exactly and keeps response values without silent clamping
   ---
-  duration_ms: 8.219913
+  duration_ms: 4.365895
   type: 'test'
   ...
 # Subtest: malformed/missing/ambiguous numeric and mute replies are not turned into state values
-ok 138 - malformed/missing/ambiguous numeric and mute replies are not turned into state values
+ok 152 - malformed/missing/ambiguous numeric and mute replies are not turned into state values
   ---
-  duration_ms: 9.817184
+  duration_ms: 5.93718
   type: 'test'
   ...
 # Subtest: mute uses numeric 1/0 and validates booleans before contact
-ok 139 - mute uses numeric 1/0 and validates booleans before contact
+ok 153 - mute uses numeric 1/0 and validates booleans before contact
   ---
-  duration_ms: 3.804476
+  duration_ms: 3.024423
   type: 'test'
   ...
 # Subtest: text iterates Unicode code points and backspace uses scancode 14
-ok 140 - text iterates Unicode code points and backspace uses scancode 14
+ok 154 - text iterates Unicode code points and backspace uses scancode 14
   ---
-  duration_ms: 3.195545
+  duration_ms: 2.807759
   type: 'test'
   ...
 # Subtest: text stops on first failed character without replaying accepted characters
-ok 141 - text stops on first failed character without replaying accepted characters
+ok 155 - text stops on first failed character without replaying accepted characters
   ---
-  duration_ms: 1.986304
+  duration_ms: 1.965386
   type: 'test'
   ...
 # Subtest: queries and ZapToMedia use extracted range/order fields and safely escaped identifiers
-ok 142 - queries and ZapToMedia use extracted range/order fields and safely escaped identifiers
+ok 156 - queries and ZapToMedia use extracted range/order fields and safely escaped identifiers
   ---
-  duration_ms: 4.029413
+  duration_ms: 4.525294
   type: 'test'
   ...
 # Subtest: SOAP errors are distinguished from HTTP failures and reset only invalid sessions
-ok 143 - SOAP errors are distinguished from HTTP failures and reset only invalid sessions
+ok 157 - SOAP errors are distinguished from HTTP failures and reset only invalid sessions
   ---
-  duration_ms: 2.462797
+  duration_ms: 3.038876
   type: 'test'
   ...
 # Subtest: total timeout aborts a mutation without retry; a later command gets a fresh session
-ok 144 - total timeout aborts a mutation without retry; a later command gets a fresh session
+ok 158 - total timeout aborts a mutation without retry; a later command gets a fresh session
   ---
-  duration_ms: 22.550606
+  duration_ms: 21.874957
   type: 'test'
   ...
 # Subtest: network connection errors and truncated replies reject instead of succeeding
-ok 145 - network connection errors and truncated replies reject instead of succeeding
+ok 159 - network connection errors and truncated replies reject instead of succeeding
   ---
-  duration_ms: 1.225405
+  duration_ms: 1.215432
   type: 'test'
   ...
 # Subtest: advertised and streamed response sizes are bounded before parsing
-ok 146 - advertised and streamed response sizes are bounded before parsing
+ok 160 - advertised and streamed response sizes are bounded before parsing
   ---
-  duration_ms: 3.565119
+  duration_ms: 4.205975
   type: 'test'
   ...
 # Subtest: close aborts pending requests, prevents all later actions and ignores late handshake data
-ok 147 - close aborts pending requests, prevents all later actions and ignores late handshake data
+ok 161 - close aborts pending requests, prevents all later actions and ignores late handshake data
   ---
-  duration_ms: 1.554378
+  duration_ms: 1.236874
   type: 'test'
   ...
 # Subtest: Wake-on-LAN packet is exactly six FF bytes and sixteen repetitions of the TV MAC
-ok 148 - Wake-on-LAN packet is exactly six FF bytes and sixteen repetitions of the TV MAC
+ok 162 - Wake-on-LAN packet is exactly six FF bytes and sixteen repetitions of the TV MAC
   ---
-  duration_ms: 0.570735
+  duration_ms: 0.405769
   type: 'test'
   ...
 # Subtest: Wake-on-LAN validates all inputs, skips blanks/duplicates and uses broadcast UDP port 9
-ok 149 - Wake-on-LAN validates all inputs, skips blanks/duplicates and uses broadcast UDP port 9
+ok 163 - Wake-on-LAN validates all inputs, skips blanks/duplicates and uses broadcast UDP port 9
   ---
-  duration_ms: 3.24529
+  duration_ms: 1.015572
   type: 'test'
   ...
 # Subtest: close also cancels an in-flight Wake-on-LAN send and closes its socket
-ok 150 - close also cancels an in-flight Wake-on-LAN send and closes its socket
+ok 164 - close also cancels an in-flight Wake-on-LAN send and closes its socket
   ---
-  duration_ms: 0.498376
+  duration_ms: 0.246039
   type: 'test'
   ...
 # Subtest: powerOn sends Wake-on-LAN while a sleeping TV status request is still waiting
-ok 151 - powerOn sends Wake-on-LAN while a sleeping TV status request is still waiting
+ok 165 - powerOn sends Wake-on-LAN while a sleeping TV status request is still waiting
   ---
-  duration_ms: 1017.684797
+  duration_ms: 1017.40319
   type: 'test'
   ...
 # Subtest: stop finishes before the controller unload deadline even if state writes never settle
-ok 152 - stop finishes before the controller unload deadline even if state writes never settle
+ok 166 - stop finishes before the controller unload deadline even if state writes never settle
   ---
-  duration_ms: 208.739551
+  duration_ms: 204.976324
   type: 'test'
   ...
 # Subtest: a failed scheduled poll never escapes as an unhandled rejection
-ok 153 - a failed scheduled poll never escapes as an unhandled rejection
+ok 167 - a failed scheduled poll never escapes as an unhandled rejection
   ---
-  duration_ms: 138.183941
+  duration_ms: 130.782251
   type: 'test'
   ...
 # Subtest: a legacy MAC address is discovered even when GetVolume is unsupported
-ok 154 - a legacy MAC address is discovered even when GetVolume is unsupported
+ok 168 - a legacy MAC address is discovered even when GetVolume is unsupported
   ---
-  duration_ms: 1007.259457
+  duration_ms: 1009.758039
   type: 'test'
   ...
 # Subtest: pollInterval zero starts without TV queries and still permits wake and explicit refresh
-ok 155 - pollInterval zero starts without TV queries and still permits wake and explicit refresh
+ok 169 - pollInterval zero starts without TV queries and still permits wake and explicit refresh
   ---
-  duration_ms: 1006.250502
+  duration_ms: 1010.140695
   type: 'test'
   ...
 # Subtest: wake without a known MAC gives a useful error without sending a datagram
-ok 156 - wake without a known MAC gives a useful error without sending a datagram
+ok 170 - wake without a known MAC gives a useful error without sending a datagram
   ---
-  duration_ms: 3.392258
+  duration_ms: 5.52244
   type: 'test'
   ...
 # Subtest: stopping immediately after powerOn prevents delayed WOL diagnostic writes
-ok 157 - stopping immediately after powerOn prevents delayed WOL diagnostic writes
+ok 171 - stopping immediately after powerOn prevents delayed WOL diagnostic writes
   ---
-  duration_ms: 3.575292
+  duration_ms: 7.084289
   type: 'test'
   ...
 # Subtest: a rejected state subscription is awaited and never escapes as an unhandled rejection
-ok 158 - a rejected state subscription is awaited and never escapes as an unhandled rejection
+ok 172 - a rejected state subscription is awaited and never escapes as an unhandled rejection
   ---
-  duration_ms: 132.788069
+  duration_ms: 141.479254
   type: 'test'
   ...
 # Subtest: startup creates usable button objects without replaying saved commands
-ok 159 - startup creates usable button objects without replaying saved commands
+ok 173 - startup creates usable button objects without replaying saved commands
   ---
-  duration_ms: 16.276632
+  duration_ms: 17.341437
   type: 'test'
   ...
 # Subtest: acknowledged feedback, deleted values, other instances and false buttons do not send
-ok 160 - acknowledged feedback, deleted values, other instances and false buttons do not send
+ok 174 - acknowledged feedback, deleted values, other instances and false buttons do not send
   ---
-  duration_ms: 9.943659
+  duration_ms: 8.1116
   type: 'test'
   ...
 # Subtest: a remote button resets only after the command completes and feedback is not replayed
-ok 161 - a remote button resets only after the command completes and feedback is not replayed
+ok 175 - a remote button resets only after the command completes and feedback is not replayed
   ---
-  duration_ms: 19.77528
+  duration_ms: 21.499609
   type: 'test'
   ...
 # Subtest: failed mutations are reported without retrying and buttons still reset
-ok 162 - failed mutations are reported without retrying and buttons still reset
+ok 176 - failed mutations are reported without retrying and buttons still reset
   ---
-  duration_ms: 8.224915
+  duration_ms: 7.315842
   type: 'test'
   ...
 # Subtest: volume state reflects the returned level, never an optimistic requested level
-ok 163 - volume state reflects the returned level, never an optimistic requested level
+ok 177 - volume state reflects the returned level, never an optimistic requested level
   ---
-  duration_ms: 8.148551
+  duration_ms: 10.082164
   type: 'test'
   ...
 # Subtest: out-of-range and wrongly typed volume commands never reach the TV
-ok 164 - out-of-range and wrongly typed volume commands never reach the TV
+ok 178 - out-of-range and wrongly typed volume commands never reach the TV
   ---
-  duration_ms: 7.210116
+  duration_ms: 5.217601
   type: 'test'
   ...
 # Subtest: mute state uses confirmed TV feedback even when it differs from the command
-ok 165 - mute state uses confirmed TV feedback even when it differs from the command
+ok 179 - mute state uses confirmed TV feedback even when it differs from the command
   ---
-  duration_ms: 9.493841
+  duration_ms: 6.930324
   type: 'test'
   ...
 # Subtest: channel parameters are staged and used only when the query button is pressed
-ok 166 - channel parameters are staged and used only when the query button is pressed
+ok 180 - channel parameters are staged and used only when the query button is pressed
   ---
-  duration_ms: 7.98063
+  duration_ms: 5.424541
   type: 'test'
   ...
 # Subtest: channel discovery resolves an empty new selection
-ok 167 - channel discovery resolves an empty new selection
+ok 181 - channel discovery resolves an empty new selection
   ---
-  duration_ms: 12.332657
+  duration_ms: 6.91127
   type: 'test'
   ...
 # Subtest: channel discovery resolves an empty upgraded selection
-ok 168 - channel discovery resolves an empty upgraded selection
+ok 182 - channel discovery resolves an empty upgraded selection
   ---
-  duration_ms: 4.7818
+  duration_ms: 3.445665
+  type: 'test'
+  ...
+# Subtest: named channel buttons use registered targets and track the real pending reset write
+ok 183 - named channel buttons use registered targets and track the real pending reset write
+  ---
+  duration_ms: 21.497847
   type: 'test'
   ...
 # Subtest: list discovery uses its own offset and preserves an explicit favorite selection
-ok 169 - list discovery uses its own offset and preserves an explicit favorite selection
+ok 184 - list discovery uses its own offset and preserves an explicit favorite selection
   ---
-  duration_ms: 9.754216
+  duration_ms: 5.947381
   type: 'test'
   ...
 # Subtest: TV list synchronization remains visible without sending a fabricated channel view
-ok 170 - TV list synchronization remains visible without sending a fabricated channel view
+ok 185 - TV list synchronization remains visible without sending a fabricated channel view
   ---
-  duration_ms: 4.876021
+  duration_ms: 6.660615
   type: 'test'
   ...
 # Subtest: a malformed channel reply retains raw evidence and the last successful channel page
-ok 171 - a malformed channel reply retains raw evidence and the last successful channel page
+ok 186 - a malformed channel reply retains raw evidence and the last successful channel page
   ---
-  duration_ms: 6.045712
+  duration_ms: 3.899055
   type: 'test'
   ...
 # Subtest: power on sends WOL then discrete TV_ON while retaining transport-only diagnostics
-ok 172 - power on sends WOL then discrete TV_ON while retaining transport-only diagnostics
+ok 187 - power on sends WOL then discrete TV_ON while retaining transport-only diagnostics
   ---
-  duration_ms: 4.871164
+  duration_ms: 7.406042
   type: 'test'
   ...
 # Subtest: power off cancels a waiting TV_ON attempt before it enters the SOAP transport
-ok 173 - power off cancels a waiting TV_ON attempt before it enters the SOAP transport
+ok 188 - power off cancels a waiting TV_ON attempt before it enters the SOAP transport
   ---
-  duration_ms: 11.710986
+  duration_ms: 7.344319
   type: 'test'
   ...
 # Subtest: a second off also cancels power on waiting for an older aborted sequence to finish
-ok 174 - a second off also cancels power on waiting for an older aborted sequence to finish
+ok 189 - a second off also cancels power on waiting for an older aborted sequence to finish
   ---
-  duration_ms: 10.603176
+  duration_ms: 7.162637
   type: 'test'
   ...
 # Subtest: WOL setting flags preserve unknown values until valid TV settings are read
-ok 175 - WOL setting flags preserve unknown values until valid TV settings are read
+ok 190 - WOL setting flags preserve unknown values until valid TV settings are read
   ---
-  duration_ms: 4.718495
+  duration_ms: 4.457052
   type: 'test'
   ...
 # Subtest: disabled advanced controls cannot be dispatched through manually written states
-ok 176 - disabled advanced controls cannot be dispatched through manually written states
+ok 191 - disabled advanced controls cannot be dispatched through manually written states
   ---
-  duration_ms: 4.816592
+  duration_ms: 4.833967
   type: 'test'
   ...
 # Subtest: advanced XML parameters do not execute until the matching action button is pressed
-ok 177 - advanced XML parameters do not execute until the matching action button is pressed
+ok 192 - advanced XML parameters do not execute until the matching action button is pressed
   ---
-  duration_ms: 12.566737
+  duration_ms: 14.814699
   type: 'test'
   ...
 # Subtest: a queued action keeps the parameters that existed at the send event
-ok 178 - a queued action keeps the parameters that existed at the send event
+ok 193 - a queued action keeps the parameters that existed at the send event
   ---
-  duration_ms: 18.371619
+  duration_ms: 16.426234
   type: 'test'
   ...
 # Subtest: back-to-back remote commands remain serialized while a reply is pending
-ok 179 - back-to-back remote commands remain serialized while a reply is pending
+ok 194 - back-to-back remote commands remain serialized while a reply is pending
   ---
-  duration_ms: 5.559464
+  duration_ms: 9.374763
   type: 'test'
   ...
 # Subtest: concurrent status refreshes coalesce into one poll
-ok 180 - concurrent status refreshes coalesce into one poll
+ok 195 - concurrent status refreshes coalesce into one poll
   ---
-  duration_ms: 17.817473
+  duration_ms: 3.509401
   type: 'test'
   ...
 # Subtest: polling schedules its next run after completion and stop clears the timer
-ok 181 - polling schedules its next run after completion and stop clears the timer
+ok 196 - polling schedules its next run after completion and stop clears the timer
   ---
-  duration_ms: 4.670414
+  duration_ms: 3.973055
   type: 'test'
   ...
 # Subtest: shutdown prevents queued commands and polls from sending after an in-flight request
-ok 182 - shutdown prevents queued commands and polls from sending after an in-flight request
+ok 197 - shutdown prevents queued commands and polls from sending after an in-flight request
   ---
-  duration_ms: 5.198174
+  duration_ms: 10.109314
   type: 'test'
   ...
 # Subtest: shutdown during initial object creation prevents a late client from being created
-ok 183 - shutdown during initial object creation prevents a late client from being created
+ok 198 - shutdown during initial object creation prevents a late client from being created
   ---
-  duration_ms: 0.780278
+  duration_ms: 0.802804
   type: 'test'
   ...
 # Subtest: a reply whose database processing was pending at shutdown cannot update later TV states
-ok 184 - a reply whose database processing was pending at shutdown cannot update later TV states
+ok 199 - a reply whose database processing was pending at shutdown cannot update later TV states
   ---
-  duration_ms: 4.346218
+  duration_ms: 4.16298
   type: 'test'
   ...
-1..184
-# tests 184
+1..199
+# tests 199
 # suites 0
-# pass 184
+# pass 199
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 3776.964565
+# duration_ms 3802.058654

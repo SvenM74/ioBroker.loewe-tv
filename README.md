@@ -1,6 +1,6 @@
 # Loewe TV für ioBroker
 
-Version **0.1.4** steuert einen Loewe-Fernseher über ioBroker-Datenpunkte. Du kannst die Fernbedienungstasten auslösen, Lautstärke und Stummschaltung setzen, Text eingeben, Senderlisten automatisch aktualisieren, einzelne TV- und Radiosender über eigene Taster anwählen und Wake-on-LAN auslösen. Die Senderordner heißen jetzt wie der jeweilige Programmplatz, beispielsweise `channels.tv.1`; Name und Beschreibung zeigen den Sendernamen.
+Version **0.1.4** steuert einen Loewe-Fernseher über ioBroker-Datenpunkte. Du kannst die Fernbedienungstasten auslösen, Lautstärke und Stummschaltung setzen, Text eingeben, Senderlisten automatisch aktualisieren, einzelne TV- und Radiosender über eigene Taster anwählen und Wake-on-LAN auslösen. Die Senderordner verwenden den Sendernamen als ID, beispielsweise `channels.tv.Das_Erste_HD`. Ihr angezeigter Name ist der aktuelle Programmplatz, ihre Beschreibung der Sendername. Beim Umsortieren bleiben die Senderpfade gleich.
 
 Die Grundlage ist die aus der Android-App **Loewe App 1.4.7** extrahierte Netzwerkschnittstelle. Die zusätzliche Analyse von **Löwenbändiger Remote 1.15** ergänzt Zifferntasten und einen weiteren EPG-Code. Beim erneuten Prüfen der ursprünglichen Loewe-App wurde außerdem ein älteres MAC-Adressformat nachgewiesen, das der Adapter jetzt ebenfalls auswertet. Jede Instanz steuert genau einen Fernseher. Für einen zweiten Fernseher wird eine zweite Instanz angelegt.
 
@@ -14,10 +14,10 @@ Die Grundlage ist die aus der Android-App **Loewe App 1.4.7** extrahierte Netzwe
 | Fernbedienung | Nach Rückmeldung des Nutzers scheinen sämtliche bereits vorhandenen Datenpunkte unter `remote` zu funktionieren. |
 | EPG-Tasten | `remote.epg` (15) und `remote.epg_alt` (78) öffnen dieselbe Anzeige am TV. Das ist noch kein Abruf von EPG-Daten. |
 | Senderabfrage | Eine echte `GetChannelListResponse` für **ASTRA LCN** liegt vor. Der TV meldet 372 Listeneinträge mit TV- und Radiosendern. Die ersten drei TV-Programme stimmen nach Prüfung des Nutzers mit seiner Konfiguration überein. |
-| Senderordner | Der Nutzer hat die Anlage der Senderordner in Version 0.1.3 bestätigt. |
+| Senderordner | Der Nutzer hat die Anlage der Senderordner in Version 0.1.3 und anschließend die Funktion des ersten 0.1.4-Stands mit numerischen Ordner-IDs bestätigt. Die hier beschriebene Überarbeitung auf Sendernamen als IDs ist noch nicht am Gerät bestätigt. |
 | Einschalten | Im bisher installierten Stand nicht erfolgreich, obwohl das Einschalten über LAN am TV aktiviert ist. |
 
-**Senderabruf und Anlage der Senderordner sind damit am SL420 grundsätzlich nachgewiesen.** Die Zahl 372 umfasst TV- und Radioeinträge sowie mehrere Programmplätze desselben Dienstes und bezeichnet nicht 372 verschiedene TV-Sender. Die automatische Listenauswahl, das Umschalten über die Sendertaster, der Einschaltablauf aus Wake-on-LAN plus gezieltem `TV_ON`-Befehl und die Änderungen in 0.1.4 benötigen weiterhin einen Gerätetest. Die Rückmeldung zu den bisherigen Fernbedienungstasten schließt den in 0.1.2 hinzugefügten Datenpunkt `remote.power_on` nicht ein. Sie ist auch keine Zusage für andere Modelle oder Firmwarestände.
+**Senderabruf und Anlage der Senderordner sind damit am SL420 grundsätzlich nachgewiesen.** Die Zahl 372 umfasst TV- und Radioeinträge sowie mehrere Programmplätze desselben Dienstes und bezeichnet nicht 372 verschiedene TV-Sender. Die allgemeine Erfolgsmeldung zum ersten 0.1.4-Stand ist kein Einzeltest aller Funktionen. Die neue Namensstruktur einschließlich Umsortieren und Migration sowie der Einschaltablauf aus Wake-on-LAN plus gezieltem `TV_ON`-Befehl benötigen weiterhin einen Gerätetest. Die Rückmeldung zu den bisherigen Fernbedienungstasten schließt den in 0.1.2 hinzugefügten Datenpunkt `remote.power_on` nicht ein. Sie ist auch keine Zusage für andere Modelle oder Firmwarestände.
 
 Die ergänzende [Loewe Remote API 1.0.47](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf) dokumentiert die Senderlisten, das Netzwerkaufwecken und einen lokalen EPG-Zugriff. Diese Herstellerangaben ergänzen die App-Analyse; die jeweilige Wirkung wird weiterhin am Gerät geprüft. Der Adapter wird als lokale Paketdatei installiert und ist nicht im ioBroker-Adapterkatalog oder auf npm veröffentlicht.
 
@@ -39,7 +39,7 @@ Der laufende Adapter arbeitet lokal. Für die Installation kann ioBroker benöti
 
 ## Installationspaket aus dem Quellcode erzeugen
 
-Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Ein fertiges `.tgz`-Paket ist dort derzeit nicht als Release hinterlegt. Du kannst es mit den folgenden Schritten selbst erzeugen. Wenn du `iobroker.loewe-tv-0.1.4.tgz` bereits erhalten hast, kannst du diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung verwenden.
+Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Ein fertiges `.tgz`-Paket ist dort derzeit nicht als Release hinterlegt. Du kannst es mit den folgenden Schritten selbst erzeugen. Wenn du das aktuelle `iobroker.loewe-tv-0.1.4.tgz` mit Sendernamen als IDs bereits erhalten hast, kannst du diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung verwenden. Das frühere 0.1.4-Paket mit numerischen IDs muss durch das neue Archiv ersetzt werden; der Paketname und die Versionsnummer bleiben gleich.
 
 Zum Erzeugen des Pakets brauchst du Git und Node.js ab 22. Öffne ein Terminal in einem eigenen Arbeitsverzeichnis und führe aus:
 
@@ -53,9 +53,9 @@ npm pack
 
 `npm pack` erzeugt im Projektverzeichnis die Datei **`iobroker.loewe-tv-0.1.4.tgz`**. Die Entwicklungsbefehle gehören in diese Projektkopie, nicht in das produktive ioBroker-Hauptverzeichnis. Kopiere anschließend die erzeugte Paketdatei auf den ioBroker-Rechner und verwende die passende Anleitung unten.
 
-## Update von 0.1.0 bis 0.1.3 auf 0.1.4
+## Update auf den aktuellen Stand von 0.1.4
 
-Die vorhandene Instanz weiterverwenden. Erzeuge `iobroker.loewe-tv-0.1.4.tgz` wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Kopiere sie unverändert auf den ioBroker-Rechner, beispielsweise nach `/tmp`. Führe dort diese Befehle in der angegebenen Reihenfolge aus:
+Die vorhandene Instanz weiterverwenden. Diese Anleitung gilt für ältere Versionen und für den ersten 0.1.4-Stand mit numerischen Sender-IDs. **Die Versionsnummer bleibt auf Wunsch 0.1.4; ein bloßer Neustart installiert die Überarbeitung nicht.** Erzeuge das Paket erneut aus dem aktuellen Quellcode wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende das neu bereitgestellte Archiv mit Sendernamen als IDs. Ersetze die alte Paketdatei auf dem ioBroker-Rechner durch dieses neue Archiv, beispielsweise unter `/tmp`. Führe dort diese Befehle in der angegebenen Reihenfolge aus:
 
 ```bash
 iobroker stop loewe-tv.0
@@ -66,11 +66,11 @@ iobroker start loewe-tv.0
 
 Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Ab Version 0.1.1 läuft der Adapter in einem eigenen Prozess; das gilt auch für 0.1.4. Die Umstellung erfolgt vor dem Paketupdate, damit sie auch bei einer vorhandenen Instanz wirksam wird. Die Syntax ist in der [offiziellen ioBroker-CLI-Dokumentation](https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/config/cli.md) beschrieben. Die bisherige Konfiguration und eine eingetragene Senderlistenkennung bleiben erhalten.
 
-**Die Sender-IDs ändern sich mit diesem Update.** Aus `channels.tv.service_<Hash>` werden Ordner wie `channels.tv.1`. Passe vorhandene Skripte, Aliase und Visualisierungen an, wenn sie auf die bisherigen Hash-IDs verweisen. Die neue ID bezeichnet den Programmplatz: Belegst du Platz 1 am TV später mit einem anderen Sender, steuert `channels.tv.1.select` nach dem Abgleich diesen neuen Sender.
+**Die Sender-IDs ändern sich mit dieser Überarbeitung einmalig.** Aus `channels.tv.service_<Hash>` aus 0.1.3 oder `channels.tv.1` aus dem ersten 0.1.4-Stand werden Ordner wie `channels.tv.Das_Erste_HD`. Passe vorhandene Skripte, Aliase und Visualisierungen an, wenn sie auf die bisherigen IDs verweisen. Anschließend bleibt der Pfad beim Umsortieren erhalten: Verschiebst du Das Erste HD am TV von Platz 1 auf Platz 7, verwendet `channels.tv.Das_Erste_HD.select` nach dem Abgleich dessen neuen Programmplatz. Eine tatsächliche Änderung des Sendernamens führt dagegen zu einer neuen Namens-ID.
 
-Der Adapter übernimmt den gespeicherten Katalog aus 0.1.3 und die verwalteten Hash-Ordner in die neue Struktur. Mehrere Plätze desselben Senders erhalten jeweils einen eigenen Ordner. Falls noch kein Katalog vorliegt, kann eine gültige alte Antwort aus `channels.items` verwendet werden. Diese Wiederherstellung arbeitet mit den vorhandenen Daten; zusätzlich ist die automatische Senderaktualisierung standardmäßig aktiv. Normale alte Hash-Ordner werden nach erfolgreicher Anlage des Ersatzes entfernt. Benutzerdefinierte Unterobjekte, `common.custom` und Löschschutz bleiben erhalten; betroffene Altordner bleiben deaktiviert bestehen.
+Der Adapter übernimmt vorhandene Kataloge und verwaltete Senderordner aus 0.1.3 sowie aus dem ersten 0.1.4-Stand in die neue Struktur. Mehrere Plätze desselben Dienstes werden in einem Senderordner zusammengefasst; der kleinste gültige Programmplatz ist die bevorzugte Position für Anzeige und Auswahl. Falls noch kein Katalog vorliegt, kann eine gültige alte Antwort aus `channels.items` verwendet werden. Diese Wiederherstellung arbeitet mit den vorhandenen Daten; zusätzlich ist die automatische Senderaktualisierung standardmäßig aktiv. Normale alte Hash- oder Nummernordner werden nach erfolgreicher Anlage des Ersatzes entfernt. Benutzerdefinierte Unterobjekte, `common.custom` und Löschschutz bleiben erhalten; betroffene Altordner bleiben deaktiviert bestehen.
 
-Schalte den TV für den ersten Abgleich ein und schreibe bei Bedarf `channels.refresh=true` mit `ack:false`. Der Adapter lädt die gewählte Liste vollständig mit TV und Radio. Sobald `channels.refreshStatus=ready` und `channels.catalogStatus=ready` stehen, kannst du beispielsweise `channels.tv.1.select` prüfen. Die neue Struktur und die Bedeutung der Statuswerte stehen unter [TV- und Radiosender einzeln anwählen](#tv--und-radiosender-einzeln-anwählen). Eine Senderwahl setzt einen erreichbaren Fernseher voraus und startet keinen eigenen Einschaltablauf.
+Schalte den TV für den ersten Abgleich ein und schreibe bei Bedarf `channels.refresh=true` mit `ack:false`. Der Adapter lädt die gewählte Liste vollständig mit TV und Radio. Sobald `channels.refreshStatus=ready` und `channels.catalogStatus=ready` stehen, kannst du beispielsweise `channels.tv.Das_Erste_HD.select` prüfen. Die neue Struktur und die Bedeutung der Statuswerte stehen unter [TV- und Radiosender einzeln anwählen](#tv--und-radiosender-einzeln-anwählen). Eine Senderwahl setzt einen erreichbaren Fernseher voraus und startet keinen eigenen Einschaltablauf.
 
 Wenn du zugleich das bisher erfolglose Einschalten prüfen möchtest, beschreibt [Ein- und Ausschalten](#ein--und-ausschalten) den separaten Test mit `control.powerOn` und `info.powerOn`. Für eine Diagnose ohne automatische TV-Abfragen **beide Intervalle**, `pollInterval` und `channelRefreshInterval`, auf 0 setzen. `info.connection` bleibt dann nach dem Start zunächst `false`, bis eine erfolgreiche manuelle TV-Abfrage oder ein Befehl die Verbindung bestätigt.
 
@@ -301,48 +301,47 @@ senderlisteAbfragen();
 
 ### TV- und Radiosender einzeln anwählen
 
-Für jeden bekannten Programmplatz legt der Adapter einen eigenen Ordner unter **`channels.tv`** oder **`channels.radio`** an. **Die Ordner-ID ist die Speicherposition; Name und Beschreibung sind der Sendername.** Intern stehen diese Texte in `common.name` und `common.desc`. Jeder Programmplatz hat einen `select`-Taster und einen eigenen `epg`-Unterordner.
+Für jeden bekannten Senderdienst legt der Adapter einen eigenen Ordner unter **`channels.tv`** oder **`channels.radio`** an. **Die Ordner-ID wird aus dem Sendernamen gebildet. Der angezeigte Name ist die bevorzugte Speicherposition; die Beschreibung bleibt der Sendername.** Intern steht die Position als Text in `common.name`, der Sendername in `common.desc`. Jeder Sender hat einen `select`-Taster und einen eigenen `epg`-Unterordner.
 
 Beispiele aus der gemeldeten Senderbelegung:
 
-| Objekt | Name / Beschreibung | Bedeutung |
+| Ordner-ID | Name (`common.name`) | Beschreibung (`common.desc`) |
 |---|---|---|
-| `channels.tv.1` | Das Erste HD | TV-Programmplatz 1. |
-| `channels.tv.2` | ZDF HD | TV-Programmplatz 2. |
-| `channels.tv.3` | RTL Television | TV-Programmplatz 3. |
-| `channels.tv.100` | Das Erste HD | Weiterer TV-Programmplatz desselben Senders. |
-| `channels.radio.100` | Bayern 1 | Radioplatz 100, unabhängig vom TV-Platz 100. |
-| `channels.tv.1.select` | Sender einschalten | Taster für den TV-Sender auf Platz 1. |
-| `channels.tv.1.epg.status` | Status des EPG-Abrufs | Derzeit `notImplemented`. |
+| `channels.tv.Das_Erste_HD` | `1` | Das Erste HD |
+| `channels.tv.ZDF_HD` | `2` | ZDF HD |
+| `channels.tv.RTL_Television` | `3` | RTL Television |
+| `channels.radio.Bayern_1` | `100` | Bayern 1 |
+
+Leerzeichen und Sonderzeichen im Sendernamen werden für die ID zu Unterstrichen, Umlaute zu `ae`, `oe` beziehungsweise `ue` und `ß` zu `ss`. So kann beispielsweise aus „WDR HD Köln“ die ID `WDR_HD_Koeln` werden. Der vollständige Sendername bleibt als Beschreibung und im Datenpunkt `name` erhalten. Verschiedene Dienste mit demselben bereinigten Namen werden über einen stabilen Suffix aus der Dienstidentität unterschieden. Die Programmposition ist kein Bestandteil dieses Suffixes. TV und Radio bleiben auch bei identischen Namen getrennt.
 
 **Zum Umschalten `select = true` mit `ack: false` schreiben.** In ioBroker Admin also die Bestätigung beim Schreiben nicht aktivieren; in Blockly den Block zum Steuern verwenden. Der Taster kehrt nach der Verarbeitung auf `false` zurück. Er ist ein Befehl zum Anwählen des Senders und kein dauerhafter Ein/Aus-Zustand. Der Fernseher muss erreichbar sein. Der Taster startet kein Wake-on-LAN; dafür gibt es weiterhin `control.powerOn`.
 
 ```javascript
-// Auf den aktuell auf TV-Platz 1 konfigurierten Sender umschalten.
-setState('loewe-tv.0.channels.tv.1.select', true, false);
+// Das Erste HD auf seinem aktuellen bevorzugten Programmplatz anwählen.
+setState('loewe-tv.0.channels.tv.Das_Erste_HD.select', true, false);
 ```
 
 Während eine neu empfangene Senderantwort in den Bestand übernommen wird, kann die Auswahl kurz mit `CHANNEL_UPDATING` abgewiesen werden. Das gilt auch für einen wartenden Tastendruck, wenn inzwischen eine weitere Senderliste empfangen wurde. Nach der Aktualisierung erneut auswählen; der Adapter sendet dadurch keinen veralteten Umschaltauftrag.
 
 | Datenpunkt im Senderobjekt | Inhalt |
 |---|---|
-| `select` | Taster zum Umschalten über den exakten, vom TV für diesen Platz gelieferten Locator. |
+| `select` | Taster zum Umschalten über den exakten, vom TV für die bevorzugte Position gelieferten Locator. |
 | `name` | Sendername. |
-| `number` | Numerischer Programmplatz, identisch mit der Nummer in der Ordner-ID. |
-| `numbers` | JSON-Liste mit der Originalbeschriftung dieses einen Programmplatzes. |
+| `number` | Kleinster gültiger Programmplatz dieses Dienstes; seine Textdarstellung ist der angezeigte Ordnername. |
+| `numbers` | JSON-Liste mit den Originalbeschriftungen aller bekannten Programmplätze dieses Dienstes. |
 | `mediaItemUuid` | Dienstkennung aus der TV-Antwort. |
-| `locator` | Für `select` verwendeter Original-Locator dieses Platzes. |
-| `locators` | JSON-Liste mit diesem einen Original-Locator. |
-| `positions` | JSON-Liste mit einem Eintrag aus `caption` und `locator` für diesen Platz. |
+| `locator` | Für `select` verwendeter Original-Locator der bevorzugten Position. |
+| `locators` | JSON-Liste mit den Original-Locators aller bekannten Programmplätze dieses Dienstes. |
+| `positions` | JSON-Liste mit den zusammengehörenden Werten `caption` und `locator` aller bekannten Positionen. |
 | `listView` | Kennung der zugehörigen Senderliste. |
-| `available` | Ob der Platz im bekannten aktiven Senderbestand eindeutig zugeordnet und über einen verwendbaren Locator auswählbar ist; kein Empfangs-, Wiedergabe- oder Bildschirmstatus. |
+| `available` | Ob der Sender im bekannten aktiven Bestand eindeutig zugeordnet und über einen verwendbaren Locator auswählbar ist; kein Empfangs-, Wiedergabe- oder Bildschirmstatus. |
 | `epg.status` | In 0.1.4 fest `notImplemented`: Der Ordner ist für den späteren EPG-Import vorbereitet. |
 
-Ein Sender kann mehrfach in der TV-Liste stehen. Das Erste HD auf 1, 100 und 1000 ergibt deshalb **drei Ordner**: `channels.tv.1`, `channels.tv.100` und `channels.tv.1000`. Jeder Taster verwendet genau den Locator seines Platzes. Die bisherigen Metadaten `numbers`, `locators` und `positions` behalten ihren JSON-Array-Typ, enthalten pro Ordner aber jeweils nur noch einen Eintrag. TV und Radio können dieselbe Nummer haben, da ihre Ordner getrennt sind.
+Ein Sender kann mehrfach in der TV-Liste stehen. Das Erste HD auf 1, 100 und 1000 ergibt **einen Ordner**: `channels.tv.Das_Erste_HD`. `numbers`, `locators` und `positions` enthalten alle drei Belegungen. `number`, der angezeigte Ordnername und der `select`-Taster verwenden die kleinste gültige Position, in diesem Beispiel 1. Entfernst du diesen Platz und bleiben 100 und 1000 erhalten, wird nach dem vollständigen Abgleich Platz 100 bevorzugt. Der Ordnerpfad bleibt gleich.
 
-Die Ordnernummer wird aus der gültigen numerischen Beschriftung des Eintrags bestimmt; führende Nullen entfallen nur in der ID. Fehlt eine brauchbare Beschriftung, kann die Nummer aus einem passenden `channel://`-Locator übernommen werden. Originalbeschriftung und Original-Locator bleiben erhalten. Einträge ohne eindeutige gültige Nummer werden nicht mit einer erfundenen ID angelegt. Widersprüchliche Belegungen desselben Platzes sperren dessen Auswahl bis zu einer eindeutigen Antwort.
+Die Programmposition wird aus der gültigen numerischen Beschriftung des Eintrags bestimmt; führende Nullen entfallen in `number` und im angezeigten Ordnernamen. Fehlt eine brauchbare Beschriftung, kann die Nummer aus einem passenden `channel://`-Locator übernommen werden. Originalbeschriftung und Original-Locator bleiben in den Positionsdaten erhalten. Eine widersprüchliche oder nicht eindeutig zuordenbare Position wird nicht als Umschaltziel verwendet.
 
-**Die ID folgt dem Programmplatz.** Wenn sich dessen Belegung am TV ändert, werden Name, Beschreibung, Dienstkennung und Locator im bestehenden Ordner aktualisiert. Verschiebst du einen Sender von Platz 1 auf Platz 7, liegt er nach dem vollständigen Abgleich unter `channels.tv.7`. Ein Skript, das weiterhin `channels.tv.1.select` verwendet, wählt dann den aktuellen Sender auf Platz 1. Für Regeln, die einem bestimmten Sender unabhängig von seiner Position folgen sollen, zusätzlich dessen `mediaItemUuid` und Listenbezug beachten.
+**Beim Umsortieren bleibt die Sender-ID erhalten.** Verschiebst du Das Erste HD von Platz 1 auf Platz 7, bleibt `channels.tv.Das_Erste_HD` bestehen. Nach dem vollständigen Abgleich zeigen `number` und der Ordnername den Wert 7; `locator` und der Taster verwenden die neue Position. Das vorhandene Skript mit `channels.tv.Das_Erste_HD.select` steuert weiterhin Das Erste HD. Voraussetzung ist, dass Platz 7 dann die kleinste noch vorhandene Position dieses Dienstes ist. Eine echte Umbenennung am TV ändert dagegen die aus dem Namen gebildete ID. EPG- und Aufnahmeregeln müssen zusätzlich `mediaItemUuid`, Medienart und Listenbezug erhalten, damit gleichnamige Dienste eindeutig zugeordnet bleiben.
 
 #### Gespeicherter Senderbestand und Aktualisierung
 
@@ -352,9 +351,9 @@ Mit `channels.refresh=true` kannst du jederzeit einen vollständigen Abgleich an
 
 Der Komplettabruf liest ab Startindex 0 mit höchstens 500 Einträgen je Seite. Eine Liste mit mehreren Seiten wird zweimal vollständig gelesen und nur bei übereinstimmendem Inhalt übernommen. Dadurch werden während des Abrufs geänderte Listen nicht als sicherer Gesamtbestand behandelt. Ein Lauf ist auf 2.000 Programmplätze, 20 Seiten je Durchlauf und ein Zeitlimit von 120 Sekunden für den Abruf begrenzt. Für den gespeicherten Katalog gelten weiterhin 480 KiB. Bei überschrittenen Grenzen oder einer nicht eindeutig auswertbaren Antwort bleibt der bisherige Bestand erhalten.
 
-Nach einem erfolgreichen vollständigen Abgleich werden neue Plätze angelegt und geänderte Plätze aktualisiert. Nicht mehr vorhandene, vom Adapter verwaltete Plätze werden entfernt. **Fehler, Standby und einzelne Teilantworten lösen keine Entfernung fehlender Sender aus.** Manuell geladene Teilseiten aktualisieren die darin eindeutig beobachteten Plätze und erhalten die übrigen Einträge. Eine einzelne vollständige und gültige manuelle Antwort kann ebenfalls einen Abgleich auslösen; bei Filter `video` bleibt Radio erhalten und bei `audio` entsprechend TV. Eine bloße Folge manueller Teilseiten gilt nicht als Nachweis eines vollständigen Bestands.
+Nach einem erfolgreichen vollständigen Abgleich werden neue Senderordner angelegt und die Positionen vorhandener Sender aktualisiert. Ordner für nicht mehr vorhandene, vom Adapter verwaltete Sender werden entfernt. **Fehler, Standby und einzelne Teilantworten lösen keine Entfernung fehlender Sender aus.** Manuell geladene Teilseiten ergänzen beziehungsweise aktualisieren eindeutig beobachtete Senderdaten und erhalten die übrigen Einträge. Eine einzelne vollständige und gültige manuelle Antwort kann ebenfalls einen Abgleich auslösen; bei Filter `video` bleibt Radio erhalten und bei `audio` entsprechend TV. Eine bloße Folge manueller Teilseiten gilt nicht als Nachweis eines vollständigen Bestands.
 
-Benutzerdefinierte Kinder, Objekte mit `common.custom` und Objekte mit `common.dontDelete` werden bei der Bereinigung geschützt. Benötigte alte Ordner bleiben dann als deaktivierte Reste mit `available=false` und gesperrter Auswahl bestehen. Das betrifft auch geschützte Hash-Ordner nach dem Update von 0.1.3. Normale verwaltete Altobjekte ohne solche Ergänzungen werden entfernt. Beim Wechsel der gewählten Senderliste beschreibt die Nummernstruktur nach dem vollständigen Abgleich die Belegung dieser Liste.
+Benutzerdefinierte Kinder, Objekte mit `common.custom` und Objekte mit `common.dontDelete` werden bei der Bereinigung geschützt. Benötigte alte Ordner bleiben dann als deaktivierte Reste mit `available=false` und gesperrter Auswahl bestehen. Das betrifft auch geschützte Hash-Ordner aus 0.1.3 und Nummernordner aus dem ersten 0.1.4-Stand. Normale verwaltete Altobjekte ohne solche Ergänzungen werden entfernt. Beim Wechsel der gewählten Senderliste bildet die Struktur nach dem vollständigen Abgleich den Senderbestand dieser Liste ab.
 
 Die Zuordnung bleibt über einen Adapterneustart hinweg erhalten. Wiederherstellung und Migration verwenden den gespeicherten Katalog, verwaltete Senderobjekte oder eine vorhandene Antwort in `channels.items`; gespeicherte Tasterwerte werden zurückgesetzt und führen keinen Umschaltbefehl aus. Die Objektaufbereitung läuft in begrenzten Abschnitten im Hintergrund und belegt die TV-Befehlswarteschlange nicht. Bei größeren Listen können Ordner deshalb nach und nach erscheinen.
 
@@ -371,7 +370,7 @@ Die Zuordnung bleibt über einen Adapterneustart hinweg erhalten. Wiederherstell
 
 `channels.refreshStatus=ready` bestätigt die Übergabe des vollständigen Abrufs. **Erst `channels.catalogStatus=ready` bestätigt die abgeschlossene Objektaufbereitung.** Für die manuelle Seitenabfrage stehen weiterhin `channels.lastError`, `channels.items` und `channels.entries` bereit. Ein alter erfolgreicher Statuswert ist kein aktueller Empfangs- oder Bildschirmstatus.
 
-**EPG-Inhalte werden in dieser Version noch nicht geladen.** Spätere Sendungslisten, Aktualisierungszeiten und EPG-Fehler sollen direkt unter `channels.tv.<Nummer>.epg` beziehungsweise `channels.radio.<Nummer>.epg` liegen. Bei einer geänderten Platzbelegung müssen spätere EPG-Daten anhand der Senderkennung neu zugeordnet werden.
+**EPG-Inhalte werden in dieser Version noch nicht geladen.** Spätere Sendungslisten, Aktualisierungszeiten und EPG-Fehler sollen direkt unter `channels.tv.<Sender-ID>.epg` beziehungsweise `channels.radio.<Sender-ID>.epg` liegen, beispielsweise `channels.tv.Das_Erste_HD.epg`. Der vorhandene Datenpunkt `epg.status` hat den Wert `notImplemented`. Mehrere Programmplätze desselben Dienstes teilen sich diesen EPG-Ordner. Die spätere EPG-Zuordnung erfolgt anhand der Senderkennung.
 
 ### Status und Gerätedaten
 
@@ -611,7 +610,7 @@ Die universellen API-Datenpunkte erschließen die extrahierten Aktionen. Sie ent
 
 Die Weiterentwicklung findet im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv) statt. Das Abrufen des Quellcodes, die Tests und das Erzeugen des installierbaren `.tgz`-Pakets sind unter [Installationspaket aus dem Quellcode erzeugen](#installationspaket-aus-dem-quellcode-erzeugen) beschrieben.
 
-Die Tests verwenden simulierte TV-Antworten sowie echte HTTP- und UDP-Verbindungen ausschließlich über die lokale Loopback-Schnittstelle. Sie prüfen das Verhalten der Implementierung, ersetzen aber keinen Start in einem tatsächlichen ioBroker-Controller und keinen Modell- und Firmwaretest am realen Fernseher. Die Prüfungen der neuen Funktionen stehen im [Prüfbericht zu 0.1.4](docs/PRUEFBERICHT_0.1.4.md). Die historischen Prüfberichte zu [0.1.3](docs/PRUEFBERICHT_0.1.3.md), [0.1.2](docs/PRUEFBERICHT_0.1.2.md) und [0.1.1](docs/PRUEFBERICHT.txt) bleiben als Nachweise für die damaligen Stände erhalten. Der Nutzerbericht zum tatsächlichen bild 7.55 ist oben gesondert aufgeführt. Er bestätigt den Senderabruf, die ersten drei TV-Programmplätze und die Ordneranlage in 0.1.3; die neuen Sendertaster, die Änderungen in 0.1.4 und der Einschaltablauf sind am Gerät noch nicht bestätigt.
+Die Tests verwenden simulierte TV-Antworten sowie echte HTTP- und UDP-Verbindungen ausschließlich über die lokale Loopback-Schnittstelle. Sie prüfen das Verhalten der Implementierung, ersetzen aber keinen Start in einem tatsächlichen ioBroker-Controller und keinen Modell- und Firmwaretest am realen Fernseher. Die Prüfungen der neuen Funktionen stehen im [Prüfbericht zu 0.1.4](docs/PRUEFBERICHT_0.1.4.md). Die historischen Prüfberichte zu [0.1.3](docs/PRUEFBERICHT_0.1.3.md), [0.1.2](docs/PRUEFBERICHT_0.1.2.md) und [0.1.1](docs/PRUEFBERICHT.txt) bleiben als Nachweise für die damaligen Stände erhalten. Der Nutzerbericht zum tatsächlichen bild 7.55 ist oben gesondert aufgeführt. Er bestätigt den Senderabruf, die ersten drei TV-Programmplätze, die Ordneranlage in 0.1.3 und allgemein die Funktion des ersten 0.1.4-Stands mit numerischen IDs. Die nachträglich in 0.1.4 eingeführten Namens-IDs, ihre Migration und das Umsortieren sind noch nicht am Gerät bestätigt. Für den Einschaltablauf liegt ebenfalls keine Erfolgsmeldung vor.
 
 Offizielle ioBroker-Grundlagen:
 
@@ -628,11 +627,12 @@ Der neu geschriebene Adaptercode steht unter der MIT-Lizenz. Siehe [LICENSE](LIC
 
 ### 0.1.4
 
-- Senderordner nach Programmplatz: `channels.tv.<Nummer>` und `channels.radio.<Nummer>`. Name und Beschreibung enthalten den Sendernamen; mehrere Plätze desselben Senders erhalten jeweils eigene Taster mit ihrem genauen Locator.
-- Bestehende Kataloge und Hash-Ordner werden in die Nummernstruktur übernommen. Die geänderten IDs erfordern gegebenenfalls Anpassungen an Skripten, Aliasen und Visualisierungen.
+- Auf Wunsch innerhalb derselben Version überarbeitet: Sendername als Ordner-ID, beispielsweise `channels.tv.Das_Erste_HD`; der Name (`common.name`) zeigt den bevorzugten Programmplatz, die Beschreibung (`common.desc`) den Sendernamen. Umsortieren aktualisiert Position und Locator bei unverändertem Senderpfad.
+- Mehrere Programmplätze desselben Dienstes werden in einem Ordner zusammengefasst. Der kleinste gültige Platz ist die bevorzugte Auswahl; alle Originalpositionen und Locators bleiben erhalten. Gleichnamige Dienste erhalten bei Bedarf einen stabilen Kennungssuffix.
+- Bestehende Kataloge und Hash-Ordner aus 0.1.3 sowie numerische Ordner aus dem ersten 0.1.4-Stand werden in die Namensstruktur übernommen. Die geänderten IDs erfordern einmalige Anpassungen an Skripten, Aliasen und Visualisierungen. Bereits installierte Version 0.1.4 mit dem aktuellen Archiv erneut installieren.
 - `channels.refresh` für den vollständigen Abgleich und ein eigenes Senderlistenintervall mit standardmäßig 300 Sekunden. Automatische Aktualisierung beim Start, nach Wiederverbindung und im eingestellten Abstand; das Statuspolling bleibt unabhängig.
 - Mehrseitenlisten werden vor dem Abgleich zweimal vollständig verglichen. Fehlgeschlagene, unvollständige oder mehrdeutige Antworten entfernen keine fehlenden Sender.
-- Veraltete verwaltete Senderordner werden gezielt bereinigt; Benutzerobjekte, benutzerdefinierte Einstellungen und Löschschutz bleiben erhalten. EPG steht weiterhin als Platzhalter direkt unter jedem Programmplatz bereit.
+- Veraltete verwaltete Senderordner werden gezielt bereinigt; Benutzerobjekte, benutzerdefinierte Einstellungen und Löschschutz bleiben erhalten. EPG steht weiterhin als Platzhalter direkt unter jedem Sender bereit.
 
 ### 0.1.3
 

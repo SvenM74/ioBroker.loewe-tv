@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const { setImmediate: nextTurn } = require('node:timers/promises');
 const { createHash } = require('node:crypto');
 const { AdapterRuntime } = require('../lib/adapter-runtime');
-const { parseChannelPage } = require('../lib/loewe-client');
+const { parseChannelPage, LoeweClient, parseResponse } = require('../lib/loewe-client');
 const { MAX_CATALOG_BYTES } = require('../lib/channel-catalog');
 
 const VIEW = 'fastscan-integration-fixture';
@@ -45,6 +45,8 @@ class FakeClient {
         this.calls = [];
         this.nextChannels = channels([]);
         this.zapHook = null;
+        this.mediaItemHook = null;
+        this.playbackHook = null;
         this.keyHook = null;
         this.closed = false;
     }
@@ -62,8 +64,22 @@ class FakeClient {
 
     async zap(...args) {
         this.calls.push({ method: 'zap', args });
-        if (this.zapHook) await this.zapHook(...args);
-        return response('ZapToMedia');
+        const result = this.zapHook ? await this.zapHook(...args) : null;
+        return result || response('ZapToMedia', { Result: '0' });
+    }
+
+    async getMediaItem(...args) {
+        this.calls.push({ method: 'getMediaItem', args });
+        if (this.mediaItemHook) return this.mediaItemHook(...args);
+        return response('GetMediaItem', { ResultItem: { MediaItem: {
+            uuid: args[0], Locator: 'channel://100:ch-radio-detail:sl-fixture', '@_itemClass': 'audio',
+        } } });
+    }
+
+    async getCurrentPlayback(...args) {
+        this.calls.push({ method: 'getCurrentPlayback', args });
+        if (this.playbackHook) return this.playbackHook(...args);
+        return response('GetCurrentPlayback', { Mode: 'radio' });
     }
 
     close() { this.closed = true; }
@@ -248,6 +264,199 @@ test('a failed channel selection resets the momentary button and reports the tra
     await write(h, button, true);
     assert.deepEqual(state(h, button), { val: false, ack: true });
     assert.match(state(h, 'info.lastError').val, /NETWORK.*Fixture timeout/u);
+});
+
+test('radio resolves its own media UUID before zap while TV at the same position keeps its direct route', async t => {
+    const h = await harness(t);
+    await query(h, [entry('tv', '100'), entry('radio', '100', 'audio')]);
+    const radio = service(h, 'radio', 'audio');
+    h.client.calls.length = 0;
+    await write(h, `${radio.id}.select`, true);
+    assert.deepEqual(h.client.calls.map(call => call.method), ['getMediaItem', 'zap', 'getCurrentPlayback']);
+    assert.equal(h.client.calls[0].args[0], 'radio');
+    assert.equal(h.client.calls[1].args[0], 'channel://100:ch-radio-detail:sl-fixture');
+    const report = JSON.parse(state(h, 'channels.lastSelection').val);
+    assert.equal(report.requested.itemClass, 'audio');
+    assert.equal(report.listLocator, 'channel://100:ch-radio:sl-fixture');
+    assert.equal(report.resolvedLocator, h.client.calls[1].args[0]);
+    assert.equal(report.locatorSource, 'GetMediaItem');
+    assert.equal(report.result, 0);
+    assert.equal(report.status, 'accepted');
+    assert.equal(report.verification, 'radioModeOnly');
+    assert.equal(report.stationConfirmed, false, 'Mode alone is not evidence of the exact radio station.');
+    assert.equal(report.getMediaItemResponse.Envelope.Body.GetMediaItemResponse.ResultItem.MediaItem.uuid, 'radio');
+    assert.equal(report.zapResponse.Envelope.Body.ZapToMediaResponse.Result, '0');
+    const deadlines = h.client.calls.map(call => call.args.at(-1).deadline);
+    assert.ok(deadlines.every(deadline => deadline === deadlines[0]), 'All radio phases share the same deadline.');
+    assert.ok(deadlines[0] <= report.startedAt + 15000);
+    assert.deepEqual(state(h, `${radio.id}.select`), { val: false, ack: true });
+    await h.runtime._write('info.lastResponse', '{}');
+    assert.deepEqual(JSON.parse(state(h, 'channels.lastSelection').val), report, 'Other responses do not erase selection evidence.');
+    h.client.calls.length = 0;
+    await write(h, `${service(h, 'tv').id}.select`, true);
+    assert.deepEqual(h.client.calls, [{ method: 'zap', args: ['channel://100:ch-tv:sl-fixture'] }]);
+});
+
+test('a real HTTP radio selection sends the detail locator with Player 0 and observes radio mode', async t => {
+    const http = require('node:http');
+    const h = await harness(t);
+    await query(h, [entry('radio', '100', 'audio')]);
+    const radio = service(h, 'radio', 'audio');
+    const calls = [];
+    const resolved = 'channel://8:ch-radio-resolved:sl-detail';
+    const server = http.createServer((request, reply) => {
+        const chunks = [];
+        request.on('data', chunk => chunks.push(chunk));
+        request.on('end', () => {
+            const body = parseResponse(Buffer.concat(chunks).toString()).data.Envelope.Body;
+            const action = Object.keys(body)[0];
+            calls.push({ action, fields: body[action] });
+            const fields = action === 'RequestAccess' ? '<m:ClientId>test-radio-client</m:ClientId>'
+                : action === 'GetMediaItem' ? `<m:ResultItem><m:MediaItem itemClass="audio"><m:uuid>radio</m:uuid><m:Locator>${resolved}</m:Locator></m:MediaItem></m:ResultItem>`
+                    : action === 'ZapToMedia' ? '<m:Result>0</m:Result>' : '<m:Mode>radio</m:Mode>';
+            reply.end(`<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" xmlns:m="urn:loewe.de:RemoteTV:Tablet"><s:Body><m:${action}Response>${fields}</m:${action}Response></s:Body></s:Envelope>\0`);
+        });
+    });
+    await new Promise((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(0, '127.0.0.1', resolve);
+    });
+    h.runtime.client = new LoeweClient({ host: '127.0.0.1', port: server.address().port, timeout: 500 });
+    t.after(async () => {
+        h.runtime.client.close();
+        server.closeAllConnections();
+        await new Promise(resolve => server.close(resolve));
+    });
+    await write(h, `${radio.id}.select`, true);
+    assert.deepEqual(calls.map(call => call.action), ['RequestAccess', 'GetMediaItem', 'ZapToMedia', 'GetCurrentPlayback']);
+    assert.equal(calls[1].fields.MediaItemReference['@_mediaItemUuid'], 'radio');
+    assert.equal(calls[2].fields.Locator, resolved);
+    assert.equal(calls[2].fields.Player, '0');
+    assert.equal(calls[3].fields.Player, '0');
+    assert.equal(JSON.parse(state(h, 'channels.lastSelection').val).verification, 'radioModeOnly');
+    assert.equal(state(h, 'info.lastError').val, '');
+});
+
+test('invalid radio details never fall back to the list locator or a remote key', async t => {
+    for (const item of [
+        { uuid: 'different', Locator: 'channel://1:ch-wrong:sl-fixture' },
+        { uuid: 'radio', StreamingUrl: 'http://example.invalid/radio' },
+        { uuid: 'radio', Locator: 'channel://1:ch-wrong:sl-fixture', '@_itemClass': 'video' },
+    ]) {
+        const h = await harness(t);
+        await query(h, [entry('radio', '100', 'audio')]);
+        h.client.mediaItemHook = () => response('GetMediaItem', { ResultItem: { MediaItem: item } });
+        h.client.calls.length = 0;
+        const button = `${service(h, 'radio', 'audio').id}.select`;
+        await write(h, button, true);
+        assert.deepEqual(h.client.calls.map(call => call.method), ['getMediaItem']);
+        const report = JSON.parse(state(h, 'channels.lastSelection').val);
+        assert.equal(report.status, 'error');
+        assert.equal(report.phase, 'getMediaItem');
+        assert.ok(report.error);
+        assert.ok(report.getMediaItemResponse, 'Keep the rejected detail response for diagnosis.');
+        assert.deepEqual(state(h, button), { val: false, ack: true });
+    }
+});
+
+test('nonzero ZapToMedia result is an error for channel buttons and manual locators without a resend', async t => {
+    const h = await harness(t);
+    await query(h, [entry('tv'), entry('radio', '100', 'audio')]);
+    h.client.zapHook = () => response('ZapToMedia', { Result: '3' });
+    for (const button of [`${service(h, 'tv').id}.select`, `${service(h, 'radio', 'audio').id}.select`]) {
+        h.client.calls.length = 0;
+        await write(h, button, true);
+        assert.equal(h.client.calls.filter(call => call.method === 'zap').length, 1);
+        assert.equal(h.client.calls.filter(call => call.method === 'getCurrentPlayback').length, 0);
+        const report = JSON.parse(state(h, 'channels.lastSelection').val);
+        assert.equal(report.result, 3);
+        assert.equal(report.status, 'error');
+        assert.equal(report.phase, 'zap');
+        assert.match(report.error, /TV_REJECTED.*Result=3/u);
+        assert.match(state(h, 'info.lastError').val, /TV_REJECTED/u);
+        assert.equal(state(h, 'info.connection').val, true, 'A command rejection does not mean the TV is offline.');
+    }
+    await write(h, 'media.locator', 'channel://1:ch-manual:sl-fixture');
+    assert.match(state(h, 'info.lastError').val, /TV_REJECTED/u);
+});
+
+test('radio diagnostics distinguish missing acknowledgement, wrong mode and exact station confirmation', async t => {
+    const h = await harness(t);
+    await query(h, [entry('radio', '100', 'audio')]);
+    const button = `${service(h, 'radio', 'audio').id}.select`;
+    h.client.zapHook = () => response('ZapToMedia');
+    await write(h, button, true);
+    let report = JSON.parse(state(h, 'channels.lastSelection').val);
+    assert.equal(report.status, 'unconfirmed');
+    assert.equal(report.result, null);
+    assert.equal(report.stationConfirmed, false);
+    h.client.zapHook = null;
+    h.client.playbackHook = () => response('GetCurrentPlayback', { Mode: 'tv', MediaItemUuid: 'tv' });
+    await write(h, button, true);
+    report = JSON.parse(state(h, 'channels.lastSelection').val);
+    assert.equal(report.status, 'accepted');
+    assert.equal(report.verification, 'differentMode', 'An immediate observation can precede the mode transition.');
+    assert.equal(report.stationConfirmed, false);
+    h.client.playbackHook = () => response('GetCurrentPlayback', { Mode: 'radio', MediaItemUuid: 'radio' });
+    await write(h, button, true);
+    report = JSON.parse(state(h, 'channels.lastSelection').val);
+    assert.equal(report.verification, 'station');
+    assert.equal(report.stationConfirmed, true);
+});
+
+test('a failed playback observation retains the zap acknowledgement without sending again', async t => {
+    const h = await harness(t);
+    await query(h, [entry('radio', '100', 'audio')]);
+    h.client.playbackHook = () => { throw Object.assign(new Error('Fixture playback timeout'), { code: 'NETWORK' }); };
+    h.client.calls.length = 0;
+    await write(h, `${service(h, 'radio', 'audio').id}.select`, true);
+    const report = JSON.parse(state(h, 'channels.lastSelection').val);
+    assert.equal(report.status, 'accepted');
+    assert.equal(report.result, 0);
+    assert.equal(report.stationConfirmed, false);
+    assert.equal(report.verification, 'readFailed');
+    assert.match(report.playbackError, /NETWORK.*timeout/u);
+    assert.equal(h.client.calls.filter(call => call.method === 'zap').length, 1);
+    assert.equal(state(h, 'info.commandPending').val, false);
+});
+
+test('a catalogue update during radio detail resolution invalidates the captured selection before zap', async t => {
+    const h = await harness(t);
+    await query(h, [entry('radio', '100', 'audio')]);
+    const gate = deferred();
+    t.after(() => gate.resolve());
+    h.client.mediaItemHook = async () => {
+        await gate.promise;
+        return response('GetMediaItem', { ResultItem: { MediaItem: { uuid: 'radio', Locator: 'channel://100:ch-detail:sl-fixture' } } });
+    };
+    h.client.calls.length = 0;
+    const select = write(h, `${service(h, 'radio', 'audio').id}.select`, true);
+    await until(() => h.client.calls.length > 0, 'GetMediaItem must be in flight.');
+    h.runtime.channelObjects.acceptPage(parseChannelPage(channels([entry('radio', '5', 'audio')])), '');
+    gate.resolve();
+    await select;
+    await h.runtime.channelObjects.whenIdle();
+    assert.deepEqual(h.client.calls.map(call => call.method), ['getMediaItem']);
+    assert.match(JSON.parse(state(h, 'channels.lastSelection').val).error, /CHANNEL_UPDATING|CHANNEL_UNAVAILABLE/u);
+});
+
+test('stopping during radio detail resolution prevents a later zap and releases the pending queue', async t => {
+    const h = await harness(t);
+    await query(h, [entry('radio', '100', 'audio')]);
+    const gate = deferred();
+    t.after(() => gate.resolve());
+    h.client.mediaItemHook = async () => {
+        await gate.promise;
+        return response('GetMediaItem', { ResultItem: { MediaItem: { uuid: 'radio', Locator: 'channel://100:ch-detail:sl-fixture' } } });
+    };
+    h.client.calls.length = 0;
+    const select = write(h, `${service(h, 'radio', 'audio').id}.select`, true);
+    await until(() => h.client.calls.length > 0, 'GetMediaItem must be in flight.');
+    const stopped = h.runtime.stop();
+    gate.resolve();
+    await Promise.all([select, stopped]);
+    assert.deepEqual(h.client.calls.map(call => call.method), ['getMediaItem']);
+    assert.equal(h.runtime._pendingCount, 0);
 });
 
 test('upgrade from 0.1.2 builds sender objects from channels.items without contacting the TV', async t => {

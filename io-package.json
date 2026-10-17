@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "news": {
+      "0.1.5": {
+        "en": "Resolve radio service UUIDs through GetMediaItem before sending ZapToMedia, following the analysed app workflow. Preserve direct TV channel selection. Check explicit zap results and add bounded selection diagnostics with a single radio playback observation; real-device radio verification remains open.",
+        "de": "Radiosender vor ZapToMedia über ihre Dienstkennung mit GetMediaItem auflösen, entsprechend dem untersuchten App-Ablauf. Direkte TV-Senderwahl bleibt erhalten. Explizite Umschaltergebnisse auswerten und zeitlich begrenzte Auswahldiagnose mit einmaliger Radio-Wiedergabeabfrage ergänzen; Gerätetest für Radio steht noch aus."
+      },
       "0.1.4": {
         "en": "Channel folders use channel names as IDs and the preferred programme position as their label, keeping IDs stable when channels are sorted. Duplicate positions are grouped by service. Automatic complete synchronization, manual refresh and migration from numeric or hashed folders preserve TV/radio separation and protect custom objects.",
         "de": "Senderordner verwenden Sendernamen als IDs und den bevorzugten Programmplatz als Bezeichnung. Beim Umsortieren bleiben die IDs erhalten; mehrfache Plätze desselben Dienstes werden zusammengefasst. Automatischer vollständiger Abgleich, manueller Aktualisierungstaster und Migration von Nummern- oder Hash-Ordnern erhalten die Trennung von TV und Radio und schützen eigene Objekte."

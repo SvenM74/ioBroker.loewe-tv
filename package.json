@@ -1,6 +1,6 @@
 {
   "name": "iobroker.loewe-tv",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Local control of Loewe TVs using the Tablet SOAP interface",
   "repository": {
     "type": "git",

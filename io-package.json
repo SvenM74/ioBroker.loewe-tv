@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "news": {
+      "0.1.6": {
+        "en": "Select the documented radio mode (l2700/73), wait for the TV to report radio, then select the requested station. Add delayed bounded playback checks, recognize SL420 itemInfoClass metadata and ignore its placeholder playback UUID for station confirmation. Add separate radio/TV mode buttons (73/72); device verification remains open.",
+        "de": "Dokumentierten Radiomodus (l2700/73) wählen, Rückmeldung des Radiomodus abwarten und danach den gewünschten Sender anwählen. Zeitversetzte begrenzte Wiedergabeprüfung, SL420-Metadaten itemInfoClass und Platzhalter-UUID bei der Senderbestätigung berücksichtigen. Getrennte Radio-/TV-Modustasten (73/72) ergänzen; Gerätetest steht noch aus."
+      },
       "0.1.5": {
         "en": "Resolve radio service UUIDs through GetMediaItem before sending ZapToMedia, following the analysed app workflow. Preserve direct TV channel selection. Check explicit zap results and add bounded selection diagnostics with a single radio playback observation; real-device radio verification remains open.",
         "de": "Radiosender vor ZapToMedia über ihre Dienstkennung mit GetMediaItem auflösen, entsprechend dem untersuchten App-Ablauf. Direkte TV-Senderwahl bleibt erhalten. Explizite Umschaltergebnisse auswerten und zeitlich begrenzte Auswahldiagnose mit einmaliger Radio-Wiedergabeabfrage ergänzen; Gerätetest für Radio steht noch aus."

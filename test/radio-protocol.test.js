@@ -5,12 +5,12 @@ const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { setImmediate: nextTurn } = require('node:timers/promises');
 const {
-    LoeweClient, parseResponse, parseMediaItem, parseZapResult, parseCurrentPlayback,
+    KEYS, LoeweClient, parseResponse, parseMediaItem, parseZapResult, parseCurrentPlayback,
 } = require('../lib/loewe-client');
 
-// Synthetic responses shaped from the Remote API and APK evidence. These are
-// transport/parser regressions, not recordings or successful hardware tests.
-const UUID = 'chl0:00-00080001ffff040f28a0';
+// Synthetic responses shaped from the user's SL420 response, Remote API and
+// APK evidence. These are transport/parser regressions, not hardware tests.
+const UUID = 'chl0:00-00080001ffff00010001';
 const LIST_LOCATOR = 'channel://100:ch-radio:sl-list';
 const DETAIL_LOCATOR = 'channel://101:ch-radio:sl-detail';
 
@@ -73,7 +73,9 @@ test('GetMediaItem sends the exact escaped UUID attribute and retains the raw re
     const { client, calls } = harness(t, [xml]);
     const response = await client.getMediaItem(uuid);
     assert.equal(response.xml, xml);
-    assert.deepEqual(parseMediaItem(response, uuid), { locator: DETAIL_LOCATOR, mediaItemUuid: uuid, itemClass: 'audio' });
+    assert.deepEqual(parseMediaItem(response, uuid), {
+        locator: DETAIL_LOCATOR, mediaItemUuid: uuid, itemClass: 'audio', itemInfoClass: '7',
+    });
     assert.deepEqual(calls.map(call => call.action), ['RequestAccess', 'GetMediaItem']);
     const call = calls[1];
     assert.equal(call.options.method, 'POST');
@@ -83,6 +85,22 @@ test('GetMediaItem sends the exact escaped UUID attribute and retains the raw re
     assert.ok(call.body.toString().includes('<ns1:GetMediaItem><fcid></fcid><ClientId>radio-fixture</ClientId>'
         + `<MediaItemReference mediaItemUuid="${escapedUuid}"/></ns1:GetMediaItem>`));
     assert.equal(call.body.at(-1), 0);
+});
+
+test('dedicated mode keys send documented l2700 press/release events through the transport', async t => {
+    const samples = [['radio_mode_on', 73], ['tv_mode_on', 72]];
+    const { client, calls } = harness(t, samples.map(() => reply('InjectRCKey')));
+    for (const [name, value] of samples) {
+        assert.deepEqual(KEYS[name], { alphabet: 'l2700', value });
+        await client.key(name);
+        const body = calls.at(-1).body.toString();
+        assert.ok(body.includes('<InputEventSequence>'
+            + `<RCKeyEvent alphabet="l2700" mode="press" value="${value}"/>`
+            + `<RCKeyEvent alphabet="l2700" mode="release" value="${value}"/>`
+            + '</InputEventSequence>'));
+        assert.equal((body.match(/<RCKeyEvent /gu) || []).length, 2);
+    }
+    assert.deepEqual(calls.map(call => call.action), ['RequestAccess', 'InjectRCKey', 'InjectRCKey']);
 });
 
 test('detail resolution uses its returned locator without altering it or substituting the list locator', async t => {
@@ -120,15 +138,93 @@ test('media details are scoped to the matching action and allow the older docume
     `<m:MediaItem><m:uuid>wrong-header-uuid</m:uuid><m:Locator>${LIST_LOCATOR}</m:Locator></m:MediaItem>`);
     const { client } = harness(t, [xml]);
     assert.deepEqual(parseMediaItem(await client.getMediaItem(UUID), UUID), {
-        locator, mediaItemUuid: '', itemClass: '',
-    }, 'An absent UUID remains absent, and itemInfoClass must not become a media class.');
+        locator, mediaItemUuid: '', itemClass: '', itemInfoClass: '99',
+    }, 'An absent UUID remains absent, and numeric itemInfoClass must not become a media class.');
 });
 
 test('actual itemClass fields are metadata even when they contradict the requested radio service', () => {
     for (const classXml of ['<ItemClass>video</ItemClass>', '<itemClass>class.videoItem</itemClass>']) {
         const response = parseResponse(reply('GetMediaItem', detail(`<uuid>${UUID}</uuid>`
             + `<Locator>${DETAIL_LOCATOR}</Locator>${classXml}`)));
-        assert.match(parseMediaItem(response, UUID).itemClass, /video/);
+        assert.equal(parseMediaItem(response, UUID).itemClass, 'video');
+    }
+});
+
+test('SL420 detail classes are recognized while the returned broadcast locator is preserved', async t => {
+    const locator = 'channel://210:ch-radio-fixture:sl-list-fixture';
+    const samples = [['object.item.audioItem', 'audio'], ['object.item.videoItem', 'video']];
+    const responses = samples.map(([itemInfoClass]) => reply('GetMediaItem',
+        '<m:fcid/><m:ClientId>radio-fixture</m:ClientId><m:ResultItem>'
+        + `<m:MediaItem itemInfoClass="${itemInfoClass}">`
+        + `<m:uuid>${UUID}</m:uuid><m:AncestorUuid>sl-list-fixture</m:AncestorUuid>`
+        + `<m:Locator>${locator}</m:Locator><m:Caption>210</m:Caption></m:MediaItem>`
+        + '<m:MediaInformation><m:ThumbnailURL>http://tv.example/thumbnail</m:ThumbnailURL>'
+        + '<m:ShortInfo>sunshine live</m:ShortInfo><m:Attributes>131144</m:Attributes>'
+        + '<m:StreamingUrl>http://tv.example/stream</m:StreamingUrl>'
+        + '<m:OriginalStreamingUrl/></m:MediaInformation></m:ResultItem>'));
+    const { client } = harness(t, responses);
+    for (const [itemInfoClass, itemClass] of samples) {
+        const response = await client.getMediaItem(UUID);
+        assert.deepEqual(parseMediaItem(response, UUID), {
+            locator, mediaItemUuid: UUID, itemClass, itemInfoClass,
+        });
+    }
+});
+
+test('only known itemInfoClass values classify a sender and unrelated metadata remains unclassified', () => {
+    for (const itemInfoClass of ['7', '99', '', 'unknown', 'object.item.audioItem.future', 'object.item.video']) {
+        const response = parseResponse(reply('GetMediaItem', detail(undefined, ` itemInfoClass="${itemInfoClass}"`)));
+        assert.deepEqual(parseMediaItem(response, UUID), {
+            locator: DETAIL_LOCATOR, mediaItemUuid: UUID, itemClass: '', itemInfoClass,
+        });
+    }
+    for (const [itemClass, itemInfoClass, expectedClass] of [
+        ['audio', 'object.item.audioItem', 'audio'],
+        ['class.videoItem', 'object.item.videoItem', 'video'],
+        ['audio', '99', 'audio'],
+        ['customClass', '99', 'customClass'],
+        ['customClass', 'object.item.audioItem', 'audio'],
+    ]) {
+        const response = parseResponse(reply('GetMediaItem', detail(undefined,
+            ` itemClass="${itemClass}" itemInfoClass="${itemInfoClass}"`)));
+        assert.deepEqual(parseMediaItem(response, UUID), {
+            locator: DETAIL_LOCATOR, mediaItemUuid: UUID, itemClass: expectedClass, itemInfoClass,
+        });
+    }
+    const response = parseResponse(reply('GetMediaItem', detail(undefined, ' m:itemInfoClass=" object.item.audioItem "')));
+    assert.deepEqual(parseMediaItem(response, UUID), {
+        locator: DETAIL_LOCATOR, mediaItemUuid: UUID, itemClass: 'audio', itemInfoClass: ' object.item.audioItem ',
+    }, 'Namespace stripping must preserve the original info class text for diagnostics.');
+    const sibling = parseResponse(reply('GetMediaItem', '<ResultItem><MediaItem>'
+        + `<uuid>${UUID}</uuid><Locator>${DETAIL_LOCATOR}</Locator></MediaItem>`
+        + '<MediaInformation itemInfoClass="object.item.audioItem"><ItemClass>audio</ItemClass></MediaInformation></ResultItem>'));
+    assert.equal(parseMediaItem(sibling, UUID).itemClass, '', 'Only direct MediaItem classification applies to the sender.');
+});
+
+test('contradictory or ambiguous detail classifications are rejected', () => {
+    for (const [itemClass, itemInfoClass] of [
+        ['audio', 'object.item.videoItem'], ['video', 'object.item.audioItem'],
+        ['class.audioItem', 'object.item.videoItem'], ['object.item.videoItem', 'object.item.audioItem'],
+    ]) {
+        const response = parseResponse(reply('GetMediaItem', detail(undefined,
+            ` itemClass="${itemClass}" itemInfoClass="${itemInfoClass}"`)));
+        assert.throws(() => parseMediaItem(response, UUID), { code: 'INVALID_RESPONSE', action: 'GetMediaItem' });
+    }
+    for (const inner of [
+        '<itemInfoClass>object.item.audioItem</itemInfoClass>',
+        '<ItemInfoClass>object.item.videoItem</ItemInfoClass>',
+    ]) {
+        const response = parseResponse(reply('GetMediaItem', detail(`<uuid>${UUID}</uuid><Locator>${DETAIL_LOCATOR}</Locator>${inner}`,
+            ' itemInfoClass="object.item.audioItem"')));
+        assert.throws(() => parseMediaItem(response, UUID), { code: 'INVALID_RESPONSE', action: 'GetMediaItem' });
+    }
+    for (const inner of [
+        '<itemInfoClass><value>object.item.audioItem</value></itemInfoClass>',
+        '<itemInfoClass>audio</itemInfoClass><itemInfoClass>audio</itemInfoClass>',
+        `<itemInfoClass>${'x'.repeat(129)}</itemInfoClass>`,
+    ]) {
+        const response = parseResponse(reply('GetMediaItem', detail(`<uuid>${UUID}</uuid><Locator>${DETAIL_LOCATOR}</Locator>${inner}`)));
+        assert.throws(() => parseMediaItem(response, UUID), { code: 'INVALID_RESPONSE', action: 'GetMediaItem' });
     }
 });
 
@@ -233,6 +329,11 @@ test('playback parses direct fields and does not infer a selected radio station 
     const nested = parseCurrentPlayback(parseResponse(reply('GetCurrentPlayback', '<Mode>radio</Mode>'
         + `<Other><Locator>${LIST_LOCATOR}</Locator><MediaItemUuid>${UUID}</MediaItemUuid></Other>`)));
     assert.deepEqual(nested, { mode: 'radio', locator: '', mediaItemUuid: '' });
+    const placeholderUuid = 'chl0:00-00000000ffff00000000';
+    const pending = parseCurrentPlayback(parseResponse(reply('GetCurrentPlayback', '<Mode>tv</Mode>'
+        + `<Locator>${LIST_LOCATOR}</Locator><MediaItemUuid>${placeholderUuid}</MediaItemUuid>`)));
+    assert.deepEqual(pending, { mode: 'tv', locator: LIST_LOCATOR, mediaItemUuid: placeholderUuid },
+        'Preserve the reported placeholder; only the caller decides whether it confirms a sender.');
 });
 
 test('playback rejects ambiguous fields and SOAP response elements', () => {

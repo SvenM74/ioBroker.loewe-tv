@@ -1,6 +1,6 @@
 # Loewe TV für ioBroker
 
-Version **0.1.5** steuert einen Loewe-Fernseher über ioBroker-Datenpunkte. Du kannst die Fernbedienungstasten auslösen, Lautstärke und Stummschaltung setzen, Text eingeben, Senderlisten automatisch aktualisieren, einzelne Sender über eigene Taster anwählen und Wake-on-LAN auslösen. TV-Sendertaster mit Namens-IDs funktionieren nach einem kurzen Test am unten genannten SL420. Für die dort bisher erfolglose Radioauswahl löst diese Version die Dienstkennung vor dem Umschalten über `GetMediaItem` auf und speichert den Ablauf in `channels.lastSelection`. Der Gerätetest dieses Radioablaufs steht noch aus.
+Version **0.1.6** steuert einen Loewe-Fernseher über ioBroker-Datenpunkte. Du kannst die Fernbedienungstasten auslösen, Lautstärke und Stummschaltung setzen, Text eingeben, Senderlisten automatisch aktualisieren, einzelne Sender über eigene Taster anwählen und Wake-on-LAN auslösen. TV-Sendertaster mit Namens-IDs funktionieren nach einem kurzen Test am unten genannten SL420. Für die dort weiterhin erfolglose Radioauswahl prüft diese Version zuerst den Wiedergabemodus und aktiviert bei Bedarf gezielt den Radiomodus, bevor sie den Sender anwählt. Anschließend prüft sie zeitversetzt die Wiedergabe und hält den Ablauf in `channels.lastSelection` fest. **Ein erfolgreicher Gerätetest dieses neuen Radioablaufs steht noch aus.**
 
 Die Senderordner verwenden weiterhin den Sendernamen als ID, beispielsweise `channels.tv.Das_Erste_HD`. Ihr angezeigter Name ist der aktuelle Programmplatz, ihre Beschreibung der Sendername. Beim Umsortieren bleiben die Senderpfade gleich.
 
@@ -17,10 +17,10 @@ Die Grundlage ist die aus der Android-App **Loewe App 1.4.7** extrahierte Netzwe
 | EPG-Tasten | `remote.epg` (15) und `remote.epg_alt` (78) öffnen dieselbe Anzeige am TV. Das ist noch kein Abruf von EPG-Daten. |
 | Senderabfrage | Eine echte `GetChannelListResponse` für **ASTRA LCN** liegt vor. Der TV meldet 372 Listeneinträge mit TV- und Radiosendern. Die ersten drei TV-Programme stimmen nach Prüfung des Nutzers mit seiner Konfiguration überein. |
 | Senderordner und TV-Auswahl | Der Nutzer hat die Anlage der Senderordner, den ersten 0.1.4-Stand mit numerischen IDs und anschließend die TV-Auswahl des überarbeiteten 0.1.4-Stands mit Namens-IDs bestätigt. Nach einem kurzen Test funktionieren die TV-Channels fehlerfrei. |
-| Radio-Auswahl | Die Radio-Channels funktionieren laut derselben Rückmeldung in 0.1.4 nicht. Version 0.1.5 ergänzt den aus der App nachvollzogenen Auflösungsschritt und genauere Rückmeldungen. Eine echte Radioantwort von `GetMediaItem` und ein erfolgreicher Gerätetest dieses Ablaufs liegen noch nicht vor. |
+| Radio-Auswahl | Auch 0.1.5 schaltet laut Nutzer nicht auf Radio um. Bei sunshine live bestätigt die echte Detailantwort einen Audioeintrag und liefert denselben Locator wie die Senderliste. `ZapToMedia` meldet `Result=0`; die unmittelbar folgende Abfrage zeigt jedoch weiter TV mit ZDF. Version 0.1.6 ergänzt den gezielten Moduswechsel und zeitversetzte Prüfungen. Deren Wirkung am Gerät ist noch unbestätigt. |
 | Einschalten | Im bisher installierten Stand nicht erfolgreich, obwohl das Einschalten über LAN am TV aktiviert ist. |
 
-**Senderabruf, Senderordner und die TV-Auswahl mit Namens-IDs sind damit am SL420 grundsätzlich nachgewiesen.** Die Zahl 372 umfasst TV- und Radioeinträge sowie mehrere Programmplätze desselben Dienstes und bezeichnet nicht 372 verschiedene TV-Sender. Der kurze TV-Test bestätigt weder alle Sender noch das Umsortieren, sämtliche Migrationsfälle oder den neuen Radioablauf. Auch für den Einschaltablauf aus Wake-on-LAN plus gezieltem `TV_ON`-Befehl fehlt weiterhin eine Erfolgsmeldung. Die frühere Rückmeldung zu den Fernbedienungstasten schließt den in 0.1.2 hinzugefügten Datenpunkt `remote.power_on` nicht ein. Sie ist auch keine Zusage für andere Modelle oder Firmwarestände.
+**Senderabruf, Senderordner und die TV-Auswahl mit Namens-IDs sind damit am SL420 grundsätzlich nachgewiesen.** Die Zahl 372 umfasst TV- und Radioeinträge sowie mehrere Programmplätze desselben Dienstes und bezeichnet nicht 372 verschiedene TV-Sender. Der kurze TV-Test bestätigt weder alle Sender noch das Umsortieren, sämtliche Migrationsfälle oder den neuen Radioablauf. Auch für den Einschaltablauf aus Wake-on-LAN plus gezieltem `TV_ON`-Befehl fehlt weiterhin eine Erfolgsmeldung. Die frühere Rückmeldung zu den Fernbedienungstasten schließt `remote.power_on` aus 0.1.2 und die beiden neuen Modustasten aus 0.1.6 nicht ein. Sie ist auch keine Zusage für andere Modelle oder Firmwarestände.
 
 Die ergänzende [Loewe Remote API 1.0.47](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf) dokumentiert die Senderlisten, das Netzwerkaufwecken und einen lokalen EPG-Zugriff. Diese Herstellerangaben ergänzen die App-Analyse; die jeweilige Wirkung wird weiterhin am Gerät geprüft. Der Adapter wird als lokale Paketdatei installiert und ist nicht im ioBroker-Adapterkatalog oder auf npm veröffentlicht.
 
@@ -28,7 +28,7 @@ Die ergänzende [Loewe Remote API 1.0.47](https://cdn.loewe.tv/manuals/de/plus/R
 
 Der geplante Ausbau soll ioBroker ermöglichen, Programmdaten auszuwerten, passende Sendungen zu erkennen und dafür im Voraus Aufnahmetimer im Loewe-TV anzulegen. Regeln, beispielsweise für bestimmte Titel, Sender und Zeiträume, werden in ioBroker gesteuert. Der Adapter soll die Sender- und EPG-Daten bereitstellen, Aufnahmeaufträge übertragen und anhand der TV-Timerliste bestätigen.
 
-Diese Automatik ist in 0.1.5 noch nicht umgesetzt. Jedes neue Senderobjekt enthält bereits einen `epg`-Unterordner mit dem Status `notImplemented`. Die [Roadmap für EPG und automatische Aufnahmen](docs/ROADMAP.md) beschreibt die vorhandenen Schnittstellen, die geplanten Datenpunkte direkt am Sender und die noch erforderlichen Gerätetests.
+Diese Automatik ist in 0.1.6 noch nicht umgesetzt. Jedes neue Senderobjekt enthält bereits einen `epg`-Unterordner mit dem Status `notImplemented`. Die [Roadmap für EPG und automatische Aufnahmen](docs/ROADMAP.md) beschreibt die vorhandenen Schnittstellen, die geplanten Datenpunkte direkt am Sender und die noch erforderlichen Gerätetests.
 
 ## Voraussetzungen
 
@@ -42,7 +42,7 @@ Der laufende Adapter arbeitet lokal. Für die Installation kann ioBroker benöti
 
 ## Installationspaket aus dem Quellcode erzeugen
 
-Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Ein fertiges `.tgz`-Paket ist dort derzeit nicht als Release hinterlegt. Du kannst es mit den folgenden Schritten selbst erzeugen. Wenn du `iobroker.loewe-tv-0.1.5.tgz` bereits erhalten hast, kannst du diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung verwenden.
+Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Ein fertiges `.tgz`-Paket ist dort derzeit nicht als Release hinterlegt. Du kannst es mit den folgenden Schritten selbst erzeugen. Wenn du `iobroker.loewe-tv-0.1.6.tgz` bereits erhalten hast, kannst du diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung verwenden.
 
 Zum Erzeugen des Pakets brauchst du Git und Node.js ab 22. Öffne ein Terminal in einem eigenen Arbeitsverzeichnis und führe aus:
 
@@ -54,22 +54,22 @@ npm test
 npm pack
 ```
 
-`npm pack` erzeugt im Projektverzeichnis die Datei **`iobroker.loewe-tv-0.1.5.tgz`**. Die Entwicklungsbefehle gehören in diese Projektkopie, nicht in das produktive ioBroker-Hauptverzeichnis. Kopiere anschließend die erzeugte Paketdatei auf den ioBroker-Rechner und verwende die passende Anleitung unten.
+`npm pack` erzeugt im Projektverzeichnis die Datei **`iobroker.loewe-tv-0.1.6.tgz`**. Die Entwicklungsbefehle gehören in diese Projektkopie, nicht in das produktive ioBroker-Hauptverzeichnis. Kopiere anschließend die erzeugte Paketdatei auf den ioBroker-Rechner und verwende die passende Anleitung unten.
 
-## Update auf 0.1.5
+## Update auf 0.1.6
 
-Die vorhandene Instanz weiterverwenden. Erzeuge das Paket aus dem aktuellen Quellcode wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende das bereitgestellte Archiv **`iobroker.loewe-tv-0.1.5.tgz`**. Kopiere es auf den ioBroker-Rechner, beispielsweise nach `/tmp`. Führe dort diese Befehle in der angegebenen Reihenfolge aus:
+Die vorhandene Instanz weiterverwenden. Erzeuge das Paket aus dem aktuellen Quellcode wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende das bereitgestellte Archiv **`iobroker.loewe-tv-0.1.6.tgz`**. Kopiere es auf den ioBroker-Rechner, beispielsweise nach `/tmp`. Führe dort diese Befehle in der angegebenen Reihenfolge aus:
 
 ```bash
 iobroker stop loewe-tv.0
 iobroker compact loewe-tv.0 disable
-iobroker url /tmp/iobroker.loewe-tv-0.1.5.tgz loewe-tv
+iobroker url /tmp/iobroker.loewe-tv-0.1.6.tgz loewe-tv
 iobroker start loewe-tv.0
 ```
 
-Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Ab Version 0.1.1 läuft der Adapter in einem eigenen Prozess; das gilt auch für 0.1.5. Die Umstellung erfolgt vor dem Paketupdate, damit sie auch bei einer vorhandenen Instanz wirksam wird. Die Syntax ist in der [offiziellen ioBroker-CLI-Dokumentation](https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/config/cli.md) beschrieben. Die bisherige Konfiguration und eine eingetragene Senderlistenkennung bleiben erhalten.
+Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Ab Version 0.1.1 läuft der Adapter in einem eigenen Prozess; das gilt auch für 0.1.6. Die Umstellung erfolgt vor dem Paketupdate, damit sie auch bei einer vorhandenen Instanz wirksam wird. Die Syntax ist in der [offiziellen ioBroker-CLI-Dokumentation](https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/config/cli.md) beschrieben. Die bisherige Konfiguration und eine eingetragene Senderlistenkennung bleiben erhalten.
 
-**Beim Update vom 0.1.4-Stand mit Namens-IDs bleiben die Senderpfade erhalten.** Nur beim Wechsel von älteren Hash- oder Nummernordnern ändern sich die IDs einmalig: Aus `channels.tv.service_<Hash>` aus 0.1.3 oder `channels.tv.1` aus dem ersten 0.1.4-Stand werden Ordner wie `channels.tv.Das_Erste_HD`. Passe vorhandene Skripte, Aliase und Visualisierungen an, wenn sie noch auf diese alten IDs verweisen. Anschließend bleibt der Pfad beim Umsortieren erhalten: Verschiebst du Das Erste HD am TV von Platz 1 auf Platz 7, verwendet `channels.tv.Das_Erste_HD.select` nach dem Abgleich dessen neuen Programmplatz. Eine tatsächliche Änderung des Sendernamens führt dagegen zu einer neuen Namens-ID.
+**Beim Update von 0.1.5 oder vom 0.1.4-Stand mit Namens-IDs bleiben die Senderpfade erhalten.** Nur beim Wechsel von älteren Hash- oder Nummernordnern ändern sich die IDs einmalig: Aus `channels.tv.service_<Hash>` aus 0.1.3 oder `channels.tv.1` aus dem ersten 0.1.4-Stand werden Ordner wie `channels.tv.Das_Erste_HD`. Passe vorhandene Skripte, Aliase und Visualisierungen an, wenn sie noch auf diese alten IDs verweisen. Anschließend bleibt der Pfad beim Umsortieren erhalten: Verschiebst du Das Erste HD am TV von Platz 1 auf Platz 7, verwendet `channels.tv.Das_Erste_HD.select` nach dem Abgleich dessen neuen Programmplatz. Eine tatsächliche Änderung des Sendernamens führt dagegen zu einer neuen Namens-ID.
 
 Der Adapter übernimmt vorhandene Kataloge und verwaltete Senderordner aus 0.1.3 sowie aus dem ersten 0.1.4-Stand in die neue Struktur. Mehrere Plätze desselben Dienstes werden in einem Senderordner zusammengefasst; der kleinste gültige Programmplatz ist die bevorzugte Position für Anzeige und Auswahl. Falls noch kein Katalog vorliegt, kann eine gültige alte Antwort aus `channels.items` verwendet werden. Diese Wiederherstellung arbeitet mit den vorhandenen Daten; zusätzlich ist die automatische Senderaktualisierung standardmäßig aktiv. Normale alte Hash- oder Nummernordner werden nach erfolgreicher Anlage des Ersatzes entfernt. Benutzerdefinierte Unterobjekte, `common.custom` und Löschschutz bleiben erhalten; betroffene Altordner bleiben deaktiviert bestehen.
 
@@ -79,12 +79,12 @@ Wenn du zugleich das bisher erfolglose Einschalten prüfen möchtest, beschreibt
 
 ## Erstinstallation aus der Paketdatei
 
-1. Erzeuge **`iobroker.loewe-tv-0.1.5.tgz`** wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Die Datei nicht entpacken.
-2. Kopiere sie auf den Rechner, auf dem ioBroker läuft, beispielsweise nach `/tmp/iobroker.loewe-tv-0.1.5.tgz`.
+1. Erzeuge **`iobroker.loewe-tv-0.1.6.tgz`** wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Die Datei nicht entpacken.
+2. Kopiere sie auf den Rechner, auf dem ioBroker läuft, beispielsweise nach `/tmp/iobroker.loewe-tv-0.1.6.tgz`.
 3. Öffne dort ein Terminal oder eine SSH-Verbindung und führe aus:
 
 ```bash
-iobroker url /tmp/iobroker.loewe-tv-0.1.5.tgz loewe-tv
+iobroker url /tmp/iobroker.loewe-tv-0.1.6.tgz loewe-tv
 ```
 
 4. Lege beim ersten Installieren eine Instanz an:
@@ -211,6 +211,8 @@ Alle folgenden Datenpunkte sind Taster. Der normale Tastendruck enthält Drücke
 | `mute` | Stummschaltung umschalten | 13 |
 | `power_off` | Bisherige Ein-/Ausschalttaste; laut API ein Umschaltbefehl | 12 |
 | `power_on` | Erreichbaren TV gezielt einschalten, ohne Wake-on-LAN | 22 |
+| `tv_mode_on` | Gezielt in den TV-Modus wechseln | 72 |
+| `radio_mode_on` | Gezielt in den Radiomodus wechseln | 73 |
 | `red` | Rot | 27 |
 | `green` | Grün | 26 |
 | `yellow` | Gelb | 43 |
@@ -234,6 +236,8 @@ Alle folgenden Datenpunkte sind Taster. Der normale Tastendruck enthält Drücke
 | `digit_9` | Ziffer 9 | 9 |
 
 Die sechs Wiedergabetasten von `rewind` bis `stop` verwenden das Tastenalphabet `l2700-hdr`. Die übrigen Tasten verwenden `l2700`. Du musst das bei den Datenpunkten nicht selbst einstellen.
+
+Die neuen Tasten `remote.radio_mode_on` und `remote.tv_mode_on` folgen der [Loewe Remote API 1.0.47, Abschnitt 9.4.1.1, Seite 25](https://cdn.loewe.tv/manuals/en/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf). Sie senden jeweils einen Tastendruck einschließlich Loslassen. Diese einzelnen Modustasten wählen keinen bestimmten Sender aus; dafür gibt es die `select`-Taster am Sender. Eine erfolgreiche Übertragung der Taste bestätigt noch nicht den am Gerät erreichten Modus.
 
 `remote.power_all_code` wird nur an den Fernseher dieser Instanz gesendet. Der Name stammt aus der App und bleibt für vorhandene Skripte erhalten. Die [Remote API 1.0.47](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf) unterscheidet den Umschaltbefehl 12 von `TV_ON` (22) und dem gezielten Ausschaltbefehl 25. **Ab 0.1.2 verwendet `control.powerOff` den Code 25.** `remote.power_off` behält den bisherigen Code 12. Zum Aufwecken aus dem Standby `control.powerOn` verwenden; `remote.power_on` sendet allein die Taste 22 über die bereits erreichbare Steuerschnittstelle.
 
@@ -277,7 +281,7 @@ setState('loewe-tv.0.remote.digit_1', true, false);
 | `channels.nextListStart` | Zahl, lesen | Startindex der nächsten Senderlistenseite. `-1`, wenn keine weitere Seite ermittelt wurde. |
 | `channels.lastUpdate` | Zeitstempel, lesen | Letzte erfolgreiche manuelle Sender- oder Senderlistenabfrage, Unixzeit in Millisekunden. |
 | `channels.lastError` | Text, lesen | Letzter Fehler der manuellen Abfragen; wird nach erfolgreicher Abfrage geleert. |
-| `channels.lastSelection` | JSON-Text, lesen | Diagnose der letzten gestarteten Senderauswahl mit Senderkennung, Listen-Locator, gegebenenfalls aufgelöstem Locator, TV-Antworten, Umschaltergebnis und Fehlern. Bei Radio zusätzlich die einmalige Beobachtung des Wiedergabemodus. |
+| `channels.lastSelection` | JSON-Text, lesen | Diagnose der letzten gestarteten Senderauswahl mit Senderkennung, Kanaladressen, TV-Antworten und Fehlern. Bei Radio zusätzlich der vorherige Modus, ein gegebenenfalls ausgelöster Moduswechsel und die zeitversetzte Prüfung der Wiedergabe. |
 | `channels.lists` | JSON-Text, lesen | Unveränderte Struktur der Senderlistenantwort, auch zur Fehlersuche. |
 | `channels.items` | JSON-Text, lesen | Unveränderte Struktur der Senderantwort der zuletzt manuell abgefragten Seite. |
 
@@ -329,7 +333,7 @@ Während eine neu empfangene Senderantwort in den Bestand übernommen wird, kann
 
 | Datenpunkt im Senderobjekt | Inhalt |
 |---|---|
-| `select` | Taster zum Umschalten. TV verwendet den Listen-Locator der bevorzugten Position; bei Radio wird vorher die Dienstkennung mit `GetMediaItem` aufgelöst. |
+| `select` | Taster zum Umschalten. TV verwendet den Listen-Locator der bevorzugten Position. Radio löst die Dienstkennung mit `GetMediaItem` auf und wartet vor der Senderwahl auf einen bestätigten Radiomodus. |
 | `name` | Sendername. |
 | `number` | Kleinster gültiger Programmplatz dieses Dienstes; seine Textdarstellung ist der angezeigte Ordnername. |
 | `numbers` | JSON-Liste mit den Originalbeschriftungen aller bekannten Programmplätze dieses Dienstes. |
@@ -339,7 +343,7 @@ Während eine neu empfangene Senderantwort in den Bestand übernommen wird, kann
 | `positions` | JSON-Liste mit den zusammengehörenden Werten `caption` und `locator` aller bekannten Positionen. |
 | `listView` | Kennung der zugehörigen Senderliste. |
 | `available` | Ob der Sender im bekannten aktiven Bestand eindeutig zugeordnet und über einen verwendbaren Locator auswählbar ist; kein Empfangs-, Wiedergabe- oder Bildschirmstatus. |
-| `epg.status` | In 0.1.5 fest `notImplemented`: Der Ordner ist für den späteren EPG-Import vorbereitet. |
+| `epg.status` | In 0.1.6 fest `notImplemented`: Der Ordner ist für den späteren EPG-Import vorbereitet. |
 
 Ein Sender kann mehrfach in der TV-Liste stehen. Das Erste HD auf 1, 100 und 1000 ergibt **einen Ordner**: `channels.tv.Das_Erste_HD`. `numbers`, `locators` und `positions` enthalten alle drei Belegungen. `number`, der angezeigte Ordnername und die direkte TV-Auswahl verwenden die kleinste gültige Position, in diesem Beispiel 1. Entfernst du diesen Platz und bleiben 100 und 1000 erhalten, wird nach dem vollständigen Abgleich Platz 100 bevorzugt. Der Ordnerpfad bleibt gleich. Bei Radio bleibt diese Position in den Listenmetadaten erhalten; die Auflösung über `GetMediaItem` kann einen anderen gültigen Locator desselben Dienstes zurückgeben.
 
@@ -347,41 +351,55 @@ Die Programmposition wird aus der gültigen numerischen Beschriftung des Eintrag
 
 **Beim Umsortieren bleibt die Sender-ID erhalten.** Verschiebst du Das Erste HD von Platz 1 auf Platz 7, bleibt `channels.tv.Das_Erste_HD` bestehen. Nach dem vollständigen Abgleich zeigen `number` und der Ordnername den Wert 7; `locator` und der Taster verwenden die neue Position. Das vorhandene Skript mit `channels.tv.Das_Erste_HD.select` steuert weiterhin Das Erste HD. Voraussetzung ist, dass Platz 7 dann die kleinste noch vorhandene Position dieses Dienstes ist. Eine echte Umbenennung am TV ändert dagegen die aus dem Namen gebildete ID. EPG- und Aufnahmeregeln müssen zusätzlich `mediaItemUuid`, Medienart und Listenbezug erhalten, damit gleichnamige Dienste eindeutig zugeordnet bleiben.
 
-#### Radioauswahl in 0.1.5
+#### Radioauswahl in 0.1.6
 
-Die [Loewe Remote API 1.0.47, Abschnitt 9.9.1, Seite 44](https://cdn.loewe.tv/manuals/en/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf) sieht `ZapToMedia` mit einem `channel://…`-Locator sowohl für TV als auch für Radio vor. `Player=0` bezeichnet die Hauptwiedergabe, `Player=1` das Bild im Bild. Die Medienart `audio` gehört laut Abschnitt 9.7.1 zur Senderabfrage; ein zusätzliches Radiofeld für `ZapToMedia` ist dort nicht beschrieben. Aus der bisher erfolglosen Radioauswahl lässt sich deshalb nicht ableiten, dass der Listen-Locator grundsätzlich das falsche Format hat.
+Die echte Diagnose aus 0.1.5 grenzt den Fehler ein: Für **sunshine live** liefert `GetMediaItem` einen Audioeintrag mit `itemInfoClass=object.item.audioItem` und denselben `channel://…`-Locator wie die Senderliste. `ZapToMedia` meldet `Result=0`, obwohl der TV nach Nutzerbeobachtung nicht auf Radio wechselt. Die damalige sofortige Wiedergabeabfrage zeigt weiterhin `Mode=tv` und den vorherigen TV-Sender. Sie wurde bereits nach insgesamt rund 77 Millisekunden gelesen. Eine Annahme des Auftrags genügt damit nicht als Wiedergabebestätigung.
 
-Im tatsächlichen Auswahlablauf von **Löwenbändiger Remote 1.15** wird zuerst die gespeicherte Dienstkennung mit `GetMediaItem` aufgelöst. Anschließend verwendet die App den `m:Locator` aus der Detailantwort für `ZapToMedia` mit `Player=0`. Die beiden extrahierten Anfragevorlagen stehen in [remote115-protocol.json](docs/remote115-protocol.json). **Version 0.1.5 ergänzt diesen Auflösungsschritt für Radiosendertaster.** Die bereits am Gerät funktionierende TV-Auswahl verwendet weiterhin unmittelbar den bekannten Listen-Locator.
+Die [Loewe Remote API 1.0.47](https://cdn.loewe.tv/manuals/en/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf) dokumentiert `RADIO_MODE_ON=73` und `TV_MODE_ON=72` im Tastenalphabet `l2700` (Abschnitt 9.4.1.1, Seite 25). `ZapToMedia` bleibt auch für Radio der dokumentierte Senderbefehl mit `Player=0` für die Hauptwiedergabe und einem `channel://…`-Locator (Abschnitt 9.9.1, Seite 44). Das [Loewe-Benutzerhandbuch für bild-Geräte, Seite 75](https://cdn.loewe.tv/manuals_new/TV_BA/SL3xx_SL4xx/universelles%20Benutzerhandbuch%20f%C3%BCr%20alle%20bild%20Ger%C3%A4te/36960000_UH_bild_universal_3l_DE_180813.pdf) beschreibt bei der Fernbedienung den Einstieg in den DVB-Radiobetrieb vor der Senderauswahl. Diese Quellen und die reale Diagnose begründen den zusätzlichen Modusschritt; sie belegen noch keinen erfolgreichen SOAP-Ablauf auf dieser Firmware.
 
-Der Radioablauf verwendet die `mediaItemUuid` des angeforderten Senders, prüft die aufgelöste Medienreferenz und sendet die vom TV gelieferte Kanaladresse. Ein ausdrücklich von null abweichendes `ZapToMediaResponse.Result` wird als Fehler gemeldet. Eine Antwort ohne `Result` bleibt unbestätigt. Danach erfolgt bei einem nicht ausdrücklich abgelehnten Radioauftrag einmalig `GetCurrentPlayback`, um den gemeldeten Modus festzuhalten. Laut Herstellerabschnitt 9.10 sind die zusätzlichen Felder `Locator` und `MediaItemUuid` nur für TV zugesichert: **`Mode=radio` allein bestätigt den Radiomodus, aber noch nicht den gewünschten Radiosender.**
+Ein Radiosendertaster führt nun folgende Schritte aus:
 
-`channels.lastSelection` hält die angeforderte Senderkennung und Medienart, die ursprüngliche und die aufgelöste Kanaladresse, die zugehörigen TV-Antworten sowie Ergebnis und Fehler zusammen. So lässt sich unterscheiden, ob bereits die Auflösung scheitert, der TV den Umschaltauftrag ablehnt oder die anschließende Wiedergabe nicht bestätigt werden kann. Die TV-Anfragen des Radioablaufs teilen sich ein Zeitbudget von höchstens **15 Sekunden**, bei kürzerem konfiguriertem Antwortzeitlimit höchstens dessen Dreifaches. Jede Einzelanfrage behält zusätzlich ihr eigenes Antwortzeitlimit. Datenbankschritte verwenden weiterhin eigene kurze Zeitlimits; das TV-Anfragebudget ist deshalb keine feste Gesamtdauer einschließlich ioBroker-Schreibvorgängen. Der Adapter sendet keine blinden Umschaltwiederholungen und keine Radio-Modustaste. Die Wartezeiten laufen asynchron.
+1. Die Dienstkennung mit `GetMediaItem` auflösen und den Locator des ausgewählten Audiodienstes prüfen. Dieser Schritt folgt weiterhin dem nachvollzogenen Ablauf von Löwenbändiger Remote 1.15; die [extrahierten Vorlagen](docs/remote115-protocol.json) sind dokumentiert.
+2. Den aktuellen Modus mit `GetCurrentPlayback` lesen. Ist er bereits `radio`, unmittelbar mit der Senderwahl fortfahren. Andernfalls einmal `radio_mode_on` senden und mit weiteren Wiedergabeabfragen auf `Mode=radio` warten.
+3. Erst nach bestätigtem Radiomodus den aufgelösten Locator einmal mit `ZapToMedia`, `Player=0`, senden. Wird der Radiomodus nicht erreicht, endet der Auftrag mit `CHANNEL_SELECTION`; es wird kein Senderauftrag gesendet.
+4. Die Wiedergabe erstmals nach 500 Millisekunden erneut lesen. Weitere Prüfungen erfolgen im Abstand von 500 Millisekunden innerhalb eines begrenzten Beobachtungsfensters. Nur diese Abfragen werden wiederholt, nicht die Modustaste oder der Senderauftrag.
+
+Für das Erreichen des Radiomodus stehen höchstens **6 Sekunden**, für die Beobachtung nach `ZapToMedia` höchstens **3 Sekunden** bereit. Für weitere TV-Anfragen und Wartezeiten gilt eine gemeinsame **15-Sekunden-Frist ab Beginn der Auswahl**; einzelne Anfragen behalten zusätzlich das konfigurierte Antwortzeitlimit. Das verbleibende Budget kann einen späteren Schritt verkürzen. Die Verarbeitung bleibt asynchron. ioBroker-Datenbankoperationen einschließlich der abschließenden Diagnose verwenden eigene Zeitlimits von jeweils zwei Sekunden. Die 15 Sekunden sind deshalb keine absolute Zusage für die Gesamtdauer einschließlich aller Datenbankschritte.
+
+Ein ausdrücklicher Ein-/Ausschaltauftrag, eine der beiden neuen Remote-Modustasten, `media.locator` oder das Stoppen der Instanz bricht eine laufende beziehungsweise noch wartende Radioauswahl ab. Bereits übertragene Gerätebefehle können nicht zurückgenommen werden. Weitere normale Sendertaster und rohe Expertenbefehle werden weiterhin in ihrer Warteschlangenreihenfolge verarbeitet.
+
+Laut Herstellerabschnitt 9.10 sind `Locator` und `MediaItemUuid` bei `GetCurrentPlayback` nur für TV zugesichert. **`Mode=radio` allein bestätigt deshalb weiterhin nur den Modus.** Die in der echten Antwort gelieferte Platzhalterkennung `chl0:00-00000000ffff00000000` zählt nicht als Identität eines Senders; sie bleibt in der Rohantwort zur Diagnose erhalten.
 
 | Feld in `channels.lastSelection` | Bedeutung |
 |---|---|
-| `requested` | Angeforderter Sender mit `id`, `name`, `number`, `itemClass`, `mediaItemUuid` und `listView`. |
-| `listLocator`, `resolvedLocator`, `locatorSource` | Ursprüngliche Kanaladresse, tatsächlich zum Umschalten verwendete Adresse und deren Quelle. Bei Radio ist die Quelle nach erfolgreicher Auflösung `GetMediaItem`. |
-| `status`, `phase` | `running` während der Verarbeitung; `accepted` bei `Result=0`; `unconfirmed` ohne Ergebnis; `error` bei einem Fehler. `phase` nennt den erreichten Schritt. |
-| `result` | Vom TV gemeldeter numerischer Umschaltwert; `null`, solange keiner vorliegt oder kein Ergebnis geliefert wurde. |
-| `verification`, `stationConfirmed` | Ergebnis der einmaligen Radio-Beobachtung. `radioModeOnly` bestätigt nur den Modus; `station` mit `stationConfirmed=true` zusätzlich eine passende zurückgemeldete Kennung oder Kanaladresse. |
-| `getMediaItemResponse`, `zapResponse`, `playbackResponse` | Die zugehörigen TV-Antworten, soweit der jeweilige Schritt ausgeführt wurde. Ihre gespeicherte Größe ist begrenzt. |
-| `playback`, `error`, `playbackError` | Aufbereitete Wiedergabeangaben und gegebenenfalls Fehler. Ein Fehler der nachgelagerten Beobachtung beweist nicht, dass der Umschaltbefehl fehlgeschlagen ist. |
-| `startedAt`, `finishedAt` | Beginn und Ende der Verarbeitung als Unixzeit in Millisekunden. Damit lässt sich die Diagnose einem konkreten Versuch zuordnen. |
+| `requested` | Angeforderter Sender mit `id`, `name`, `number`, `itemClass`, `mediaItemUuid` und `listView`. Die aufbereitete Medienart eines Radioeintrags ist `audio`. |
+| `detail` | Aufbereitete Senderdetails aus `GetMediaItem`, einschließlich `itemClass` und originalem `itemInfoClass`. |
+| `listLocator`, `resolvedLocator`, `locatorSource` | Ursprüngliche Kanaladresse, aufgelöste Kanaladresse und deren Quelle. Bei Radio ist die Quelle nach erfolgreicher Auflösung `GetMediaItem`. |
+| `playbackBefore` | Aufbereitete Wiedergabe vor einem möglichen Moduswechsel. |
+| `modeSwitch` | Ob die Modustaste gesendet wurde (`attempted`), welche Taste vorgesehen ist (`key`), ob der Radiomodus bestätigt wurde (`confirmed`) und die zeitlich zugeordneten Beobachtungen in `observations`. |
+| `status`, `phase`, `result` | Verarbeitungsergebnis, erreichter Schritt und numerisches `ZapToMedia`-Ergebnis. `result=null` bedeutet, dass kein auswertbares Ergebnis vorliegt. |
+| `verification`, `stationConfirmed` | Aussage der Wiedergabeprüfung. `radioModeOnly` bestätigt nur den Modus; `station` mit `stationConfirmed=true` zusätzlich eine passende Dienstkennung oder Kanaladresse. |
+| `getMediaItemResponse`, `playbackBeforeResponse`, `zapResponse`, `playbackResponse` | Größenbegrenzt gespeicherte Antworten der ausgeführten Schritte. |
+| `playbackObservations`, `playbackUuidIgnored` | Zeitlich zugeordnete Beobachtungen nach der Senderwahl und Angabe, ob die zuletzt gelieferte Dienstkennung als Platzhalter ignoriert wurde. |
+| `playback`, `error`, `playbackError` | Zuletzt nach der Senderwahl beobachtete Wiedergabe und gegebenenfalls Ablauf- oder Beobachtungsfehler. |
+| `startedAt`, `finishedAt` | Beginn und Ende der Verarbeitung als Unixzeit in Millisekunden. |
 
-Die Beobachtung erfolgt unmittelbar nach dem Umschaltauftrag. `differentMode` oder `differentStation` beschreibt daher die zu diesem Zeitpunkt gelesene Wiedergabe; der TV kann noch mit dem Wechsel beschäftigt sein. `unknown`, `readFailed` oder `notChecked` liefern keine Bestätigung. Auch `status=accepted` bezeichnet die Annahme des Befehls und ersetzt keine bestätigte Senderkennung oder die Kontrolle am Fernseher.
+Bei Radio bedeutet `status=confirmed`, dass die Wiedergabeprüfung den gewünschten Sender bestätigt hat. `accepted` steht für `Result=0` mit bestätigtem Radiomodus, aber ohne genaue Senderidentität. `unconfirmed` kennzeichnet eine ausbleibende Wiedergabebestätigung; `error` einen Ablauf- oder ausdrücklich gemeldeten Befehlsfehler. Während der Verarbeitung gilt `running`. Ein vom TV ausdrücklich von null abweichendes `ZapToMediaResponse.Result` wird als Fehler behandelt. `differentMode` oder `differentStation` beschreibt die beobachtete Abweichung; `unknown`, `readFailed` und `notChecked` bestätigen keine Wiedergabe. Auch eine erfolglose zeitversetzte Beobachtung beweist nicht, dass der TV nie mehr umschalten wird.
 
 #### Radioauswahl prüfen
 
-1. Version **0.1.5** installieren und die vorhandene Instanz starten. Den Fernseher einschalten. Bei Bedarf `channels.refresh=true` auslösen und warten, bis `channels.catalogStatus=ready` steht.
-2. Zunächst einen TV-Sender wiedergeben. Einen am TV funktionierenden Radiosender auswählen, beispielsweise mit dem unten gezeigten Taster für Bayern 1, sofern dieser Sender im eigenen Bestand vorhanden ist.
-3. Am Fernseher prüfen, ob tatsächlich der gewünschte Radiosender läuft. Danach `channels.lastSelection` lesen; der zurückgesetzte Taster allein ist keine Wiedergabebestätigung.
-4. Den Versuch einmal aus dem bereits aktiven Radiomodus wiederholen. Falls Radio weiter nicht umschaltet, die Diagnose direkt nach dem fehlgeschlagenen Versuch sichern und zusammen mit der Ausgangssituation melden. Der nächste Sendertaster ersetzt die letzte Diagnose.
+1. Version **0.1.6** installieren und die vorhandene Instanz starten. Den Fernseher einschalten und zunächst einen TV-Sender wiedergeben. Bei Bedarf `channels.refresh=true` auslösen und auf `channels.catalogStatus=ready` warten.
+2. Den Radiosendertaster für **sunshine live** einmal auslösen, sofern dieser Sender im eigenen Bestand vorhanden ist:
 
 ```javascript
-setState('loewe-tv.0.channels.radio.Bayern_1.select', true, false);
+setState('loewe-tv.0.channels.radio.sunshine_live.select', true, false);
 ```
 
-Für einen Fehlerbericht genügt zunächst der vollständige Wert von **`channels.lastSelection`** nach dem betreffenden Versuch. Bleibt `startedAt` unverändert, wurde die Auswahl möglicherweise schon vor ihrem Start abgewiesen; dann zusätzlich `info.lastError` lesen. Die gesamte Senderliste muss dafür nicht erneut kopiert werden. Die neue Auflösung ist anhand von App und Herstellerdokumentation nachvollziehbar; eine erfolgreiche Radioauswahl auf dem SL420 ist erst mit diesem Gerätetest bestätigt.
+3. Den Ablauf abschließen lassen und am Fernseher prüfen, ob sunshine live tatsächlich zu hören ist. Danach **`channels.lastSelection`** lesen. Der zurückgesetzte Taster allein bestätigt keine Wiedergabe.
+
+Falls es weiterhin nicht funktioniert, genügt zunächst dieser Diagnosewert mit der Angabe, welcher Modus vor dem Versuch aktiv war. Er enthält auch die Modusprüfung und den Senderauftrag. Bleibt `startedAt` unverändert, zusätzlich `info.lastError` lesen, da der Auftrag schon vor seinem Start abgewiesen worden sein kann. Die gesamte Senderliste muss nicht erneut kopiert werden.
+
+Als optionaler getrennter Diagnoseschritt lässt sich anschließend `remote.radio_mode_on=true` auslösen. Nach etwa zwei Sekunden `control.refresh=true` senden und `status.playback` sowie die sichtbare beziehungsweise hörbare Reaktion am Gerät prüfen. Das zeigt, ob bereits die einzelne dokumentierte Modustaste angenommen wird. Die abgeschlossene `channels.lastSelection` des vorherigen Senderversuchs bleibt dafür erhalten. Der Erfolg des neuen Radioablaufs am SL420 ist erst durch den Gerätetest bestätigt.
 
 #### Gespeicherter Senderbestand und Aktualisierung
 
@@ -615,12 +633,12 @@ Die zweite App Löwenbändiger Remote 1.15 lieferte keinen nachgewiesenen WOL-Ab
 | `info.wakeReady` ist `false` | Die passende TV-MAC-Adresse manuell konfigurieren oder bei eingeschaltetem TV `control.refresh` auslösen. Bei `pollInterval=0` wird die MAC-Adresse beim Start nicht automatisch abgefragt. |
 | `info.wakeReady` ist `true`, aber der TV startet nicht | Den aktuellen Eintrag in `info.lastWakeOnLan` und den Ablauf in `info.powerOn` prüfen. Nach dem Ausschalten mindestens 30 Sekunden warten. `powerKeySent` bestätigt nur die Antwort auf den Einschaltbefehl, kein Bild. |
 | Ein Einschaltversuch aktualisiert `info.lastWakeOnLan` nicht | `info.lastError` lesen und prüfen, ob `control.powerOn` mit `true` und `ack: false` geschrieben wurde. Eine frühere Versandmeldung ist kein Nachweis für den aktuellen Versuch. |
-| ioBroker wird nach dem Aktivieren der bisherigen Version träge | `loewe-tv.0` stoppen und die Updateanleitung auf 0.1.5 einschließlich der instanzbezogenen Compact-Umstellung ausführen. Für die anschließende Prüfung `pollInterval` und `channelRefreshInterval` auf 0 setzen. |
+| ioBroker wird nach dem Aktivieren der bisherigen Version träge | `loewe-tv.0` stoppen und die Updateanleitung auf 0.1.6 einschließlich der instanzbezogenen Compact-Umstellung ausführen. Für die anschließende Prüfung `pollInterval` und `channelRefreshInterval` auf 0 setzen. |
 | Senderabfrage scheitert | `channels.lastError`, `channels.lists` und `channels.items` prüfen. Für einen Komplettabruf `channels.refreshError` prüfen. Zum erneuten automatischen Auswählen `channels.view` leeren und `channels.refresh` auslösen; alternativ eine Kennung aus `channels.availableLists` setzen. Bei Synchronisierung später wiederholen. |
 | Sender wurden empfangen, unter `channels.tv` oder `channels.radio` fehlen noch Objekte | `channels.catalogStatus` prüfen und bei `updating` die Hintergrundaufbereitung abwarten. Bei `error` steht die Ursache in `channels.catalogError`; danach die passende Senderliste erneut abfragen. |
 | Ein Sendertaster meldet `CHANNEL_UNAVAILABLE` | Die Liste dieses Senders erneut abfragen. Bei `available=false` gehört er nicht zum aktiven Bestand oder es fehlt ein verwendbarer Locator. Nach Änderungen während der Wartezeit den Sender erneut auswählen. |
-| TV-Sendertaster funktionieren, Radio schaltet nicht um | Version 0.1.5 installieren und [Radioauswahl prüfen](#radioauswahl-prüfen). Direkt nach dem Versuch `channels.lastSelection` lesen. Die Diagnose enthält die Auflösung über `GetMediaItem`, den Umschaltauftrag und die einmalige Beobachtung der Wiedergabe. |
-| Der Sendertaster ist wieder `false`, aber der Sender läuft nicht | Das Rücksetzen bestätigt nur die Verarbeitung des Tasters. `channels.lastSelection` auf TV-Ergebnis, Auflösungsfehler und Wiedergabebeobachtung prüfen. Ein fehlendes `Result` ist kein bestätigter Erfolg; `Mode=radio` allein bestätigt keinen bestimmten Radiosender. |
+| TV-Sendertaster funktionieren, Radio schaltet nicht um | Version 0.1.6 installieren und [Radioauswahl prüfen](#radioauswahl-prüfen). Nach dem Versuch `channels.lastSelection` lesen. Die Diagnose zeigt die Detailauflösung, den Modus vor der Auswahl, einen gegebenenfalls ausgelösten Moduswechsel und die Wiedergabe nach dem Senderauftrag. |
+| Der Sendertaster ist wieder `false`, aber der Sender läuft nicht | Das Rücksetzen bestätigt nur die Verarbeitung des Tasters. `channels.lastSelection` auf TV-Ergebnis, Auflösungsfehler und Wiedergabebeobachtung prüfen. Ein fehlendes `Result` bestätigt die Befehlsannahme nicht; `Mode=radio` allein bestätigt keinen bestimmten Radiosender. |
 | Texteingabe erscheint nicht | Erst ein passendes Eingabefeld am TV fokussieren. Nicht jede TV-Oberfläche nimmt Tastatureingaben an. |
 | `api` fehlt | Zusätzliche TV-Befehle in der Konfiguration aktivieren, speichern und die Instanz neu starten. |
 | Eine JSON-Antwort enthält `omitted: true` oder API-XML ist leer mit Größenhinweis | Kleinere Sender- oder Archivbereiche abfragen, beispielsweise `channels.count` reduzieren. Der Hinweis beschreibt die ausgelassene Speicherung einer großen Antwort. |
@@ -640,7 +658,7 @@ Diese Änderungen beheben nachgewiesene Schwachstellen der Implementierung. Ohne
 
 Die Netzwerkschnittstelle verwendet `POST /loewe_tablet_0001` mit dem SOAP-Namensraum `urn:loewe.de:RemoteTV:Tablet`. Die Anmeldung erfolgt mit `RequestAccess`; die Antwort liefert die `ClientId` für Folgeanfragen. Die Original-App hängt ein NUL-Byte an den XML-Body an. Der Adapter übernimmt dieses Verhalten standardmäßig.
 
-Die ursprünglichen Tastencodes, Requestvorlagen und die Lautstärkeskalierung stammen aus Loewe App 1.4.7. Die Zifferntasten und der alternative EPG-Code stammen aus Löwenbändiger Remote 1.15. Der neue TV_ON-Code 22 und die ergänzte Bedeutung der Ein-/Ausschaltcodes folgen der Remote API 1.0.47. Die App-Stufe 20 entspricht im Protokoll dem Wert 200000. `SetMute` mit `Value=1` ist im App-Sendepfad nachgewiesen. Das Aufheben mit `Value=0` ist aus dem Antwortparser und der Gegenoperation abgeleitet; die Toggle-Taste `remote.mute` ist separat nachgewiesen.
+Die ursprünglichen Tastencodes, Requestvorlagen und die Lautstärkeskalierung stammen aus Loewe App 1.4.7. Die Zifferntasten und der alternative EPG-Code stammen aus Löwenbändiger Remote 1.15. TV_ON (22), TV_MODE_ON (72), RADIO_MODE_ON (73) und die ergänzte Bedeutung der Ein-/Ausschaltcodes folgen der Remote API 1.0.47. Die App-Stufe 20 entspricht im Protokoll dem Wert 200000. `SetMute` mit `Value=1` ist im App-Sendepfad nachgewiesen. Das Aufheben mit `Value=0` ist aus dem Antwortparser und der Gegenoperation abgeleitet; die Toggle-Taste `remote.mute` ist separat nachgewiesen.
 
 Bei `AddServicesFavoriteList` enthält die extrahierte Originalvorlage einen falschen XML-Endtag. Der Adapter erzeugt für diese Aktion wohlgeformtes XML.
 
@@ -652,9 +670,9 @@ Die universellen API-Datenpunkte erschließen die extrahierten Aktionen. Sie ent
 
 Die Weiterentwicklung findet im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv) statt. Das Abrufen des Quellcodes, die Tests und das Erzeugen des installierbaren `.tgz`-Pakets sind unter [Installationspaket aus dem Quellcode erzeugen](#installationspaket-aus-dem-quellcode-erzeugen) beschrieben.
 
-Die Tests verwenden simulierte TV-Antworten sowie echte HTTP- und UDP-Verbindungen ausschließlich über die lokale Loopback-Schnittstelle. Sie prüfen das Verhalten der Implementierung, ersetzen aber keinen Start in einem tatsächlichen ioBroker-Controller und keinen Modell- und Firmwaretest am realen Fernseher. Die Prüfung des Radioablaufs steht im [Prüfbericht zu 0.1.5](docs/PRUEFBERICHT_0.1.5.md). Die historischen Prüfberichte zu [0.1.4](docs/PRUEFBERICHT_0.1.4.md), [0.1.3](docs/PRUEFBERICHT_0.1.3.md), [0.1.2](docs/PRUEFBERICHT_0.1.2.md) und [0.1.1](docs/PRUEFBERICHT.txt) bleiben als Nachweise für die damaligen Stände erhalten.
+Die Tests verwenden simulierte TV-Antworten sowie echte HTTP- und UDP-Verbindungen ausschließlich über die lokale Loopback-Schnittstelle. Sie prüfen das Verhalten der Implementierung, ersetzen aber keinen Start in einem tatsächlichen ioBroker-Controller und keinen Modell- und Firmwaretest am realen Fernseher. Die Prüfung des Radioablaufs steht im [Prüfbericht zu 0.1.6](docs/PRUEFBERICHT_0.1.6.md). Die historischen Prüfberichte zu [0.1.5](docs/PRUEFBERICHT_0.1.5.md), [0.1.4](docs/PRUEFBERICHT_0.1.4.md), [0.1.3](docs/PRUEFBERICHT_0.1.3.md), [0.1.2](docs/PRUEFBERICHT_0.1.2.md) und [0.1.1](docs/PRUEFBERICHT.txt) bleiben als Nachweise für die damaligen Stände erhalten.
 
-Der Nutzerbericht zum tatsächlichen bild 7.55 ist oben gesondert aufgeführt. Er bestätigt inzwischen auch die TV-Auswahl des 0.1.4-Stands mit Namens-IDs nach einem kurzen Test. Radio ist in diesem Stand ausdrücklich als nicht funktionierend gemeldet. Die Wirkung des neuen Radioablaufs in 0.1.5, das Umsortieren und sämtliche Migrationsfälle bleiben am Gerät zu prüfen. Für den Einschaltablauf liegt ebenfalls keine Erfolgsmeldung vor.
+Der Nutzerbericht zum tatsächlichen bild 7.55 ist oben gesondert aufgeführt. Er bestätigt inzwischen auch die TV-Auswahl des 0.1.4-Stands mit Namens-IDs nach einem kurzen Test. Radio ist sowohl in 0.1.4 als auch nach dem Versuch mit 0.1.5 als nicht funktionierend gemeldet. Die Wirkung des neuen Radioablaufs in 0.1.6, das Umsortieren und sämtliche Migrationsfälle bleiben am Gerät zu prüfen. Für den Einschaltablauf liegt ebenfalls keine Erfolgsmeldung vor.
 
 Offizielle ioBroker-Grundlagen:
 
@@ -668,6 +686,14 @@ Offizielle ioBroker-Grundlagen:
 Der neu geschriebene Adaptercode steht unter der MIT-Lizenz. Siehe [LICENSE](LICENSE).
 
 ## Änderungsverlauf
+
+### 0.1.6
+
+- Radioauswahl prüft nach `GetMediaItem` zuerst den aktuellen Wiedergabemodus. Falls nötig, einmal gezielt `RADIO_MODE_ON` senden und auf einen bestätigten Radiomodus warten; erst danach den Sender-Locator mit `ZapToMedia` übertragen.
+- Zeitversetzte Wiedergabeprüfung ergänzt: erstes Lesen nach 500 Millisekunden, weitere begrenzte Leseversuche. Moduswechsel und Senderauftrag werden nicht automatisch wiederholt. Netzwerk- und Wartezeiten teilen sich ein Gesamtbudget von 15 Sekunden.
+- `remote.radio_mode_on` (`l2700/73`) und `remote.tv_mode_on` (`l2700/72`) als getrennte Taster ergänzt. Die direkte TV-Senderauswahl bleibt erhalten.
+- `channels.lastSelection` um vorherige Wiedergabe, Moduswechsel und dessen Beobachtungen erweitert. `confirmed` setzt eine passende Senderidentität voraus; die leere Platzhalterkennung gilt nicht als Nachweis.
+- Echten Befund aus 0.1.5 dokumentiert: Audio-Detailantwort und identischer Locator für sunshine live, dennoch kein hörbarer Radiowechsel trotz `Result=0`. Die Wirkung des neuen Ablaufs bleibt am SL420 zu prüfen.
 
 ### 0.1.5
 

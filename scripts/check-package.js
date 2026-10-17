@@ -7,6 +7,7 @@ const { spawnSync } = require('node:child_process');
 const { KEYS, TABLET_ACTIONS, buildEnvelope } = require('../lib/loewe-client');
 const { createDefinitions } = require('../lib/states');
 const { normalizeConfig } = require('../lib/adapter-runtime');
+const { BUILD_ID } = require('../lib/build-info');
 
 const root = path.resolve(__dirname, '..');
 const readJson = name => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'));
@@ -18,7 +19,9 @@ const remote115 = readJson('docs/remote115-keys.json');
 
 assert.equal(pkg.name, `iobroker.${io.common.name}`);
 assert.equal(pkg.version, io.common.version);
+assert.ok(BUILD_ID.startsWith(`${pkg.version}-`), 'Build identifier must match package version');
 assert.equal(io.common.mode, 'daemon');
+assert.equal(io.common.messagebox, true, 'Admin list selection requires adapter messaging');
 assert.equal(io.common.connectionType, 'local');
 assert.equal(io.common.adminUI.config, 'json');
 assert.equal(io.common.platform, 'Javascript/Node.js');
@@ -66,8 +69,10 @@ for (const advanced of [false, true]) {
         }
     }
     assert.equal([...ids].filter(id => /^remote\.[^.]+$/.test(id)).length, 42);
-    assert.equal(objects.length, 105);
-    assert.ok(![...ids].some(id => /^(?:api|channels\.radio)(?:\.|$)/.test(id)));
+    assert.equal(objects.length, 102);
+    assert.ok(![...ids].some(id => /^(?:api|media|channels\.radio)(?:\.|$)/.test(id)));
+    assert.ok(ids.has('info.adapterBuild'));
+    assert.equal(objects.find(object => object.id === 'channels.view').common.write, false);
     assert.ok(!ids.has('channels.mediaType'));
     assert.ok(!ids.has('remote.radio_mode_on'));
     console.log(`Object definitions valid: ${objects.length} objects (${advanced ? 'legacy advanced setting ignored' : 'standard'}).`);

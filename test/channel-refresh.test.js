@@ -74,7 +74,8 @@ class FakeClient {
 class FakeAdapter {
     constructor(config) {
         this.namespace = 'loewe-tv.0';
-        this.config = { host: 'fixture.invalid', pollInterval: 0, channelRefreshInterval: 300, pollPlayback: false, ...config };
+        this.config = { host: 'fixture.invalid', pollInterval: 0, channelRefreshInterval: 300, pollPlayback: false,
+            channelListView: VIEW, ...config };
         this.states = new Map([['channels.view', { val: VIEW, ack: true }]]);
         this.objects = new Map();
         this.writes = [];
@@ -92,8 +93,8 @@ class FakeAdapter {
             .filter(row => row.id >= options.startkey && row.id <= options.endkey) };
     }
     async delObjectAsync(id, options) {
-        assert.ok(['api', 'channels.radio', 'remote.radio_mode_on', 'channels.mediaType'].includes(id));
-        assert.equal(options.recursive, ['api', 'channels.radio'].includes(id));
+        assert.ok(['api', 'media', 'channels.radio', 'remote.radio_mode_on', 'channels.mediaType'].includes(id));
+        assert.equal(options.recursive, ['api', 'media', 'channels.radio'].includes(id));
         for (const store of [this.objects, this.states]) {
             for (const child of store.keys()) if (child === id || (options.recursive && child.startsWith(`${id}.`))) store.delete(child);
         }
@@ -195,12 +196,17 @@ test('disabled automatic refresh sends nothing, while the explicit complete-refr
     assert.equal(h.adapter.timers.size, 0);
 });
 
-test('empty view selects a TV-reported list with a shared overall deadline', async t => {
-    const h = await harness(t, { channelRefreshInterval: 0 }, adapter => adapter.states.set('channels.view', { val: '', ack: true }));
+test('no configured view requests no list and does not adopt a former channels.view value', async t => {
+    const h = await harness(t, { channelListView: '' });
+    assert.equal(h.adapter.timers.size, 0);
+    assert.equal(state(h, 'channels.refreshStatus'), 'notConfigured');
     await write(h, 'channels.refresh', true);
-    assert.equal(state(h, 'channels.view'), VIEW);
-    assert.equal(calls(h, 'getChannelLists').length, 1);
-    assert.equal(calls(h, 'getChannelLists')[0].args[2].deadline, calls(h, 'getChannels')[0].args[4].deadline);
+    assert.equal(state(h, 'channels.view'), '');
+    assert.equal(h.client.calls.length, 0);
+    assert.equal(h.channelObjects.accepted.length, 0);
+    assert.equal(state(h, 'channels.refreshStatus'), 'notConfigured');
+    assert.match(state(h, 'channels.refreshError'), /CHANNEL_LIST_REQUIRED/u);
+    assert.equal(h.adapter.timers.size, 0);
 });
 
 test('repeated refresh requests share one in-flight scan', async t => {
@@ -333,38 +339,58 @@ test('an unsupported channel response keeps a working connection and does not pr
     assert.equal(calls(h, 'getChannels').length, 1);
 });
 
-test('an unsupported channel-list overview keeps a working connection without reconnect refresh loops', async t => {
-    const h = await harness(t, { pollInterval: 30 }, (adapter, client) => {
-        adapter.states.set('channels.view', { val: '', ack: true });
-        client.hooks.getChannelLists = () => response('GetListOfChannelLists', { Unsupported: 'fixture' });
-    });
-    await fire(h, 0);
-    assert.equal(h.channelObjects.accepted.length, 0);
-    assert.equal(state(h, 'info.connection'), true);
-    assert.equal(state(h, 'channels.refreshStatus'), 'error');
-    assert.match(state(h, 'channels.refreshError'), /CHANNEL_REFRESH_INVALID/u);
+test('a TV reply for a different or unidentified list is rejected without selecting any replacement', async t => {
+    for (const wrongView of ['another-list', '']) {
+        const h = await harness(t, { pollInterval: 30 }, (_adapter, client) => {
+            client.hooks.getChannels = (_view, start) => page(wrongView, start, client.entries);
+        });
+        await fire(h, 0);
+        assert.equal(h.channelObjects.accepted.length, 0);
+        assert.equal(state(h, 'info.connection'), true);
+        assert.equal(state(h, 'channels.refreshStatus'), 'error');
+        assert.match(state(h, 'channels.refreshError'), /CHANNEL_REFRESH_INVALID/u);
+        assert.equal(calls(h, 'getChannelLists').length, 0);
+        assert.equal(calls(h, 'getChannels').length, 1);
+        assert.equal(calls(h, 'getChannels')[0].args[0], VIEW);
+    }
+});
+
+test('missing configuration remains unscheduled when a status poll reconnects the TV', async t => {
+    const h = await harness(t, { pollInterval: 30, channelListView: '' });
+    assert.equal(state(h, 'channels.refreshStatus'), 'notConfigured');
     await h.runtime.poll();
-    assert.equal([...h.adapter.timers.values()].some(value => value.ms === 0), false);
-    assert.equal(calls(h, 'getChannelLists').length, 1);
+    assert.equal([...h.adapter.timers.values()].some(value => value.ms === 0 || value.ms === 300000), false);
+    assert.equal(calls(h, 'getChannelLists').length, 0);
     assert.equal(calls(h, 'getChannels').length, 0);
 });
 
-test('channel-list discovery preserves genuine transport and session failures', async t => {
+test('a stale stored diagnostic view cannot change the configured refresh target', async t => {
+    const h = await harness(t, {}, adapter => {
+        adapter.states.set('channels.view', { val: 'stale-other-list', ack: false });
+    });
+    await fire(h, 0);
+    assert.equal(h.channelObjects.accepted.length, 1);
+    assert.equal(h.channelObjects.accepted[0].page.view, VIEW);
+    assert.equal(state(h, 'channels.view'), VIEW);
+    assert.equal(calls(h, 'getChannelLists').length, 0);
+});
+
+test('the configured list refresh preserves genuine transport and session failures', async t => {
     for (const error of [
         Object.assign(new Error('Socket failed'), { code: 'NETWORK' }),
         Object.assign(new Error('Invalid XML'), { code: 'INVALID_RESPONSE' }),
-        Object.assign(new Error('TV response exceeds the 8 MiB limit.'), { code: 'INVALID_RESPONSE', action: 'GetListOfChannelLists' }),
-        Object.assign(new Error('GetListOfChannelLists: session invalid'), { code: 'INVALID_RESPONSE', action: 'GetListOfChannelLists', sessionInvalid: true }),
+        Object.assign(new Error('TV response exceeds the 8 MiB limit.'), { code: 'INVALID_RESPONSE', action: 'GetChannelList' }),
+        Object.assign(new Error('GetChannelList: session invalid'), { code: 'INVALID_RESPONSE', action: 'GetChannelList', sessionInvalid: true }),
     ]) {
-        const h = await harness(t, { pollInterval: 30 }, (adapter, client) => {
-            adapter.states.set('channels.view', { val: '', ack: true });
-            client.hooks.getChannelLists = () => { throw error; };
+        const h = await harness(t, { pollInterval: 30 }, (_adapter, client) => {
+            client.hooks.getChannels = () => { throw error; };
         });
         await fire(h, 0);
         assert.equal(state(h, 'info.connection'), false);
         assert.equal(state(h, 'channels.refreshError'), `${error.code}: ${error.message}`);
         assert.equal(h.channelObjects.accepted.length, 0);
-        assert.equal(calls(h, 'getChannelLists').length, 1);
+        assert.equal(calls(h, 'getChannels').length, 1);
+        assert.equal(calls(h, 'getChannelLists').length, 0);
     }
 });
 
@@ -384,20 +410,20 @@ test('an offline polled TV waits for a real reconnect and ordinary later polls d
     assert.equal(calls(h, 'getChannels').length, 1);
 });
 
-test('a staged view edit preserves the existing refresh timer and sends nothing until explicitly refreshed', async t => {
+test('a write to the read-only view cannot replace the configured refresh target or advance its timer', async t => {
     const h = await harness(t);
     await fire(h, 0);
     const existingTimers = [...h.adapter.timers.entries()];
     await write(h, 'channels.view', 'favlist-staged');
     await nextTurn();
-    assert.deepEqual([...h.adapter.timers.entries()], existingTimers, 'Staging a view must not advance or replace the interval timer');
+    assert.deepEqual([...h.adapter.timers.entries()], existingTimers, 'A diagnostic view write must not advance or replace the interval timer');
     assert.equal(calls(h, 'getChannels').length, 1);
     await write(h, 'channels.refresh', true);
     assert.equal(calls(h, 'getChannels').length, 2);
-    assert.equal(h.channelObjects.accepted.at(-1).page.view, 'favlist-staged');
+    assert.equal(h.channelObjects.accepted.at(-1).page.view, VIEW);
 });
 
-test('a view edit while reading discards the old snapshot and waits for the regular interval before reading the new list', async t => {
+test('a configuration change while reading discards the old snapshot before any publication', async t => {
     const gate = deferred();
     const h = await harness(t, {}, (_adapter, client) => {
         client.hooks.getChannels = async (view, start, count) => {
@@ -408,7 +434,7 @@ test('a view edit while reading discards the old snapshot and waits for the regu
     h.adapter.fire(0);
     const running = h.runtime.channelRefresh.promise;
     await until(() => calls(h, 'getChannels').length === 1, 'Initial page did not start');
-    await write(h, 'channels.view', 'favlist-changed');
+    h.runtime.config.channelListView = 'favlist-changed';
     gate.resolve();
     assert.equal(await running, false);
     assert.equal(h.channelObjects.accepted.length, 0);

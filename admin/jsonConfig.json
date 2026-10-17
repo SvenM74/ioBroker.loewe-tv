@@ -39,20 +39,6 @@
           "validatorNoSaveOnError": true,
           "validatorErrorText": "Enter 0 or a whole number from 5 to 3600."
         },
-        "channelRefreshInterval": {
-          "type": "number",
-          "label": "Channel refresh interval (seconds)",
-          "help": "Refresh the complete selected TV channel list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.",
-          "min": 0,
-          "max": 86400,
-          "step": 1,
-          "default": 300,
-          "xs": 12,
-          "sm": 6,
-          "validator": "Number.isInteger(data.channelRefreshInterval) && (data.channelRefreshInterval === 0 || (data.channelRefreshInterval >= 60 && data.channelRefreshInterval <= 86400))",
-          "validatorNoSaveOnError": true,
-          "validatorErrorText": "Enter 0 or a whole number from 60 to 86400."
-        },
         "maxVolume": {
           "type": "number",
           "label": "Maximum volume for direct commands",
@@ -71,6 +57,66 @@
           "help": "Include current playback in status queries. Disable this if the TV does not support the playback query.",
           "default": true,
           "xs": 12
+        }
+      }
+    },
+    "_channels": {
+      "type": "panel",
+      "label": "Channel lists",
+      "items": {
+        "_channelListHelp": {
+          "type": "staticText",
+          "text": "Turn on the TV and start the adapter to load the available channel lists. Save changes to the TV address or control port first. Then reopen this configuration or use Reload channel lists.",
+          "xs": 12
+        },
+        "_channelSelectionHelp": {
+          "type": "staticText",
+          "text": "Only TV stations from this list are created under channels.tv. An empty selection creates no TV station objects. Save the selection to apply it.",
+          "xs": 12
+        },
+        "channelListView": {
+          "type": "selectSendTo",
+          "label": "Selected channel list",
+          "command": "getChannelLists",
+          "jsonData": "${JSON.stringify({host: data.host, port: data.port, channelListView: data.channelListView || ''})}",
+          "alsoDependsOn": [
+            "host",
+            "port",
+            "_channelListsReload"
+          ],
+          "manual": false,
+          "multiple": false,
+          "noTranslation": true,
+          "disabled": "!_alive",
+          "default": "",
+          "xs": 12,
+          "sm": 8
+        },
+        "_channelListsReload": {
+          "type": "sendto",
+          "label": "Reload channel lists",
+          "command": "refreshChannelLists",
+          "useNative": true,
+          "doNotSave": true,
+          "showProcess": true,
+          "timeout": 5000,
+          "variant": "outlined",
+          "xs": 12,
+          "sm": 4
+        },
+        "channelRefreshInterval": {
+          "type": "number",
+          "label": "Channel refresh interval (seconds)",
+          "help": "Refresh the complete selected TV channel list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.",
+          "min": 0,
+          "max": 86400,
+          "step": 1,
+          "default": 300,
+          "xs": 12,
+          "sm": 6,
+          "validator": "Number.isInteger(data.channelRefreshInterval) && (data.channelRefreshInterval === 0 || (data.channelRefreshInterval >= 60 && data.channelRefreshInterval <= 86400))",
+          "validatorNoSaveOnError": true,
+          "validatorErrorText": "Enter 0 or a whole number from 60 to 86400."
         }
       }
     },

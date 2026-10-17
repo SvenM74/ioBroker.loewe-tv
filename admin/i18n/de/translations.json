@@ -34,5 +34,10 @@
   "info.wakeReady shows whether a MAC address is known. info.lastWakeOnLan records packet transmission. info.powerOn shows the current attempt and its result; successful transmission does not confirm a visible picture.": "info.wakeReady zeigt, ob eine MAC-Adresse bekannt ist. info.lastWakeOnLan protokolliert den Paketversand. info.powerOn zeigt den aktuellen Versuch und sein Ergebnis; erfolgreicher Versand bestätigt kein sichtbares Bild.",
   "Channel refresh interval (seconds)": "Senderlistenabgleich (Sekunden)",
   "Enter 0 or a whole number from 60 to 86400.": "Bitte 0 oder eine ganze Zahl von 60 bis 86.400 eintragen.",
-  "Refresh the complete selected TV channel list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.": "Die ausgewählte TV-Senderliste automatisch vollständig abgleichen. Standard: 300 Sekunden. 0 deaktiviert den automatischen Senderabgleich. Der manuelle Abgleich bleibt verfügbar."
+  "Refresh the complete selected TV channel list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.": "Die ausgewählte TV-Senderliste automatisch vollständig abgleichen. Standard: 300 Sekunden. 0 deaktiviert den automatischen Senderabgleich. Der manuelle Abgleich bleibt verfügbar.",
+  "Channel lists": "Senderlisten",
+  "Turn on the TV and start the adapter to load the available channel lists. Save changes to the TV address or control port first. Then reopen this configuration or use Reload channel lists.": "Schalte den Fernseher ein und starte den Adapter, um die verfügbaren Senderlisten zu laden. Speichere Änderungen an der TV-Adresse oder am Steuerungsport zuerst. Öffne die Konfiguration anschließend erneut oder klicke auf „Senderlisten neu laden“.",
+  "Selected channel list": "TV-Senderliste",
+  "Only TV stations from this list are created under channels.tv. An empty selection creates no TV station objects. Save the selection to apply it.": "Unter channels.tv werden nur die TV-Sender dieser Liste angelegt. Bei leerer Auswahl werden keine TV-Senderobjekte angelegt. Speichere die Auswahl, um sie zu übernehmen.",
+  "Reload channel lists": "Senderlisten neu laden"
 }

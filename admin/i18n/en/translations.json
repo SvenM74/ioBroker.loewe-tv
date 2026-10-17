@@ -34,5 +34,10 @@
   "info.wakeReady shows whether a MAC address is known. info.lastWakeOnLan records packet transmission. info.powerOn shows the current attempt and its result; successful transmission does not confirm a visible picture.": "info.wakeReady shows whether a MAC address is known. info.lastWakeOnLan records packet transmission. info.powerOn shows the current attempt and its result; successful transmission does not confirm a visible picture.",
   "Channel refresh interval (seconds)": "Channel refresh interval (seconds)",
   "Enter 0 or a whole number from 60 to 86400.": "Enter 0 or a whole number from 60 to 86400.",
-  "Refresh the complete selected TV channel list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.": "Refresh the complete selected TV channel list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available."
+  "Refresh the complete selected TV channel list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.": "Refresh the complete selected TV channel list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.",
+  "Channel lists": "Channel lists",
+  "Turn on the TV and start the adapter to load the available channel lists. Save changes to the TV address or control port first. Then reopen this configuration or use Reload channel lists.": "Turn on the TV and start the adapter to load the available channel lists. Save changes to the TV address or control port first. Then reopen this configuration or use Reload channel lists.",
+  "Selected channel list": "Selected channel list",
+  "Only TV stations from this list are created under channels.tv. An empty selection creates no TV station objects. Save the selection to apply it.": "Only TV stations from this list are created under channels.tv. An empty selection creates no TV station objects. Save the selection to apply it.",
+  "Reload channel lists": "Reload channel lists"
 }

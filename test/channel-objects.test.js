@@ -71,7 +71,7 @@ class FakeClient {
 class FakeAdapter {
     constructor() {
         this.namespace = 'loewe-tv.0';
-        this.config = { host: 'tv.example.invalid', pollInterval: 0, channelRefreshInterval: 0 };
+        this.config = { host: 'tv.example.invalid', pollInterval: 0, channelRefreshInterval: 0, channelListView: VIEW };
         this.objects = new Map();
         this.states = new Map([['channels.view', { val: VIEW, ack: true }]]);
         this.writes = [];
@@ -137,7 +137,7 @@ class FakeAdapter {
     async delObjectAsync(fullId, options) {
         const id = this.id(fullId);
         if (options.recursive) {
-            assert.ok(['channels.radio', 'api'].includes(id), 'Only explicitly removed adapter trees may be deleted recursively.');
+            assert.ok(['channels.radio', 'api', 'media'].includes(id), 'Only explicitly removed adapter trees may be deleted recursively.');
             for (const store of [this.objects, this.states]) {
                 for (const childId of store.keys()) if (childId === id || childId.startsWith(`${id}.`)) store.delete(childId);
             }
@@ -172,7 +172,6 @@ function write(h, id, val, ack = false) {
 
 async function query(h, entries, options = {}) {
     h.client.nextChannels = channels(entries, options);
-    await write(h, 'channels.view', options.view || VIEW);
     await write(h, 'channels.start', options.start || 0);
     await write(h, 'channels.getChannels', true);
     if (options.idle !== false) await h.runtime.channelObjects.whenIdle();
@@ -391,6 +390,118 @@ test('native restoration with a saved or live partial first page preserves unque
     }
 });
 
+test('a wrong-list page is rejected before disturbing the current catalogue or queued-selection epoch', async t => {
+    const h = await harness(t);
+    await query(h, [entry('first')]);
+    const manager = h.runtime.channelObjects;
+    const first = service(h, 'first');
+    const target = manager.target(`${first.id}.select`);
+    const saved = state(h, 'channels.catalog').val;
+    const epoch = manager.selectionEpoch;
+    for (const wrongView of ['different-list', '']) {
+        const parsed = parseChannelPage(channels([entry('unexpected')], { view: wrongView }));
+        assert.throws(() => manager.acceptPage(parsed, 'video'), { code: 'CHANNEL_LIST_MISMATCH' });
+        assert.equal(manager.selectionEpoch, epoch);
+        assert.equal(manager.pending.length, 0);
+    }
+    assert.equal(state(h, 'channels.catalog').val, saved);
+    assert.doesNotThrow(() => manager.checkTarget(target));
+    const injected = { ...first, id: 'channels.tv.Injected', listView: 'different-list' };
+    manager.services.set(injected.id, injected);
+    assert.throws(() => manager.target(`${injected.id}.select`), { code: 'CHANNEL_UNAVAILABLE' });
+    assert.throws(() => manager.checkTarget({ ...injected, epoch }), { code: 'CHANNEL_UNAVAILABLE' });
+    manager.services.delete(injected.id);
+    await write(h, `${first.id}.select`, true);
+    assert.deepEqual(h.client.calls.at(-1), { method: 'zap', args: [first.locator] });
+});
+
+test('blank or changed configuration retires old TV folders and ignores stale caches even without a TV host', async t => {
+    const original = await harness(t);
+    await query(original, [entry('first'), entry('second', '2')]);
+    const oldIds = [...original.runtime.channelObjects.services.keys()];
+    for (const configuredView of ['', 'new-configured-list']) {
+        const h = await harness(t, adapter => {
+            adapter.config.channelListView = configuredView;
+            adapter.config.host = '';
+            adapter.objects = structuredClone(original.adapter.objects);
+            adapter.states = structuredClone(original.adapter.states);
+            adapter.objects.set('channels.tv.My_Notes', { type: 'channel', common: { name: 'User notes' }, native: {} });
+            // Simulate a prior package with both obsolete public trees and a
+            // stale radio leaf whose parent folder has already disappeared.
+            adapter.objects.set('channels.radio.Old.select', { type: 'state', common: { type: 'boolean' }, native: {} });
+            adapter.objects.set('media.locator', { type: 'state', common: { type: 'string' }, native: {} });
+        });
+        assert.equal(h.runtime.channelObjects.services.size, 0);
+        assert.equal(h.runtime.channelObjects.catalog, null);
+        assert.equal(state(h, 'channels.catalog').val, '{}');
+        assert.equal(state(h, 'channels.view').val, configuredView);
+        assert.equal(h.client.calls.length, 0);
+        assert.equal(h.runtime.client, null);
+        for (const id of oldIds) {
+            assert.equal(h.adapter.objects.has(id), false);
+            assert.equal(h.adapter.states.has(`${id}.select`), false);
+            assert.equal(h.runtime._objects.has(`${id}.select`), false);
+        }
+        assert.equal(h.adapter.objects.has('channels.tv.My_Notes'), true);
+        assert.equal([...h.adapter.objects.keys()].some(id => id.startsWith('channels.radio.') || id.startsWith('media.')), false);
+        assert.equal(h.adapter.dynamicCalls.some(call => call.operation === 'extend'), false);
+    }
+});
+
+test('restoration combines only the configured list cache and native records, including partial caches', async t => {
+    const original = await harness(t);
+    await query(original, [entry('old-one'), entry('old-two', '2')]);
+    const chosen = await harness(t, adapter => { adapter.config.channelListView = 'chosen-list'; });
+    await query(chosen, [entry('chosen', '7')], { view: 'chosen-list', total: 3 });
+    const h = await harness(t, adapter => {
+        adapter.config.channelListView = 'chosen-list';
+        adapter.objects = new Map([...structuredClone(original.adapter.objects), ...structuredClone(chosen.adapter.objects)]);
+        adapter.states = structuredClone(original.adapter.states);
+        adapter.states.set('channels.catalog', structuredClone(state(chosen, 'channels.catalog')));
+    });
+    assert.equal(h.runtime.channelObjects.services.size, 1);
+    assert.equal(service(h, 'chosen').listView, 'chosen-list');
+    assert.equal(h.runtime.channelObjects.catalog.lastQuery.complete, false);
+    assert.equal(service(h, 'old-one'), undefined);
+    assert.equal(h.adapter.objects.has('channels.tv.Fixture_old_one'), false);
+    assert.equal(h.adapter.objects.has('channels.tv.Fixture_old_two'), false);
+    assert.equal(h.client.calls.length, 0);
+    assert.ok([...h.runtime.channelObjects.services.values()].every(value => value.listView === 'chosen-list'));
+});
+
+test('a protected folder of a formerly configured list stays disabled and cannot become a tuning target', async t => {
+    const original = await harness(t);
+    await query(original, [entry('first')]);
+    const id = service(original, 'first').id;
+    const h = await harness(t, adapter => {
+        adapter.config.channelListView = 'different-list';
+        adapter.objects = structuredClone(original.adapter.objects);
+        adapter.states = structuredClone(original.adapter.states);
+        adapter.objects.set(`${id}.mySchedule`, { type: 'state', common: { type: 'string' }, native: {} });
+    });
+    assert.equal(h.adapter.objects.has(`${id}.mySchedule`), true);
+    assert.equal(h.adapter.objects.get(id).native.channelRetired, true);
+    assert.equal(h.adapter.objects.get(`${id}.select`).common.write, false);
+    assert.equal(state(h, `${id}.available`).val, false);
+    assert.equal(h.runtime.channelObjects.services.has(id), false);
+    await h.runtime.handleStateChange(`${h.adapter.namespace}.${id}.select`, { val: true, ack: false });
+    assert.equal(h.client.calls.length, 0);
+    assert.ok(h.adapter.logs.some(row => row.level === 'warn' && row.message.includes(id)));
+});
+
+test('an unidentified old raw response cannot be labelled as the newly configured list', async t => {
+    const raw = channels([entry('first')]).data;
+    delete raw.Envelope.Body.GetChannelListResponse.ChannelListView;
+    const h = await harness(t, adapter => {
+        adapter.states.set('channels.catalog', { val: '{}', ack: true });
+        adapter.states.set('channels.items', { val: JSON.stringify(raw), ack: true });
+    });
+    assert.equal(h.runtime.channelObjects.services.size, 0);
+    assert.equal(state(h, 'channels.catalog').val, '{}');
+    assert.equal(h.adapter.dynamicCalls.length, 0);
+    assert.equal(h.client.calls.length, 0);
+});
+
 test('only complete TV responses delete absent managed positions while partial and ignored audio rows preserve history', async t => {
     const h = await harness(t);
     await query(h, [entry('first'), entry('second', '2'), entry('radio', '100', 'audio')]);
@@ -425,7 +536,7 @@ test('only complete TV responses delete absent managed positions while partial a
     assert.equal(h.runtime.channelObjects.services.size, 0);
 });
 
-test('switching lists deletes obsolete folders and cancels queued selections of the former list', async t => {
+test('a changed configured list deletes obsolete folders and cancels queued selections of the former list', async t => {
     const h = await harness(t);
     await query(h, [entry('first')]);
     const oldId = service(h, 'first').id;
@@ -443,6 +554,7 @@ test('switching lists deletes obsolete folders and cancels queued selections of 
         cacheStarted = true;
         return cacheHold.promise;
     };
+    h.runtime.config.channelListView = 'favlist-other';
     h.runtime.channelObjects.acceptPage(parseChannelPage(channels([entry('replacement', '2')], { view: 'favlist-other' })), '');
     await until(() => cacheStarted, 'Expected the newly received list to wait on its cache write.');
     assert.equal(h.runtime.channelObjects.services.get(oldId).available, true, 'The race is tested before the old service map is replaced.');
@@ -464,6 +576,7 @@ test('slow sender object creation does not block the remote-control command queu
     t.after(() => hold.resolve());
     h.adapter.dynamicHook = call => call.operation === 'extend' ? hold.promise : undefined;
     const listId = 'sl11111111-2222-4333-8444-555555555555';
+    h.runtime.config.channelListView = `fastscan${listId}`;
     const entries = Array.from({ length: 372 }, (_, index) => {
         const uuid = `chl0:00-00080001ffff${(index + 1).toString(16).padStart(8, '0')}`;
         const channelId = `ch00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`;

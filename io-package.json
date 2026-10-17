@@ -4,8 +4,8 @@
     "version": "0.1.6",
     "news": {
       "0.1.6": {
-        "en": "Temporarily remove radio channel support and the api data point tree after unsuccessful radio tests. Clean up existing radio/API objects on startup and ignore the former advanced setting. Keep TV channel IDs and direct selection; request TV lists and exclude audio entries from the active catalogue. Version remains 0.1.6; reinstall the updated package.",
-        "de": "Radiosender nach erfolglosen Gerätetests vorerst zurückstellen und den api-Datenpunktbaum entfernen. Vorhandene Radio-/API-Objekte beim Start bereinigen; die bisherige Expertenoption entfällt. TV-Sender-IDs und direkte Auswahl erhalten, TV-Senderlisten anfragen und Audioeinträge aus dem aktiven Katalog ausschließen. Version bleibt 0.1.6; aktualisiertes Paket erneut installieren."
+        "en": "Choose a TV channel list in the adapter configuration after loading all available lists. Only the configured list is restored and synchronized under channels.tv. Remove radio, api and media data point trees, including existing objects on startup. Add a build identifier to distinguish revisions. Version remains 0.1.6; reinstall this package and select a channel list in Admin.",
+        "de": "TV-Senderliste nach Abruf aller verfügbaren Listen in der Adapter-Konfiguration auswählen. Nur die konfigurierte Liste unter channels.tv wiederherstellen und synchronisieren. Radio-, api- und media-Datenpunktbäume einschließlich vorhandener Objekte beim Start entfernen. Build-Kennung zur Unterscheidung der überarbeiteten Pakete ergänzen. Version bleibt 0.1.6; Paket erneut installieren und Senderliste in Admin auswählen."
       },
       "0.1.5": {
         "en": "Resolve radio service UUIDs through GetMediaItem before sending ZapToMedia, following the analysed app workflow. Preserve direct TV channel selection. Check explicit zap results and add bounded selection diagnostics with a single radio playback observation; real-device radio verification remains open.",
@@ -49,6 +49,7 @@
     },
     "platform": "Javascript/Node.js",
     "mode": "daemon",
+    "messagebox": true,
     "enabled": false,
     "compact": false,
     "icon": "loewe-tv.png",
@@ -76,6 +77,7 @@
     "timeout": 5000,
     "pollInterval": 30,
     "channelRefreshInterval": 300,
+    "channelListView": "",
     "pollPlayback": true,
     "appendNul": true,
     "macLan": "",

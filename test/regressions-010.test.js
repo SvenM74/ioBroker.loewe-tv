@@ -20,7 +20,7 @@ function makeHarness(AdapterRuntimeClass, config = {}) {
     const adapter = {
         namespace: 'loewe-tv.0',
         config: {
-            host: 'fixture.invalid', pollInterval: 30, pollPlayback: false,
+            host: 'fixture.invalid', pollInterval: 30, channelRefreshInterval: 0, pollPlayback: false,
             macLan: '02:00:00:00:00:01', ...config,
         },
         states, logs,

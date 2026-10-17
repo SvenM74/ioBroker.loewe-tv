@@ -39,6 +39,20 @@
           "validatorNoSaveOnError": true,
           "validatorErrorText": "Enter 0 or a whole number from 5 to 3600."
         },
+        "channelRefreshInterval": {
+          "type": "number",
+          "label": "Channel refresh interval (seconds)",
+          "help": "Refresh the complete selected TV and radio list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.",
+          "min": 0,
+          "max": 86400,
+          "step": 1,
+          "default": 300,
+          "xs": 12,
+          "sm": 6,
+          "validator": "Number.isInteger(data.channelRefreshInterval) && (data.channelRefreshInterval === 0 || (data.channelRefreshInterval >= 60 && data.channelRefreshInterval <= 86400))",
+          "validatorNoSaveOnError": true,
+          "validatorErrorText": "Enter 0 or a whole number from 60 to 86400."
+        },
         "maxVolume": {
           "type": "number",
           "label": "Maximum volume for direct commands",

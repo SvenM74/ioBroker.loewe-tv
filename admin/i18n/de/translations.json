@@ -33,5 +33,8 @@
   "Power-on time limit (seconds)": "Zeitlimit für Einschalten (Sekunden)",
   "Maximum time for waking the network service and sending the dedicated TV-on command. The attempt stops when this limit is reached.": "Maximale Zeit zum Aufwecken des Netzwerkdiensts und Senden des gezielten Einschaltbefehls. Nach Ablauf dieses Zeitlimits wird der Versuch beendet.",
   "Enter a whole number from 5 to 120.": "Bitte eine ganze Zahl von 5 bis 120 eintragen.",
-  "info.wakeReady shows whether a MAC address is known. info.lastWakeOnLan records packet transmission. info.powerOn shows the current attempt and its result; successful transmission does not confirm a visible picture.": "info.wakeReady zeigt, ob eine MAC-Adresse bekannt ist. info.lastWakeOnLan protokolliert den Paketversand. info.powerOn zeigt den aktuellen Versuch und sein Ergebnis; erfolgreicher Versand bestätigt kein sichtbares Bild."
+  "info.wakeReady shows whether a MAC address is known. info.lastWakeOnLan records packet transmission. info.powerOn shows the current attempt and its result; successful transmission does not confirm a visible picture.": "info.wakeReady zeigt, ob eine MAC-Adresse bekannt ist. info.lastWakeOnLan protokolliert den Paketversand. info.powerOn zeigt den aktuellen Versuch und sein Ergebnis; erfolgreicher Versand bestätigt kein sichtbares Bild.",
+  "Channel refresh interval (seconds)": "Senderlistenabgleich (Sekunden)",
+  "Refresh the complete selected TV and radio list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.": "Die ausgewählte TV- und Radiosenderliste automatisch vollständig abgleichen. Standard: 300 Sekunden. 0 deaktiviert den automatischen Senderabgleich. Der manuelle Abgleich bleibt verfügbar.",
+  "Enter 0 or a whole number from 60 to 86400.": "Bitte 0 oder eine ganze Zahl von 60 bis 86.400 eintragen."
 }

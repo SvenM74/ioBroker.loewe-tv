@@ -33,5 +33,8 @@
   "Power-on time limit (seconds)": "Power-on time limit (seconds)",
   "Maximum time for waking the network service and sending the dedicated TV-on command. The attempt stops when this limit is reached.": "Maximum time for waking the network service and sending the dedicated TV-on command. The attempt stops when this limit is reached.",
   "Enter a whole number from 5 to 120.": "Enter a whole number from 5 to 120.",
-  "info.wakeReady shows whether a MAC address is known. info.lastWakeOnLan records packet transmission. info.powerOn shows the current attempt and its result; successful transmission does not confirm a visible picture.": "info.wakeReady shows whether a MAC address is known. info.lastWakeOnLan records packet transmission. info.powerOn shows the current attempt and its result; successful transmission does not confirm a visible picture."
+  "info.wakeReady shows whether a MAC address is known. info.lastWakeOnLan records packet transmission. info.powerOn shows the current attempt and its result; successful transmission does not confirm a visible picture.": "info.wakeReady shows whether a MAC address is known. info.lastWakeOnLan records packet transmission. info.powerOn shows the current attempt and its result; successful transmission does not confirm a visible picture.",
+  "Channel refresh interval (seconds)": "Channel refresh interval (seconds)",
+  "Refresh the complete selected TV and radio list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.": "Refresh the complete selected TV and radio list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.",
+  "Enter 0 or a whole number from 60 to 86400.": "Enter 0 or a whole number from 60 to 86400."
 }

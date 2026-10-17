@@ -154,6 +154,7 @@ class FakeAdapter {
             timeout: 5000,
             appendNul: true,
             pollInterval: 30,
+            channelRefreshInterval: 0,
             pollPlayback: true,
             maxVolume: 99,
             macLan: '',

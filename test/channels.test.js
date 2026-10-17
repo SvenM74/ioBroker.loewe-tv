@@ -160,3 +160,17 @@ test('channel requests accept documented TV/radio filters, trim pasted views and
     await assert.rejects(client.getChannels('fastscan-tv', 0, 10, 'guessed-mode'), { code: 'VALIDATION' });
     assert.equal(calls.length, 3);
 });
+
+test('channel and list page requests forward the shared deadline to the bounded SOAP transport', async t => {
+    const client = new LoeweClient({ host: 'tv.example' });
+    t.after(() => client.close());
+    const options = { deadline: Date.now() + 120000 };
+    const calls = [];
+    client.request = async (action, parameters, requestOptions) => { calls.push({ action, parameters, options: requestOptions }); return {}; };
+    await client.getChannelLists(0, 500, options);
+    await client.getChannels('fastscan-fixture', 500, 500, '', options);
+    assert.deepEqual(calls.map(call => call.action), ['GetListOfChannelLists', 'GetChannelList']);
+    assert.equal(calls[0].options, options);
+    assert.equal(calls[1].options, options);
+    for (const call of calls) assert.match(call.parameters, /maxItems="500"/u);
+});

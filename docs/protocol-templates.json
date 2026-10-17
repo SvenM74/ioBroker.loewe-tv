@@ -1,0 +1,1915 @@
+{
+  "source": {
+    "filename": "Loewe app 1.4.7.apk",
+    "sha256": "e4b8cb245096021c6681db66e947d7d9acb2c3f947a820cce54158bcb9b9da36",
+    "package": "de.loewe.loeweapp",
+    "version_name": "1.4.7",
+    "version_code": 1890
+  },
+  "extraction_method": "Static ZIP extraction and scanning native library read-only data strings; XML well-formedness check with inert format placeholders. No APK or native code executed, no TV contacted.",
+  "native_library_sha256": "4be7ca702da336a80bfd55d0703b386518649db41a300ceb56a60415b5f4a49e",
+  "offset_semantics": "Byte offsets inside the uncompressed source_internal_path file, not offsets inside the APK ZIP.",
+  "scope": "Loewe Tablet SOAP only. The APK itself is not part of this adapter package.",
+  "notes": [
+    "Original templates contain printf placeholders. Do not send the placeholder templates directly.",
+    "The adapter uses an empty fcid and the ClientId returned by RequestAccess.",
+    "The AddServicesFavoriteList original has an unprefixed closing tag. The adapter repairs only that tag.",
+    "SetMute=1 is directly proven. SetMute=0 is inferred from the original response parser.",
+    "No real TV or running ioBroker controller was contacted during development."
+  ],
+  "remote_keymap": [
+    {
+      "button": 1,
+      "name": "BUTTON_RC_MUTE",
+      "table_code": 13,
+      "table_hex": "0xd",
+      "sent_code": 13,
+      "sent_hex": "0xd",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e40"
+    },
+    {
+      "button": 2,
+      "name": "BUTTON_RC_POWER_OFF",
+      "table_code": 12,
+      "table_hex": "0xc",
+      "sent_code": 12,
+      "sent_hex": "0xc",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e44"
+    },
+    {
+      "button": 3,
+      "name": "BUTTON_RC_EPG",
+      "table_code": 15,
+      "table_hex": "0xf",
+      "sent_code": 15,
+      "sent_hex": "0xf",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e48"
+    },
+    {
+      "button": 4,
+      "name": "BUTTON_RC_HOME",
+      "table_code": 49,
+      "table_hex": "0x31",
+      "sent_code": 49,
+      "sent_hex": "0x31",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e4c"
+    },
+    {
+      "button": 5,
+      "name": "BUTTON_RC_PIP",
+      "table_code": 10,
+      "table_hex": "0xa",
+      "sent_code": 10,
+      "sent_hex": "0xa",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e50"
+    },
+    {
+      "button": 6,
+      "name": "BUTTON_RC_TEXT",
+      "table_code": 60,
+      "table_hex": "0x3c",
+      "sent_code": 60,
+      "sent_hex": "0x3c",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e54"
+    },
+    {
+      "button": 7,
+      "name": "BUTTON_RC_MENU",
+      "table_code": 11,
+      "table_hex": "0xb",
+      "sent_code": 11,
+      "sent_hex": "0xb",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e58"
+    },
+    {
+      "button": 8,
+      "name": "BUTTON_RC_BACK",
+      "table_code": 63,
+      "table_hex": "0x3f",
+      "sent_code": 63,
+      "sent_hex": "0x3f",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e5c"
+    },
+    {
+      "button": 9,
+      "name": "BUTTON_RC_INFO",
+      "table_code": 79,
+      "table_hex": "0x4f",
+      "sent_code": 79,
+      "sent_hex": "0x4f",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e60"
+    },
+    {
+      "button": 10,
+      "name": "BUTTON_RC_VPLUS",
+      "table_code": 21,
+      "table_hex": "0x15",
+      "sent_code": 21,
+      "sent_hex": "0x15",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e64"
+    },
+    {
+      "button": 11,
+      "name": "BUTTON_RC_PPLUS",
+      "table_code": 24,
+      "table_hex": "0x18",
+      "sent_code": 24,
+      "sent_hex": "0x18",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e68"
+    },
+    {
+      "button": 12,
+      "name": "BUTTON_RC_VMINUS",
+      "table_code": 20,
+      "table_hex": "0x14",
+      "sent_code": 20,
+      "sent_hex": "0x14",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e6c"
+    },
+    {
+      "button": 13,
+      "name": "BUTTON_RC_PMINUS",
+      "table_code": 23,
+      "table_hex": "0x17",
+      "sent_code": 23,
+      "sent_hex": "0x17",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e70"
+    },
+    {
+      "button": 14,
+      "name": "BUTTON_RC_OK",
+      "table_code": 38,
+      "table_hex": "0x26",
+      "sent_code": 38,
+      "sent_hex": "0x26",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e74"
+    },
+    {
+      "button": 15,
+      "name": "BUTTON_RC_UP",
+      "table_code": 32,
+      "table_hex": "0x20",
+      "sent_code": 32,
+      "sent_hex": "0x20",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e78"
+    },
+    {
+      "button": 16,
+      "name": "BUTTON_RC_DOWN",
+      "table_code": 33,
+      "table_hex": "0x21",
+      "sent_code": 33,
+      "sent_hex": "0x21",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e7c"
+    },
+    {
+      "button": 17,
+      "name": "BUTTON_RC_LEFT",
+      "table_code": 17,
+      "table_hex": "0x11",
+      "sent_code": 17,
+      "sent_hex": "0x11",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e80"
+    },
+    {
+      "button": 18,
+      "name": "BUTTON_RC_RIGHT",
+      "table_code": 16,
+      "table_hex": "0x10",
+      "sent_code": 16,
+      "sent_hex": "0x10",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e84"
+    },
+    {
+      "button": 19,
+      "name": "BUTTON_RC_RED",
+      "table_code": 27,
+      "table_hex": "0x1b",
+      "sent_code": 27,
+      "sent_hex": "0x1b",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e88"
+    },
+    {
+      "button": 20,
+      "name": "BUTTON_RC_GREEN",
+      "table_code": 26,
+      "table_hex": "0x1a",
+      "sent_code": 26,
+      "sent_hex": "0x1a",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e8c"
+    },
+    {
+      "button": 21,
+      "name": "BUTTON_RC_YELLOW",
+      "table_code": 43,
+      "table_hex": "0x2b",
+      "sent_code": 43,
+      "sent_hex": "0x2b",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e90"
+    },
+    {
+      "button": 22,
+      "name": "BUTTON_RC_BLUE",
+      "table_code": 40,
+      "table_hex": "0x28",
+      "sent_code": 40,
+      "sent_hex": "0x28",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e94"
+    },
+    {
+      "button": 23,
+      "name": "BUTTON_RC_REWIND",
+      "table_code": 4146,
+      "table_hex": "0x1032",
+      "sent_code": 50,
+      "sent_hex": "0x32",
+      "alphabet": "l2700-hdr",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e98"
+    },
+    {
+      "button": 24,
+      "name": "BUTTON_RC_PLAY",
+      "table_code": 4149,
+      "table_hex": "0x1035",
+      "sent_code": 53,
+      "sent_hex": "0x35",
+      "alphabet": "l2700-hdr",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356e9c"
+    },
+    {
+      "button": 25,
+      "name": "BUTTON_RC_FAST_FORWARD",
+      "table_code": 4148,
+      "table_hex": "0x1034",
+      "sent_code": 52,
+      "sent_hex": "0x34",
+      "alphabet": "l2700-hdr",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356ea0"
+    },
+    {
+      "button": 26,
+      "name": "BUTTON_RC_REC",
+      "table_code": 4151,
+      "table_hex": "0x1037",
+      "sent_code": 55,
+      "sent_hex": "0x37",
+      "alphabet": "l2700-hdr",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356ea4"
+    },
+    {
+      "button": 27,
+      "name": "BUTTON_RC_PAUSE",
+      "table_code": 4137,
+      "table_hex": "0x1029",
+      "sent_code": 41,
+      "sent_hex": "0x29",
+      "alphabet": "l2700-hdr",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356ea8"
+    },
+    {
+      "button": 28,
+      "name": "BUTTON_RC_STOP",
+      "table_code": 4150,
+      "table_hex": "0x1036",
+      "sent_code": 54,
+      "sent_hex": "0x36",
+      "alphabet": "l2700-hdr",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": "0x356eac"
+    },
+    {
+      "button": 73,
+      "name": "BUTTON_POWER_ALL",
+      "table_code": null,
+      "table_hex": null,
+      "sent_code": 25,
+      "sent_hex": "0x19",
+      "alphabet": "l2700",
+      "confidence": "verified_ui_mapping",
+      "source_table_vaddr": null,
+      "source_branch_vaddr": "0xf7432",
+      "call_vaddr": "0xf753d"
+    }
+  ],
+  "templates": [
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x33f3a2",
+      "file_offset_decimal": 3404706,
+      "byte_length": 681,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetDeviceData xsi:type=\"ns1:ClientRequestType\"><fcid>%s</fcid><ClientId>%s</ClientId></ns1:GetDeviceData></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetDeviceData xsi:type=\"ns1:ClientRequestType\"><fcid>%s</fcid><ClientId>%s</ClientId></ns1:GetDeviceData></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetDeviceData",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetDeviceData",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 2,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetDeviceData[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetDeviceData[1]/ClientId[1]/text()"
+        }
+      ],
+      "constant_xml_values": [
+        {
+          "location": "/Envelope/Body[1]/GetDeviceData[1]/@type",
+          "value": "ns1:ClientRequestType"
+        }
+      ],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x319313"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2adc6c"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x34f0bc"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x33f65a",
+      "file_offset_decimal": 3405402,
+      "byte_length": 690,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetFeature xsi:type=\"ns1:ClientRequestType\"><fcid>%s</fcid><ClientId>%s</ClientId><Name>%s</Name></ns1:GetFeature></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetFeature xsi:type=\"ns1:ClientRequestType\"><fcid>%s</fcid><ClientId>%s</ClientId><Name>%s</Name></ns1:GetFeature></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetFeature",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetFeature",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 3,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetFeature[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetFeature[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/GetFeature[1]/Name[1]/text()"
+        }
+      ],
+      "constant_xml_values": [
+        {
+          "location": "/Envelope/Body[1]/GetFeature[1]/@type",
+          "value": "ns1:ClientRequestType"
+        }
+      ],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x3195cb"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2adf24"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x34f374"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x33f918",
+      "file_offset_decimal": 3406104,
+      "byte_length": 770,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetListOfChannelLists xsi:type=\"ns1:ClientRequestType\"><fcid>%s</fcid><ClientId>%s</ClientId><QueryParameters><Range startIndex=\"%s\" maxItems=\"%s\"/></QueryParameters></ns1:GetListOfChannelLists></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetListOfChannelLists xsi:type=\"ns1:ClientRequestType\"><fcid>%s</fcid><ClientId>%s</ClientId><QueryParameters><Range startIndex=\"%s\" maxItems=\"%s\"/></QueryParameters></ns1:GetListOfChannelLists></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetListOfChannelLists",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetListOfChannelLists",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 4,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetListOfChannelLists[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetListOfChannelLists[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/GetListOfChannelLists[1]/QueryParameters[1]/Range[1]/@startIndex"
+        },
+        {
+          "xml_placeholder_index": 3,
+          "location": "/Envelope/Body[1]/GetListOfChannelLists[1]/QueryParameters[1]/Range[1]/@maxItems"
+        }
+      ],
+      "constant_xml_values": [
+        {
+          "location": "/Envelope/Body[1]/GetListOfChannelLists[1]/@type",
+          "value": "ns1:ClientRequestType"
+        }
+      ],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x319889"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2ae1e2"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x34f632"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x33fc31",
+      "file_offset_decimal": 3406897,
+      "byte_length": 936,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetChannelList xsi:type=\"ns1:ClientRequestType\"><fcid>%s</fcid><ClientId>%s</ClientId><ChannelListView>%s</ChannelListView><QueryParameters><Range startIndex=\"%s\" maxItems=\"%s\"/><OrderField field=\"userChannelNumber\" type=\"ascending\"/><MediaItemInformation>true</MediaItemInformation><MediaItemClass>video</MediaItemClass></QueryParameters></ns1:GetChannelList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetChannelList xsi:type=\"ns1:ClientRequestType\"><fcid>%s</fcid><ClientId>%s</ClientId><ChannelListView>%s</ChannelListView><QueryParameters><Range startIndex=\"%s\" maxItems=\"%s\"/><OrderField field=\"userChannelNumber\" type=\"ascending\"/><MediaItemInformation>true</MediaItemInformation><MediaItemClass>video</MediaItemClass></QueryParameters></ns1:GetChannelList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetChannelList",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetChannelList",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 5,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetChannelList[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetChannelList[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/GetChannelList[1]/ChannelListView[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 3,
+          "location": "/Envelope/Body[1]/GetChannelList[1]/QueryParameters[1]/Range[1]/@startIndex"
+        },
+        {
+          "xml_placeholder_index": 4,
+          "location": "/Envelope/Body[1]/GetChannelList[1]/QueryParameters[1]/Range[1]/@maxItems"
+        }
+      ],
+      "constant_xml_values": [
+        {
+          "location": "/Envelope/Body[1]/GetChannelList[1]/@type",
+          "value": "ns1:ClientRequestType"
+        },
+        {
+          "location": "/Envelope/Body[1]/GetChannelList[1]/QueryParameters[1]/OrderField[1]/@field",
+          "value": "userChannelNumber"
+        },
+        {
+          "location": "/Envelope/Body[1]/GetChannelList[1]/QueryParameters[1]/OrderField[1]/@type",
+          "value": "ascending"
+        },
+        {
+          "location": "/Envelope/Body[1]/GetChannelList[1]/QueryParameters[1]/MediaItemInformation[1]/text()",
+          "value": "true"
+        },
+        {
+          "location": "/Envelope/Body[1]/GetChannelList[1]/QueryParameters[1]/MediaItemClass[1]/text()",
+          "value": "video"
+        }
+      ],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x319ba2"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2ae4fb"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x34f94b"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x33ffe9",
+      "file_offset_decimal": 3407849,
+      "byte_length": 686,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetMediaItem><fcid>%s</fcid><ClientId>%s</ClientId><MediaItemReference mediaItemUuid=\"%s\"/></ns1:GetMediaItem></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetMediaItem><fcid>%s</fcid><ClientId>%s</ClientId><MediaItemReference mediaItemUuid=\"%s\"/></ns1:GetMediaItem></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetMediaItem",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetMediaItem",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 3,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetMediaItem[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetMediaItem[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/GetMediaItem[1]/MediaItemReference[1]/@mediaItemUuid"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x319f5a"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2ae8b3"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x34fd03"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x3402a5",
+      "file_offset_decimal": 3408549,
+      "byte_length": 690,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetMediaEvent><fcid>%s</fcid><ClientId>%s</ClientId><MediaEventReference mediaEventUuid=\"%s\"/></ns1:GetMediaEvent></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetMediaEvent><fcid>%s</fcid><ClientId>%s</ClientId><MediaEventReference mediaEventUuid=\"%s\"/></ns1:GetMediaEvent></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetMediaEvent",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetMediaEvent",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 3,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetMediaEvent[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetMediaEvent[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/GetMediaEvent[1]/MediaEventReference[1]/@mediaEventUuid"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31a216"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2aeb6f"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x34ffbf"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x340566",
+      "file_offset_decimal": 3409254,
+      "byte_length": 727,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetDRPlusArchive><fcid>%s</fcid><ClientId>%s</ClientId><QueryParameters><Range startIndex=\"%s\" maxItems=\"%s\"/></QueryParameters></ns1:GetDRPlusArchive></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetDRPlusArchive><fcid>%s</fcid><ClientId>%s</ClientId><QueryParameters><Range startIndex=\"%s\" maxItems=\"%s\"/></QueryParameters></ns1:GetDRPlusArchive></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetDRPlusArchive",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetDRPlusArchive",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 4,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetDRPlusArchive[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetDRPlusArchive[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/GetDRPlusArchive[1]/QueryParameters[1]/Range[1]/@startIndex"
+        },
+        {
+          "xml_placeholder_index": 3,
+          "location": "/Envelope/Body[1]/GetDRPlusArchive[1]/QueryParameters[1]/Range[1]/@maxItems"
+        }
+      ],
+      "constant_xml_values": [],
+      "variant": "without_volume_id",
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31a4d7"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2aee30"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x350280"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x34084f",
+      "file_offset_decimal": 3409999,
+      "byte_length": 750,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetDRPlusArchive><fcid>%s</fcid><ClientId>%s</ClientId><QueryParameters><Range startIndex=\"%s\" maxItems=\"%s\"/></QueryParameters><VolumeId>%s</VolumeId></ns1:GetDRPlusArchive></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetDRPlusArchive><fcid>%s</fcid><ClientId>%s</ClientId><QueryParameters><Range startIndex=\"%s\" maxItems=\"%s\"/></QueryParameters><VolumeId>%s</VolumeId></ns1:GetDRPlusArchive></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetDRPlusArchive",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetDRPlusArchive",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 5,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetDRPlusArchive[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetDRPlusArchive[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/GetDRPlusArchive[1]/QueryParameters[1]/Range[1]/@startIndex"
+        },
+        {
+          "xml_placeholder_index": 3,
+          "location": "/Envelope/Body[1]/GetDRPlusArchive[1]/QueryParameters[1]/Range[1]/@maxItems"
+        },
+        {
+          "xml_placeholder_index": 4,
+          "location": "/Envelope/Body[1]/GetDRPlusArchive[1]/VolumeId[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "variant": "with_volume_id",
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31a7c0"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2af119"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x350569"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x340b3e",
+      "file_offset_decimal": 3410750,
+      "byte_length": 658,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:ExportServiceLists><fcid>%s</fcid><ClientId>%s</ClientId></ns1:ExportServiceLists></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:ExportServiceLists><fcid>%s</fcid><ClientId>%s</ClientId></ns1:ExportServiceLists></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "ExportServiceLists",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#ExportServiceLists",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 2,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/ExportServiceLists[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/ExportServiceLists[1]/ClientId[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31aaaf"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2af408"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x350858"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x340de4",
+      "file_offset_decimal": 3411428,
+      "byte_length": 673,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:ImportServiceLists><fcid>%s</fcid><ClientId>%s</ClientId><Data>%s</Data></ns1:ImportServiceLists></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:ImportServiceLists><fcid>%s</fcid><ClientId>%s</ClientId><Data>%s</Data></ns1:ImportServiceLists></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "ImportServiceLists",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#ImportServiceLists",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 3,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/ImportServiceLists[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/ImportServiceLists[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/ImportServiceLists[1]/Data[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31ad55"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2af6ae"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x350afe"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x341099",
+      "file_offset_decimal": 3412121,
+      "byte_length": 681,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:ZapToMedia><fcid>%s</fcid><ClientId>%s</ClientId><Player>0</Player><Locator>%s</Locator></ns1:ZapToMedia></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:ZapToMedia><fcid>%s</fcid><ClientId>%s</ClientId><Player>0</Player><Locator>%s</Locator></ns1:ZapToMedia></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "ZapToMedia",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#ZapToMedia",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 3,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/ZapToMedia[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/ZapToMedia[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/ZapToMedia[1]/Locator[1]/text()"
+        }
+      ],
+      "constant_xml_values": [
+        {
+          "location": "/Envelope/Body[1]/ZapToMedia[1]/Player[1]/text()",
+          "value": "0"
+        }
+      ],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31b00a"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2af963"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x350db3"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x34134e",
+      "file_offset_decimal": 3412814,
+      "byte_length": 658,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetCurrentPlayback><fcid>%s</fcid><ClientId>%s</ClientId></ns1:GetCurrentPlayback></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetCurrentPlayback><fcid>%s</fcid><ClientId>%s</ClientId></ns1:GetCurrentPlayback></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetCurrentPlayback",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetCurrentPlayback",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 2,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetCurrentPlayback[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetCurrentPlayback[1]/ClientId[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31b2bf"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2afc18"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x351068"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x3415f4",
+      "file_offset_decimal": 3413492,
+      "byte_length": 681,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:RemoveFavoriteList><fcid>%s</fcid><ClientId>%s</ClientId><ViewName>%s</ViewName></ns1:RemoveFavoriteList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:RemoveFavoriteList><fcid>%s</fcid><ClientId>%s</ClientId><ViewName>%s</ViewName></ns1:RemoveFavoriteList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "RemoveFavoriteList",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#RemoveFavoriteList",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 3,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/RemoveFavoriteList[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/RemoveFavoriteList[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/RemoveFavoriteList[1]/ViewName[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31b565"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2afebe"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x35130e"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x3418b1",
+      "file_offset_decimal": 3414193,
+      "byte_length": 714,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:AddFavoriteList><fcid>%s</fcid><ClientId>%s</ClientId><Name>%s</Name><AdditionalAttributes>%s</AdditionalAttributes></ns1:AddFavoriteList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:AddFavoriteList><fcid>%s</fcid><ClientId>%s</ClientId><Name>%s</Name><AdditionalAttributes>%s</AdditionalAttributes></ns1:AddFavoriteList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "AddFavoriteList",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#AddFavoriteList",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 4,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/AddFavoriteList[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/AddFavoriteList[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/AddFavoriteList[1]/Name[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 3,
+          "location": "/Envelope/Body[1]/AddFavoriteList[1]/AdditionalAttributes[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31b822"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b017b"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x3515cb"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x341b8c",
+      "file_offset_decimal": 3414924,
+      "byte_length": 710,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:RenameFavoriteList><fcid>%s</fcid><ClientId>%s</ClientId><ListViewName>%s</ListViewName><NewName>%s</NewName></ns1:RenameFavoriteList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:RenameFavoriteList><fcid>%s</fcid><ClientId>%s</ClientId><ListViewName>%s</ListViewName><NewName>%s</NewName></ns1:RenameFavoriteList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "RenameFavoriteList",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#RenameFavoriteList",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 4,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/RenameFavoriteList[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/RenameFavoriteList[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/RenameFavoriteList[1]/ListViewName[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 3,
+          "location": "/Envelope/Body[1]/RenameFavoriteList[1]/NewName[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31bafd"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b0456"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x3518a6"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x341e66",
+      "file_offset_decimal": 3415654,
+      "byte_length": 636,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetMute><fcid>%s</fcid><ClientId>%s</ClientId></ns1:GetMute></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetMute><fcid>%s</fcid><ClientId>%s</ClientId></ns1:GetMute></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetMute",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetMute",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 2,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetMute[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetMute[1]/ClientId[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31bdd7"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b0730"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x351b80"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x3420eb",
+      "file_offset_decimal": 3416299,
+      "byte_length": 653,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:SetMute><fcid>%s</fcid><ClientId>%s</ClientId><Value>%s</Value></ns1:SetMute></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:SetMute><fcid>%s</fcid><ClientId>%s</ClientId><Value>%s</Value></ns1:SetMute></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "SetMute",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#SetMute",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 3,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/SetMute[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/SetMute[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/SetMute[1]/Value[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31c05c"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b09b5"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x351e05"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x342381",
+      "file_offset_decimal": 3416961,
+      "byte_length": 640,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetVolume><fcid>%s</fcid><ClientId>%s</ClientId></ns1:GetVolume></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetVolume><fcid>%s</fcid><ClientId>%s</ClientId></ns1:GetVolume></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetVolume",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetVolume",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 2,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetVolume[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetVolume[1]/ClientId[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31c2f2"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b0c4b"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x35209b"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x34260c",
+      "file_offset_decimal": 3417612,
+      "byte_length": 657,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:SetVolume><fcid>%s</fcid><ClientId>%s</ClientId><Value>%s</Value></ns1:SetVolume></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:SetVolume><fcid>%s</fcid><ClientId>%s</ClientId><Value>%s</Value></ns1:SetVolume></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "SetVolume",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#SetVolume",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 3,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/SetVolume[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/SetVolume[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/SetVolume[1]/Value[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31c57d"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b0ed6"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x352326"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x3428a8",
+      "file_offset_decimal": 3418280,
+      "byte_length": 797,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:PlayMultiroom><fcid>%s</fcid><ClientId>%s</ClientId><Locator>%s</Locator><AncestorUuid>%s</AncestorUuid><MultiroomClientIds><MultiroomClientId id=\"%s\"/><MultiroomClientId id=\"%s\"/></MultiroomClientIds></ns1:PlayMultiroom></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:PlayMultiroom><fcid>%s</fcid><ClientId>%s</ClientId><Locator>%s</Locator><AncestorUuid>%s</AncestorUuid><MultiroomClientIds><MultiroomClientId id=\"%s\"/><MultiroomClientId id=\"%s\"/></MultiroomClientIds></ns1:PlayMultiroom></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "PlayMultiroom",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#PlayMultiroom",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 6,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/PlayMultiroom[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/PlayMultiroom[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/PlayMultiroom[1]/Locator[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 3,
+          "location": "/Envelope/Body[1]/PlayMultiroom[1]/AncestorUuid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 4,
+          "location": "/Envelope/Body[1]/PlayMultiroom[1]/MultiroomClientIds[1]/MultiroomClientId[1]/@id"
+        },
+        {
+          "xml_placeholder_index": 5,
+          "location": "/Envelope/Body[1]/PlayMultiroom[1]/MultiroomClientIds[1]/MultiroomClientId[2]/@id"
+        }
+      ],
+      "constant_xml_values": [],
+      "finding": "This compiled template contains exactly two MultiroomClientId elements, each supplied by a format parameter.",
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31c819"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b1172"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x3525c2"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x342c19",
+      "file_offset_decimal": 3419161,
+      "byte_length": 687,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:InjectRCKey><fcid>%s</fcid><ClientId>%s</ClientId><InputEventSequence>%s</InputEventSequence></ns1:InjectRCKey></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:InjectRCKey><fcid>%s</fcid><ClientId>%s</ClientId><InputEventSequence>%s</InputEventSequence></ns1:InjectRCKey></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "InjectRCKey",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#InjectRCKey",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 3,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/InjectRCKey[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/InjectRCKey[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/InjectRCKey[1]/InputEventSequence[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31cb80"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b14e3"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x352933"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x342f2d",
+      "file_offset_decimal": 3419949,
+      "byte_length": 699,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:InjectKeyboardKey><fcid>%s</fcid><ClientId>%s</ClientId><InputEventSequence>%s</InputEventSequence></ns1:InjectKeyboardKey></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:InjectKeyboardKey><fcid>%s</fcid><ClientId>%s</ClientId><InputEventSequence>%s</InputEventSequence></ns1:InjectKeyboardKey></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "InjectKeyboardKey",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#InjectKeyboardKey",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 3,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/InjectKeyboardKey[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/InjectKeyboardKey[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/InjectKeyboardKey[1]/InputEventSequence[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31ce88"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b17f7"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x352c47"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x3431fb",
+      "file_offset_decimal": 3420667,
+      "byte_length": 745,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:AddServicesFavoriteList><fcid>%s</fcid><ClientId>%s</ClientId><ViewName>%s</ViewName><LocatorSequence><Locator Locator=\"%s\"/></LocatorSequence></AddServicesFavoriteList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:AddServicesFavoriteList><fcid>%s</fcid><ClientId>%s</ClientId><ViewName>%s</ViewName><LocatorSequence><Locator Locator=\"%s\"/></LocatorSequence></AddServicesFavoriteList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "AddServicesFavoriteList",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#AddServicesFavoriteList",
+      "well_formed_with_placeholders": false,
+      "parse_error": "mismatched tag: line 2, column 486",
+      "xml_format_placeholder_count": 4,
+      "finding": "Original template opens <ns1:AddServicesFavoriteList> but closes </AddServicesFavoriteList>. The mismatched closing tag is retained verbatim here.",
+      "parameter_inspection_after_closing_tag_repair_only": {
+        "well_formed_with_placeholders": true,
+        "xml_format_placeholder_count": 4,
+        "xml_parameters_in_format_order": [
+          {
+            "xml_placeholder_index": 0,
+            "location": "/Envelope/Body[1]/AddServicesFavoriteList[1]/fcid[1]/text()"
+          },
+          {
+            "xml_placeholder_index": 1,
+            "location": "/Envelope/Body[1]/AddServicesFavoriteList[1]/ClientId[1]/text()"
+          },
+          {
+            "xml_placeholder_index": 2,
+            "location": "/Envelope/Body[1]/AddServicesFavoriteList[1]/ViewName[1]/text()"
+          },
+          {
+            "xml_placeholder_index": 3,
+            "location": "/Envelope/Body[1]/AddServicesFavoriteList[1]/LocatorSequence[1]/Locator[1]/@Locator"
+          }
+        ],
+        "constant_xml_values": []
+      },
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31d156"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b1ac5"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x352f15"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x3434fd",
+      "file_offset_decimal": 3421437,
+      "byte_length": 770,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:MoveServicesFavoriteList><fcid>%s</fcid><ClientId>%s</ClientId><ViewName>%s</ViewName><NumBegin>%s</NumBegin><NumEnd>%s</NumEnd><NumNewPosition>%s</NumNewPosition></ns1:MoveServicesFavoriteList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:MoveServicesFavoriteList><fcid>%s</fcid><ClientId>%s</ClientId><ViewName>%s</ViewName><NumBegin>%s</NumBegin><NumEnd>%s</NumEnd><NumNewPosition>%s</NumNewPosition></ns1:MoveServicesFavoriteList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "MoveServicesFavoriteList",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#MoveServicesFavoriteList",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 6,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/MoveServicesFavoriteList[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/MoveServicesFavoriteList[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/MoveServicesFavoriteList[1]/ViewName[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 3,
+          "location": "/Envelope/Body[1]/MoveServicesFavoriteList[1]/NumBegin[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 4,
+          "location": "/Envelope/Body[1]/MoveServicesFavoriteList[1]/NumEnd[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 5,
+          "location": "/Envelope/Body[1]/MoveServicesFavoriteList[1]/NumNewPosition[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31d458"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b1dc7"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x353217"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x343819",
+      "file_offset_decimal": 3422233,
+      "byte_length": 739,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:RemoveServicesFavoriteList><fcid>%s</fcid><ClientId>%s</ClientId><ViewName>%s</ViewName><NumBegin>%s</NumBegin><NumEnd>%s</NumEnd></ns1:RemoveServicesFavoriteList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:RemoveServicesFavoriteList><fcid>%s</fcid><ClientId>%s</ClientId><ViewName>%s</ViewName><NumBegin>%s</NumBegin><NumEnd>%s</NumEnd></ns1:RemoveServicesFavoriteList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "RemoveServicesFavoriteList",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#RemoveServicesFavoriteList",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 5,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/RemoveServicesFavoriteList[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/RemoveServicesFavoriteList[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/RemoveServicesFavoriteList[1]/ViewName[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 3,
+          "location": "/Envelope/Body[1]/RemoveServicesFavoriteList[1]/NumBegin[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 4,
+          "location": "/Envelope/Body[1]/RemoveServicesFavoriteList[1]/NumEnd[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31d774"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b20e3"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x353533"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x343b18",
+      "file_offset_decimal": 3423000,
+      "byte_length": 644,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetSettings><fcid>%s</fcid><ClientId>%s</ClientId></ns1:GetSettings></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetSettings><fcid>%s</fcid><ClientId>%s</ClientId></ns1:GetSettings></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetSettings",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetSettings",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 2,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetSettings[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetSettings[1]/ClientId[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31da73"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b23e2"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x353832"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x343da9",
+      "file_offset_decimal": 3423657,
+      "byte_length": 674,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:SetSetting><fcid>%s</fcid><ClientId>%s</ClientId><Name>%s</Name><Value>%s</Value></ns1:SetSetting></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:SetSetting><fcid>%s</fcid><ClientId>%s</ClientId><Name>%s</Name><Value>%s</Value></ns1:SetSetting></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "SetSetting",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#SetSetting",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 4,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/SetSetting[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/SetSetting[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/SetSetting[1]/Name[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 3,
+          "location": "/Envelope/Body[1]/SetSetting[1]/Value[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31dcf8"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b2673"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x353ac3"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x344057",
+      "file_offset_decimal": 3424343,
+      "byte_length": 807,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetVolumes><fcid>%s</fcid><ClientId>%s</ClientId><QueryParameters><Range startIndex=\"%s\" maxItems=\"%s\"/></QueryParameters><AdditionalParameters><Properties isActiveList=\"%s\" hasPurpose=\"%s\"/></AdditionalParameters></ns1:GetVolumes></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetVolumes><fcid>%s</fcid><ClientId>%s</ClientId><QueryParameters><Range startIndex=\"%s\" maxItems=\"%s\"/></QueryParameters><AdditionalParameters><Properties isActiveList=\"%s\" hasPurpose=\"%s\"/></AdditionalParameters></ns1:GetVolumes></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetVolumes",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetVolumes",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 6,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetVolumes[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetVolumes[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/GetVolumes[1]/QueryParameters[1]/Range[1]/@startIndex"
+        },
+        {
+          "xml_placeholder_index": 3,
+          "location": "/Envelope/Body[1]/GetVolumes[1]/QueryParameters[1]/Range[1]/@maxItems"
+        },
+        {
+          "xml_placeholder_index": 4,
+          "location": "/Envelope/Body[1]/GetVolumes[1]/AdditionalParameters[1]/Properties[1]/@isActiveList"
+        },
+        {
+          "xml_placeholder_index": 5,
+          "location": "/Envelope/Body[1]/GetVolumes[1]/AdditionalParameters[1]/Properties[1]/@hasPurpose"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31dfa6"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b2921"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x353d71"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x34438a",
+      "file_offset_decimal": 3425162,
+      "byte_length": 772,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:ProgramTimer><fcid>%s</fcid><ClientId>%s</ClientId><Device>%s</Device><RecordingType>%s</RecordingType><Locator>%s</Locator><Timer starttime=\"%s\" duration=\"%s\" repeatDays=\"%s\"/></ns1:ProgramTimer></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:ProgramTimer><fcid>%s</fcid><ClientId>%s</ClientId><Device>%s</Device><RecordingType>%s</RecordingType><Locator>%s</Locator><Timer starttime=\"%s\" duration=\"%s\" repeatDays=\"%s\"/></ns1:ProgramTimer></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "ProgramTimer",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#ProgramTimer",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 8,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/ProgramTimer[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/ProgramTimer[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/ProgramTimer[1]/Device[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 3,
+          "location": "/Envelope/Body[1]/ProgramTimer[1]/RecordingType[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 4,
+          "location": "/Envelope/Body[1]/ProgramTimer[1]/Locator[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 5,
+          "location": "/Envelope/Body[1]/ProgramTimer[1]/Timer[1]/@starttime"
+        },
+        {
+          "xml_placeholder_index": 6,
+          "location": "/Envelope/Body[1]/ProgramTimer[1]/Timer[1]/@duration"
+        },
+        {
+          "xml_placeholder_index": 7,
+          "location": "/Envelope/Body[1]/ProgramTimer[1]/Timer[1]/@repeatDays"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31e2ce"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b2c54"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x3540a4"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x34469c",
+      "file_offset_decimal": 3425948,
+      "byte_length": 646,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetTimerList><fcid>%s</fcid><ClientId>%s</ClientId></ns1:GetTimerList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:GetTimerList><fcid>%s</fcid><ClientId>%s</ClientId></ns1:GetTimerList></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "GetTimerList",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#GetTimerList",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 2,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/GetTimerList[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/GetTimerList[1]/ClientId[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31e5d3"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b2f66"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x3543b6"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x344948",
+      "file_offset_decimal": 3426632,
+      "byte_length": 786,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:CreateIterator><fcid>%s</fcid><ClientId>%s</ClientId><TableName>%s</TableName><Type>%s</Type><Selections>%s</Selections><Fields>%s</Fields><Orders>%s</Orders><NotifyUpdate>%s</NotifyUpdate></ns1:CreateIterator></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:CreateIterator><fcid>%s</fcid><ClientId>%s</ClientId><TableName>%s</TableName><Type>%s</Type><Selections>%s</Selections><Fields>%s</Fields><Orders>%s</Orders><NotifyUpdate>%s</NotifyUpdate></ns1:CreateIterator></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "CreateIterator",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#CreateIterator",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 8,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/CreateIterator[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/CreateIterator[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/CreateIterator[1]/TableName[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 3,
+          "location": "/Envelope/Body[1]/CreateIterator[1]/Type[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 4,
+          "location": "/Envelope/Body[1]/CreateIterator[1]/Selections[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 5,
+          "location": "/Envelope/Body[1]/CreateIterator[1]/Fields[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 6,
+          "location": "/Envelope/Body[1]/CreateIterator[1]/Orders[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 7,
+          "location": "/Envelope/Body[1]/CreateIterator[1]/NotifyUpdate[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31e86a"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b3212"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x354662"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x344c75",
+      "file_offset_decimal": 3427445,
+      "byte_length": 661,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:CloseIterator><fcid>%s</fcid><ClientId>%s</ClientId><Ids>%s</Ids></ns1:CloseIterator></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:CloseIterator><fcid>%s</fcid><ClientId>%s</ClientId><Ids>%s</Ids></ns1:CloseIterator></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "CloseIterator",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#CloseIterator",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 3,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/CloseIterator[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/CloseIterator[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/CloseIterator[1]/Ids[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31eb88"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b353f"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x35498f"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x34546f",
+      "file_offset_decimal": 3429487,
+      "byte_length": 687,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:ActivateFeaturePackage><fcid>%s</fcid><ClientId>%s</ClientId><Package>%s</Package></ns1:ActivateFeaturePackage></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:ActivateFeaturePackage><fcid>%s</fcid><ClientId>%s</ClientId><Package>%s</Package></ns1:ActivateFeaturePackage></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "ActivateFeaturePackage",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#ActivateFeaturePackage",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 3,
+      "xml_parameters_in_format_order": [
+        {
+          "xml_placeholder_index": 0,
+          "location": "/Envelope/Body[1]/ActivateFeaturePackage[1]/fcid[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 1,
+          "location": "/Envelope/Body[1]/ActivateFeaturePackage[1]/ClientId[1]/text()"
+        },
+        {
+          "xml_placeholder_index": 2,
+          "location": "/Envelope/Body[1]/ActivateFeaturePackage[1]/Package[1]/text()"
+        }
+      ],
+      "constant_xml_values": [],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31f374"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b3d39"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x355189"
+        }
+      ]
+    },
+    {
+      "source_internal_path": "lib/x86_64/libLoeweApp.so",
+      "file_offset_hex": "0x345736",
+      "file_offset_decimal": 3430198,
+      "byte_length": 704,
+      "exact_c_string": "POST /loewe_tablet_0001 HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: LOEWE SOAP/1.0\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: %zu\r\nConnection: close\r\nSOAPAction: \"urn:loewe.de:RemoteTV:Tablet#%s\"\r\n\r\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:RequestAccess xsi:type=\"ns1:RequestAccessRequestType\"><fcid></fcid><DeviceType>----------------</DeviceType></ns1:RequestAccess></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "protocol": "Loewe Tablet SOAP",
+      "exact_xml_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns1=\"urn:loewe.de:RemoteTV:Tablet\"><SOAP-ENV:Body><ns1:RequestAccess xsi:type=\"ns1:RequestAccessRequestType\"><fcid></fcid><DeviceType>----------------</DeviceType></ns1:RequestAccess></SOAP-ENV:Body></SOAP-ENV:Envelope>",
+      "action": "RequestAccess",
+      "soap_action": "urn:loewe.de:RemoteTV:Tablet#RequestAccess",
+      "well_formed_with_placeholders": true,
+      "xml_format_placeholder_count": 0,
+      "xml_parameters_in_format_order": [],
+      "constant_xml_values": [
+        {
+          "location": "/Envelope/Body[1]/RequestAccess[1]/@type",
+          "value": "ns1:RequestAccessRequestType"
+        },
+        {
+          "location": "/Envelope/Body[1]/RequestAccess[1]/DeviceType[1]/text()",
+          "value": "----------------"
+        }
+      ],
+      "identical_in_other_architectures": [
+        {
+          "source_internal_path": "lib/arm64-v8a/libLoeweApp.so",
+          "file_offset_hex": "0x31f63b"
+        },
+        {
+          "source_internal_path": "lib/armeabi-v7a/libLoeweApp.so",
+          "file_offset_hex": "0x2b4000"
+        },
+        {
+          "source_internal_path": "lib/x86/libLoeweApp.so",
+          "file_offset_hex": "0x355450"
+        }
+      ]
+    }
+  ]
+}

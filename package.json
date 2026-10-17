@@ -1,0 +1,49 @@
+{
+  "name": "iobroker.loewe-tv",
+  "version": "0.1.1",
+  "description": "Local control of Loewe TVs using the Tablet SOAP interface",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SvenM74/ioBroker.loewe-tv.git"
+  },
+  "homepage": "https://github.com/SvenM74/ioBroker.loewe-tv#readme",
+  "bugs": {
+    "url": "https://github.com/SvenM74/ioBroker.loewe-tv/issues"
+  },
+  "main": "main.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "test:protocol": "node --test test/protocol.test.js",
+    "test:runtime": "node --test test/runtime.test.js",
+    "check": "node scripts/check-package.js",
+    "prepack": "npm run check"
+  },
+  "dependencies": {
+    "@iobroker/adapter-core": "3.4.3",
+    "sax": "1.6.1"
+  },
+  "files": [
+    "main.js",
+    "io-package.json",
+    "lib/",
+    "admin/",
+    "docs/",
+    "scripts/",
+    "test/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "ioBroker",
+    "loewe",
+    "tv",
+    "remote",
+    "soap",
+    "smart-home"
+  ],
+  "license": "MIT"
+}

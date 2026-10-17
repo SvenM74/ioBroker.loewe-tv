@@ -1,0 +1,418 @@
+TAP version 13
+# Subtest: malformed NUL padding is rejected without quadratic suffix matching
+ok 1 - malformed NUL padding is rejected without quadratic suffix matching
+  ---
+  duration_ms: 10.513646
+  type: 'test'
+  ...
+# Subtest: the input size limit includes trailing NUL bytes for strings as well as buffers
+ok 2 - the input size limit includes trailing NUL bytes for strings as well as buffers
+  ---
+  duration_ms: 9.967642
+  type: 'test'
+  ...
+# Subtest: large asynchronous parsing yields and preserves the synchronous parser result
+ok 3 - large asynchronous parsing yields and preserves the synchronous parser result
+  ---
+  duration_ms: 265.906509
+  type: 'test'
+  ...
+# Subtest: asynchronous parsing retains strict XML checks across chunk boundaries
+ok 4 - asynchronous parsing retains strict XML checks across chunk boundaries
+  ---
+  duration_ms: 6.831013
+  type: 'test'
+  ...
+# Subtest: HTTP total deadline remains effective while a large valid reply is being parsed
+ok 5 - HTTP total deadline remains effective while a large valid reply is being parsed
+  ---
+  duration_ms: 36.234477
+  type: 'test'
+  ...
+# Subtest: close can interrupt response parsing without another TV operation
+ok 6 - close can interrupt response parsing without another TV operation
+  ---
+  duration_ms: 18.086842
+  type: 'test'
+  ...
+# Subtest: Wake-on-LAN repeats use the real matching subnet mask and deduplicate destinations
+ok 7 - Wake-on-LAN repeats use the real matching subnet mask and deduplicate destinations
+  ---
+  duration_ms: 5.442886
+  type: 'test'
+  ...
+# Subtest: Wake-on-LAN respects a custom broadcast and does not guess a hostname subnet
+ok 8 - Wake-on-LAN respects a custom broadcast and does not guess a hostname subnet
+  ---
+  duration_ms: 1.033493
+  type: 'test'
+  ...
+# Subtest: unavailable network-interface enumeration leaves the global WOL destination usable
+ok 9 - unavailable network-interface enumeration leaves the global WOL destination usable
+  ---
+  duration_ms: 0.466116
+  type: 'test'
+  ...
+# Subtest: invalid Wake-on-LAN repeat options do not create a socket
+ok 10 - invalid Wake-on-LAN repeat options do not create a socket
+  ---
+  duration_ms: 0.800155
+  type: 'test'
+  ...
+# Subtest: close cancels scheduled Wake-on-LAN repetitions
+ok 11 - close cancels scheduled Wake-on-LAN repetitions
+  ---
+  duration_ms: 73.100787
+  type: 'test'
+  ...
+# Subtest: the total Wake-on-LAN deadline cancels later repetition timers
+ok 12 - the total Wake-on-LAN deadline cancels later repetition timers
+  ---
+  duration_ms: 86.944376
+  type: 'test'
+  ...
+# Subtest: text has one total deadline across successful characters and the last pending HTTP request
+ok 13 - text has one total deadline across successful characters and the last pending HTTP request
+  ---
+  duration_ms: 128.871189
+  type: 'test'
+  ...
+# Subtest: the text deadline includes a new access handshake
+ok 14 - the text deadline includes a new access handshake
+  ---
+  duration_ms: 16.007468
+  type: 'test'
+  ...
+# Subtest: a text wait can expire without cancelling an existing shared handshake or parallel WOL
+ok 15 - a text wait can expire without cancelling an existing shared handshake or parallel WOL
+  ---
+  duration_ms: 52.950559
+  type: 'test'
+  ...
+# Subtest: text timeout configuration cannot remove the 15-second maximum
+ok 16 - text timeout configuration cannot remove the 15-second maximum
+  ---
+  duration_ms: 0.741558
+  type: 'test'
+  ...
+# Subtest: real HTTP carries the handshake, NUL-terminated commands and preserved TV identifiers
+ok 17 - real HTTP carries the handshake, NUL-terminated commands and preserved TV identifiers
+  ---
+  duration_ms: 49.538999
+  type: 'test'
+  ...
+# Subtest: real incomplete HTTP response hits the total deadline and leaves the event loop responsive
+ok 18 - real incomplete HTTP response hits the total deadline and leaves the event loop responsive
+  ---
+  duration_ms: 109.480941
+  type: 'test'
+  ...
+# Subtest: real HTTP with an internal NUL run is rejected without the old regex stall
+ok 19 - real HTTP with an internal NUL run is rejected without the old regex stall
+  ---
+  duration_ms: 10.776269
+  type: 'test'
+  ...
+# Subtest: real UDP delivers repeated WOL packets to an isolated loopback receiver
+ok 20 - real UDP delivers repeated WOL packets to an isolated loopback receiver
+  ---
+  duration_ms: 46.440789
+  type: 'test'
+  ...
+# Subtest: golden APK access/OK XML, 33 actions and verified remote alphabets
+ok 21 - golden APK access/OK XML, 33 actions and verified remote alphabets
+  ---
+  duration_ms: 8.352531
+  type: 'test'
+  ...
+# Subtest: invalid actions and injected/malformed XML are rejected before any network access
+ok 22 - invalid actions and injected/malformed XML are rejected before any network access
+  ---
+  duration_ms: 4.778284
+  type: 'test'
+  ...
+# Subtest: response parser preserves namespaces-free string identifiers, attributes and Unicode
+ok 23 - response parser preserves namespaces-free string identifiers, attributes and Unicode
+  ---
+  duration_ms: 0.945351
+  type: 'test'
+  ...
+# Subtest: XML nesting is bounded and unbound namespace prefixes or multiple roots are rejected
+ok 24 - XML nesting is bounded and unbound namespace prefixes or multiple roots are rejected
+  ---
+  duration_ms: 1.240642
+  type: 'test'
+  ...
+# Subtest: XML element/attribute names cannot change object prototypes
+ok 25 - XML element/attribute names cannot change object prototypes
+  ---
+  duration_ms: 0.320058
+  type: 'test'
+  ...
+# Subtest: HTTP handshake sends exact endpoint, SOAP header, final NUL and UTF-8 byte lengths
+ok 26 - HTTP handshake sends exact endpoint, SOAP header, final NUL and UTF-8 byte lengths
+  ---
+  duration_ms: 3.290553
+  type: 'test'
+  ...
+# Subtest: appendNul=false is honored independently of multibyte parameter text
+ok 27 - appendNul=false is honored independently of multibyte parameter text
+  ---
+  duration_ms: 0.926553
+  type: 'test'
+  ...
+# Subtest: simultaneous first calls share one handshake and use the returned ClientId
+ok 28 - simultaneous first calls share one handshake and use the returned ClientId
+  ---
+  duration_ms: 2.069891
+  type: 'test'
+  ...
+# Subtest: missing ClientId stops the original operation and permits a fresh later handshake
+ok 29 - missing ClientId stops the original operation and permits a fresh later handshake
+  ---
+  duration_ms: 4.473239
+  type: 'test'
+  ...
+# Subtest: volume scales sends exactly and keeps response values without silent clamping
+ok 30 - volume scales sends exactly and keeps response values without silent clamping
+  ---
+  duration_ms: 11.727258
+  type: 'test'
+  ...
+# Subtest: malformed/missing/ambiguous numeric and mute replies are not turned into state values
+ok 31 - malformed/missing/ambiguous numeric and mute replies are not turned into state values
+  ---
+  duration_ms: 8.435825
+  type: 'test'
+  ...
+# Subtest: mute uses numeric 1/0 and validates booleans before contact
+ok 32 - mute uses numeric 1/0 and validates booleans before contact
+  ---
+  duration_ms: 2.381986
+  type: 'test'
+  ...
+# Subtest: text iterates Unicode code points and backspace uses scancode 14
+ok 33 - text iterates Unicode code points and backspace uses scancode 14
+  ---
+  duration_ms: 2.941361
+  type: 'test'
+  ...
+# Subtest: text stops on first failed character without replaying accepted characters
+ok 34 - text stops on first failed character without replaying accepted characters
+  ---
+  duration_ms: 1.899096
+  type: 'test'
+  ...
+# Subtest: queries and ZapToMedia use extracted range/order fields and safely escaped identifiers
+ok 35 - queries and ZapToMedia use extracted range/order fields and safely escaped identifiers
+  ---
+  duration_ms: 6.314663
+  type: 'test'
+  ...
+# Subtest: SOAP errors are distinguished from HTTP failures and reset only invalid sessions
+ok 36 - SOAP errors are distinguished from HTTP failures and reset only invalid sessions
+  ---
+  duration_ms: 5.859418
+  type: 'test'
+  ...
+# Subtest: total timeout aborts a mutation without retry; a later command gets a fresh session
+ok 37 - total timeout aborts a mutation without retry; a later command gets a fresh session
+  ---
+  duration_ms: 25.205176
+  type: 'test'
+  ...
+# Subtest: network connection errors and truncated replies reject instead of succeeding
+ok 38 - network connection errors and truncated replies reject instead of succeeding
+  ---
+  duration_ms: 1.14547
+  type: 'test'
+  ...
+# Subtest: advertised and streamed response sizes are bounded before parsing
+ok 39 - advertised and streamed response sizes are bounded before parsing
+  ---
+  duration_ms: 3.692021
+  type: 'test'
+  ...
+# Subtest: close aborts pending requests, prevents all later actions and ignores late handshake data
+ok 40 - close aborts pending requests, prevents all later actions and ignores late handshake data
+  ---
+  duration_ms: 0.78394
+  type: 'test'
+  ...
+# Subtest: Wake-on-LAN packet is exactly six FF bytes and sixteen repetitions of the TV MAC
+ok 41 - Wake-on-LAN packet is exactly six FF bytes and sixteen repetitions of the TV MAC
+  ---
+  duration_ms: 4.266239
+  type: 'test'
+  ...
+# Subtest: Wake-on-LAN validates all inputs, skips blanks/duplicates and uses broadcast UDP port 9
+ok 42 - Wake-on-LAN validates all inputs, skips blanks/duplicates and uses broadcast UDP port 9
+  ---
+  duration_ms: 1.645616
+  type: 'test'
+  ...
+# Subtest: close also cancels an in-flight Wake-on-LAN send and closes its socket
+ok 43 - close also cancels an in-flight Wake-on-LAN send and closes its socket
+  ---
+  duration_ms: 0.370664
+  type: 'test'
+  ...
+# Subtest: powerOn sends Wake-on-LAN while a sleeping TV status request is still waiting
+ok 44 - powerOn sends Wake-on-LAN while a sleeping TV status request is still waiting
+  ---
+  duration_ms: 18.865276
+  type: 'test'
+  ...
+# Subtest: stop finishes before the controller unload deadline even if state writes never settle
+ok 45 - stop finishes before the controller unload deadline even if state writes never settle
+  ---
+  duration_ms: 206.785994
+  type: 'test'
+  ...
+# Subtest: a failed scheduled poll never escapes as an unhandled rejection
+ok 46 - a failed scheduled poll never escapes as an unhandled rejection
+  ---
+  duration_ms: 157.768993
+  type: 'test'
+  ...
+# Subtest: a legacy MAC address is discovered even when GetVolume is unsupported
+ok 47 - a legacy MAC address is discovered even when GetVolume is unsupported
+  ---
+  duration_ms: 13.899657
+  type: 'test'
+  ...
+# Subtest: pollInterval zero starts without TV queries and still permits wake and explicit refresh
+ok 48 - pollInterval zero starts without TV queries and still permits wake and explicit refresh
+  ---
+  duration_ms: 4.864422
+  type: 'test'
+  ...
+# Subtest: wake without a known MAC gives a useful error without sending a datagram
+ok 49 - wake without a known MAC gives a useful error without sending a datagram
+  ---
+  duration_ms: 2.227345
+  type: 'test'
+  ...
+# Subtest: stopping immediately after powerOn prevents delayed WOL diagnostic writes
+ok 50 - stopping immediately after powerOn prevents delayed WOL diagnostic writes
+  ---
+  duration_ms: 8.57296
+  type: 'test'
+  ...
+# Subtest: a rejected state subscription is awaited and never escapes as an unhandled rejection
+ok 51 - a rejected state subscription is awaited and never escapes as an unhandled rejection
+  ---
+  duration_ms: 137.425861
+  type: 'test'
+  ...
+# Subtest: startup creates usable button objects without replaying saved commands
+ok 52 - startup creates usable button objects without replaying saved commands
+  ---
+  duration_ms: 23.706428
+  type: 'test'
+  ...
+# Subtest: acknowledged feedback, deleted values, other instances and false buttons do not send
+ok 53 - acknowledged feedback, deleted values, other instances and false buttons do not send
+  ---
+  duration_ms: 14.586593
+  type: 'test'
+  ...
+# Subtest: a remote button resets only after the command completes and feedback is not replayed
+ok 54 - a remote button resets only after the command completes and feedback is not replayed
+  ---
+  duration_ms: 18.838395
+  type: 'test'
+  ...
+# Subtest: failed mutations are reported without retrying and buttons still reset
+ok 55 - failed mutations are reported without retrying and buttons still reset
+  ---
+  duration_ms: 10.66719
+  type: 'test'
+  ...
+# Subtest: volume state reflects the returned level, never an optimistic requested level
+ok 56 - volume state reflects the returned level, never an optimistic requested level
+  ---
+  duration_ms: 5.74646
+  type: 'test'
+  ...
+# Subtest: out-of-range and wrongly typed volume commands never reach the TV
+ok 57 - out-of-range and wrongly typed volume commands never reach the TV
+  ---
+  duration_ms: 5.309687
+  type: 'test'
+  ...
+# Subtest: mute state uses confirmed TV feedback even when it differs from the command
+ok 58 - mute state uses confirmed TV feedback even when it differs from the command
+  ---
+  duration_ms: 5.201251
+  type: 'test'
+  ...
+# Subtest: channel parameters are staged and used only when the query button is pressed
+ok 59 - channel parameters are staged and used only when the query button is pressed
+  ---
+  duration_ms: 3.490131
+  type: 'test'
+  ...
+# Subtest: disabled advanced controls cannot be dispatched through manually written states
+ok 60 - disabled advanced controls cannot be dispatched through manually written states
+  ---
+  duration_ms: 8.036944
+  type: 'test'
+  ...
+# Subtest: advanced XML parameters do not execute until the matching action button is pressed
+ok 61 - advanced XML parameters do not execute until the matching action button is pressed
+  ---
+  duration_ms: 25.409205
+  type: 'test'
+  ...
+# Subtest: a queued action keeps the parameters that existed at the send event
+ok 62 - a queued action keeps the parameters that existed at the send event
+  ---
+  duration_ms: 43.806031
+  type: 'test'
+  ...
+# Subtest: back-to-back remote commands remain serialized while a reply is pending
+ok 63 - back-to-back remote commands remain serialized while a reply is pending
+  ---
+  duration_ms: 13.884325
+  type: 'test'
+  ...
+# Subtest: concurrent status refreshes coalesce into one poll
+ok 64 - concurrent status refreshes coalesce into one poll
+  ---
+  duration_ms: 6.337571
+  type: 'test'
+  ...
+# Subtest: polling schedules its next run after completion and stop clears the timer
+ok 65 - polling schedules its next run after completion and stop clears the timer
+  ---
+  duration_ms: 8.270272
+  type: 'test'
+  ...
+# Subtest: shutdown prevents queued commands and polls from sending after an in-flight request
+ok 66 - shutdown prevents queued commands and polls from sending after an in-flight request
+  ---
+  duration_ms: 4.937993
+  type: 'test'
+  ...
+# Subtest: shutdown during initial object creation prevents a late client from being created
+ok 67 - shutdown during initial object creation prevents a late client from being created
+  ---
+  duration_ms: 1.113062
+  type: 'test'
+  ...
+# Subtest: a reply whose database processing was pending at shutdown cannot update later TV states
+ok 68 - a reply whose database processing was pending at shutdown cannot update later TV states
+  ---
+  duration_ms: 4.884602
+  type: 'test'
+  ...
+1..68
+# tests 68
+# suites 0
+# pass 68
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 812.281408

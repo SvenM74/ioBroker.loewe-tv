@@ -1,0 +1,149 @@
+Statische Analyse: Loewenbaendiger Remote 1.15
+==========================================
+
+Quelle
+------
+Datei: Loewenbaendiger+Remote_1.15_APKPure.apk
+Android-Paket: com.alternone.loeweremote
+Version: 1.15, versionCode 115
+SHA-256: 676e86b962aae77fae3df08607a56e423bdae12a1843589532e0b42d33bff121
+APK: 408987 Bytes; classes.dex: 894760 Bytes; DEX-Version 035.
+
+Die APK wurde ausschließlich als ZIP-/DEX-/Ressourcendatei gelesen. Kein
+Programmcode daraus wurde ausgeführt und kein Fernseher wurde angesprochen.
+DEX-SHA1 und Adler32 stimmen. Alle 31 App-Klassen mit ihren 116 Methoden wurden
+dekodiert, ohne unbekannte App-Opcodes. Insgesamt enthält das DEX 511 Klassen,
+überwiegend Android-Support- und CyberGarage-UPnP-Bibliotheken. Es gibt keine
+nativen App-Methoden und keine nativen Bibliotheken in der APK.
+
+1. Einschalten
+---------------
+Diese App enthält keine zusätzliche Einschaltfunktion. Es gibt keine
+Wake-on-LAN-Paketerzeugung, keine TV-MAC-Abfrage und keinen eigenen
+Einschaltpfad. Die erste Zeile in assets/configuration.csv heißt ausdrücklich
+OFF und verwendet l2700, Wert 12. Dieser Knopf sendet wie die übrigen Knöpfe
+ein InjectRCKey-Ereignis. Daraus darf kein belegter Einschaltcode abgeleitet
+werden.
+
+Die DatagramSocket-/MulticastSocket-Klassen gehören zur mitgelieferten
+CyberGarage-SSDP-Erkennung. Die einzigen direkten UDP-Sendestellen im gesamten
+DEX liegen in org.cybergarage.upnp.ssdp.HTTPMUSocket.send() und
+HTTPUSocket.post(). Die eigene App greift auf diese Bibliothek zur
+Gerätesuche zu. Ein Magic Packet wird nicht konstruiert.
+
+Das beweist nicht, dass ein bestimmter TV nicht per Netzwerk eingeschaltet
+werden kann. Es bedeutet, dass diese APK dafür keine neue Implementierung
+liefert. Für Einschalten bleiben die Wake-on-LAN-Evidenz der ursprünglichen
+Loewe-App und die tatsächliche TV-/Netzwerkkonfiguration maßgeblich.
+
+2. Transport und Anmeldung
+-------------------------
+Die Zieladresse ist wieder http://<TV-IP>:905/loewe_tablet_0001.
+SOAP-Namensraum: urn:loewe.de:RemoteTV:Tablet.
+
+LoeweTV.connect() führt RequestAccess aus. Der Body setzt:
+  fcid = 0
+  ClientId = ?
+  DeviceType = Apple iPad
+  DeviceName = Dummy
+  DeviceUUID = 1234
+  RequesterName = Assist Media App
+
+Die zurückgegebene m:ClientId wird bei HTTP 200 aus der XML-Antwort gelesen
+und im TV-Objekt gespeichert. Folgebefehle ersetzen PHCLIENTID durch diesen
+Wert. Es wird keine feste ClientId zur Steuerung benutzt.
+
+Header der SOAP-Anfragen:
+  User-Agent: Assist%20Media/20 CFNetwork/609.1.4 Darwin/13.0.0
+  SOAPAction: RequestAccess (bzw. nur der jeweilige Aktionsname)
+  Content-Type: application/soap+xml;charset=UTF-8
+  Accept-Encoding: gzip, deflate
+  Accept: */*
+  Accept-Language: de-de
+  Connection: keep-alive
+
+Der XML-String wird direkt über StringEntity(String, "UTF-8") gesendet.
+Anders als bei der ursprünglichen Loewe-App hängt diese App kein NUL an.
+Trotz des Keep-alive-Headers wird pro Methodenaufruf ein neuer
+DefaultHttpClient erzeugt. Für die SOAP-Aufrufe setzt der eigene Code keine
+Connect- oder Read-Zeitbegrenzung. Das ist keine Empfehlung für den Adapter.
+
+Evidenz: LoeweTV.connect(), code_item 0x46d1c; HTTP-Aufruf DEX 0x46e12;
+ClientId-Elementname 0x46e9e; Speicherung 0x46ece. Der Body stammt unmittelbar
+aus String-Index 262, geladen im Konstruktor bei DEX 0x46b12.
+
+3. Fernbedienungstasten und Unterschiede
+---------------------------------------
+Die Ressourcen liefern neu belastbare Zifferntasten:
+  0 bis 9 = l2700 mit numerischem Wert 0 bis 9.
+
+EPG verwendet l2700 / 78, während in der ursprünglichen Loewe-App 1.4.7
+l2700 / 15 extrahiert wurde. Ein separater Alternativ-Datenpunkt ist sinnvoll;
+das vorhandene Mapping sollte nicht ohne Gerätetest ersetzt werden.
+
+Alle 36 CSV-Zeilen stehen unverändert samt Herkunft in remote115-keys.json.
+Die Werte 1337 und 1338 sind lokale App-Sonderfunktionen für Senderauswahl
+und Texteingabe. Sie werden nicht als Fernbedienungscode an den TV gesendet.
+
+Die dritte CSV-Spalte ist die Schriftfett-Einstellung. Sie bezeichnet keinen
+Sende-, Tastendruck- oder Wiederholungsmodus. Tatsächlich lädt
+LoeweRemoteKeyConfiguration.<init>() Feld 3 als keyCode und Feld 6 als alpha.
+MainActivity.onStart() überträgt keyCode nach Button.id und alpha nach
+Button.tag; onClick() verwendet genau diese beiden Werte.
+
+Pro InjectRCKey-Anfrage enthält diese App ein einzelnes RCKeyEvent.
+Normale Klicks senden immer press. Für 32, 16, 17, 41, 53, 50, 52 und 55
+wird zusätzlich eine zweite Anfrage mit release gestartet. Auffällig:
+32 wird doppelt geprüft, 33 fehlt. Beide Aufgaben laufen über
+THREAD_POOL_EXECUTOR, ohne dass die erste abgewartet wird. Das kann die
+Reihenfolge beeinflussen. Die gepaarte press/release-Sequenz aus der
+Original-App ist daher die bessere Grundlage für den Adapter.
+
+Evidenz: MainActivity.onClick(), code_item 0x4864c; press bei DEX 0x48840,
+erster Dispatch 0x4884e; release bei 0x48906, zweiter Dispatch 0x48914.
+LoeweTV.sendRemoteButton(), code_item 0x47c58, ersetzt die Platzhalter und
+führt den HTTP-POST aus.
+
+4. Gerätesuche
+--------------
+Bei manueller IP beziehungsweise Subnetzsuche prüft tryHTTPGet() den Pfad
+http://<IP>:1543/happy. HTTP 200 gilt als Treffer. Connect- und Read-Timeout
+betragen dort beide 80 Millisekunden. Diese URL ist ein Erkennungstest,
+kein belegter Einschaltbefehl.
+
+Alternativ startet die App eine CyberGarage-UPnP-Suche, wartet 4500 ms,
+liest die Geräteliste, stoppt die Suche und wählt Geräte mit dem Hersteller
+LOEWE. Die IP wird aus dem Hostteil von device.getLocation() entnommen.
+Die App ruft kein GetDeviceData, GetVolume oder GetMute auf. Sie liefert
+somit auch kein alternatives Format für Lautstärke-/MAC-Antworten.
+
+5. Zusätzlicher relevanter Fund in der ursprünglichen Loewe-App
+-------------------------------------------------------------
+Beim Gegencheck der ursprünglichen APK wurde ein bislang vom Adapter nicht
+berücksichtigtes MAC-Element verifiziert: m:MAC-Address, ohne -LAN/-WLAN.
+
+Quelle: lib/x86_64/libLoeweApp.so aus Loewe app 1.4.7.apk.
+String: m:MAC-Address bei 0x345a43.
+Symbol: CloeweSoap::Parse.
+Vergleich der 13 Zeichen ab 0x151497; Trefferzweig 0x1514b5 -> 0x151b5f.
+Das Ziel liegt bei SOAP-Objekt +0xe0; die Zeichenfolge wird über die gemeinsame
+Zuweisung ab 0x151d43 übernommen. LAN und WLAN haben eigene Felder und Tags.
+Die genauen Maschinenbefehle sind in legacy-mac-evidence.txt
+enthalten.
+
+Diesen generischen MAC-Wert als zusätzlichen Adapter-Rückfall zu lernen und
+zu speichern ist damit begründet. Der Fund allein beweist weder die Ursache
+des Nutzerfehlers noch, dass die ursprüngliche App genau dieses generische
+Feld beim Wake-on-LAN verwendet. Der dortige Widget-Wake-on-LAN-Pfad verwendet
+ausdrücklich LAN/WLAN.
+
+Mitgelieferte Nachweise im Verzeichnis docs
+-----------------------------------------
+remote115-protocol.json: strukturierte Ergebnisse mit Methoden und Offsets.
+remote115-keys.json: sämtliche Tastenkonfigurationszeilen und lokale Ausnahmen.
+legacy-mac-evidence.txt: ergänzende Original-App-Evidenz.
+protocol-templates.json: bisherige Vorlagen und Nachweise aus Loewe App 1.4.7.
+
+Die ursprünglichen APK-Dateien und vollständige App-Disassemblierungen sind
+nicht Bestandteil des Adapterpakets. Die Herkunft und Codepositionen sind
+in den genannten Nachweisdateien festgehalten.

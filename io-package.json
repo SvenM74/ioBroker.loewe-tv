@@ -1,0 +1,112 @@
+{
+  "common": {
+    "name": "loewe-tv",
+    "version": "0.1.1",
+    "news": {
+      "0.1.1": {
+        "en": "Fix response parser stalls and shutdown; independent Wake-on-LAN, legacy MAC discovery, diagnostic states and additional verified remote keys.",
+        "de": "Blockaden beim Antwortparser und Beenden behoben; unabhängiges Wake-on-LAN, MAC-Erkennung älterer TVs, Diagnose und zusätzliche belegte Fernbedienungstasten."
+      },
+      "0.1.0": {
+        "en": "Initial version: remote keys, volume, mute, text input, channel lists, Wake-on-LAN and additional SOAP actions.",
+        "de": "Erste Version: Fernbedienung, Lautstärke, Stummschaltung, Texteingabe, Senderlisten, Wake-on-LAN und zusätzliche SOAP-Aktionen."
+      }
+    },
+    "titleLang": {
+      "en": "Loewe TV",
+      "de": "Loewe TV"
+    },
+    "desc": {
+      "en": "Control a Loewe TV locally through its Tablet SOAP interface.",
+      "de": "Einen Loewe-Fernseher lokal über die Tablet-SOAP-Schnittstelle steuern."
+    },
+    "authors": [
+      "Loewe TV adapter contributors"
+    ],
+    "licenseInformation": {
+      "license": "MIT",
+      "type": "free"
+    },
+    "platform": "Javascript/Node.js",
+    "mode": "daemon",
+    "enabled": false,
+    "compact": false,
+    "icon": "loewe-tv.svg",
+    "type": "multimedia",
+    "connectionType": "local",
+    "dataSource": "poll",
+    "adminUI": {
+      "config": "json"
+    },
+    "dependencies": [
+      {
+        "js-controller": ">=6.0.11"
+      }
+    ],
+    "globalDependencies": [
+      {
+        "admin": ">=7.0.23"
+      }
+    ],
+    "stopTimeout": 500
+  },
+  "native": {
+    "host": "",
+    "port": 905,
+    "timeout": 5000,
+    "pollInterval": 30,
+    "pollPlayback": true,
+    "appendNul": true,
+    "macLan": "",
+    "macWlan": "",
+    "broadcastAddress": "255.255.255.255",
+    "maxVolume": 99,
+    "enableAdvanced": false
+  },
+  "objects": [],
+  "instanceObjects": [
+    {
+      "_id": "info",
+      "type": "channel",
+      "common": {
+        "name": {
+          "en": "Connection and diagnostics",
+          "de": "Verbindung und Diagnose"
+        }
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.connection",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "TV reachable",
+          "de": "TV erreichbar"
+        },
+        "type": "boolean",
+        "role": "indicator.connected",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.lastError",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Last error",
+          "de": "Letzter Fehler"
+        },
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": false,
+        "def": ""
+      },
+      "native": {}
+    }
+  ]
+}

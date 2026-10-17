@@ -1,0 +1,146 @@
+Loewe TV ioBroker Adapter 0.1.1 - Prüfbericht
+Stand: 17. Oktober 2026
+
+ERGEBNIS
+68 Tests bestanden, 0 fehlgeschlagen, 0 abgebrochen, 0 übersprungen.
+Die unbearbeitete Ausgabe des abschließenden gemeinsamen Testlaufs steht
+in TESTERGEBNIS_0.1.1.tap. Alle Tests wurden mit der endgültigen Codefassung
+von 0.1.1 ausgeführt.
+
+Aufteilung:
+  test/protocol.test.js:                23 Protokolltests
+  test/runtime.test.js:                 17 ursprüngliche Laufzeittests
+  test/client-regressions-010.test.js:   16 neue Client-Regressionstests
+  test/regressions-010.test.js:           8 neue Laufzeit-Regressionstests
+  test/loopback.test.js:                 4 echte HTTP-/UDP-Loopbacktests
+
+Zusätzlich bestanden:
+- Abgleich aller 34 originalen XML-Vorlagen und 33 SOAP-Aktionen.
+- Abgleich der 29 ursprünglichen Fernbedienungsbelegungen sowie 11 neuer
+  Belegungen aus Löwenbändiger Remote 1.15; keine Übernahme lokaler UI-Codes.
+- Konsistente Paketmetadaten, 11 Konfigurationsfelder und Übersetzungen.
+- 80 Objektdefinitionen im Standardmodus; 279 mit erweiterten Aktionen.
+- Syntaxprüfung sämtlicher JavaScript-Dateien.
+
+TESTUMGEBUNG UND BEFEHLE
+Node.js 24.19.0, Linux, echte Produktionsbibliothek sax 1.6.1.
+
+node --test --test-reporter=tap test/*.test.js
+npm run check
+
+Die normalen Protokoll-/Laufzeittests verwenden kontrollierte Transport-
+und ioBroker-Datenbank-Doubles. Die vier Loopbacktests verwenden echte
+Node-HTTP-/UDP-Sockets ausschließlich auf 127.0.0.1. Die Antworten werden
+von einem lokalen Testserver erzeugt; es gibt keinen Kontakt zu einem TV.
+Beim UDP-Test wird der angeforderte Produktionsport 9 geprüft und nur für
+den Test auf den dynamischen Port eines lokalen Empfängers umgeleitet.
+
+NACHGEWIESENE FEHLER IN 0.1.0 UND IHRE KORREKTUREN
+
+1. Lange CPU-Blockade bei bestimmten fehlerhaften XML-Antworten
+   Der bisherige Ausdruck zum Entfernen nachgestellter NUL-Zeichen konnte
+   bei einer langen NUL-Folge mit anschließendem weiteren Zeichen
+   quadratisch viel Rechenzeit beanspruchen. Währenddessen liefen auch
+   JavaScript-Zeitbegrenzungen im selben Prozess nicht weiter.
+   Korrektur: lineares Entfernen eines echten NUL-Suffixes; HTTP-Antworten
+   werden mit dem echten SAX-Parser in Abschnitten von 32 KiB verarbeitet.
+   Dazwischen kann die Ereignisschleife andere Aufgaben erledigen.
+   Gesamte HTTP-Zeitbegrenzung und Abbruch gelten auch während des Parsens.
+   Geprüft: fehlerhafte Antwort mit 40.000 NUL-Zeichen, echte HTTP-Übertragung,
+   große gültige Antworten, Chunk-Grenzen sowie Abbruch während des Parsens.
+
+2. Einschalten wartete hinter SOAP-Anfragen an einen ausgeschalteten TV
+   Korrektur: Wake-on-LAN wird außerhalb der SOAP-Warteschlange und vor
+   Diagnosezugriffen auf die ioBroker-Datenbank gestartet.
+   Geprüft: Der Wake-Aufruf erreicht den Transport, während eine normale
+   TV-Statusabfrage weiter auf ihre Antwort wartet.
+   Gleichzeitige Wake-Aufrufe werden zusammengefasst.
+
+3. Unvollständige MAC-Erkennung und ungünstige Abfragereihenfolge
+   Korrektur: GetDeviceData wird vor den optionalen Lautstärke-/Mute-
+   Abfragen ausgeführt. Neben MAC-Address-LAN und MAC-Address-WLAN wird das
+   ursprüngliche Antwortfeld MAC-Address als zusätzliche Quelle gelernt.
+   Geprüft: Ein simulierter älterer TV liefert nur MAC-Address und lehnt
+   GetVolume ab. Die MAC wird trotzdem gespeichert und für WOL angeboten.
+   Das Feld ist im Parser der offiziellen App 1.4.7 nachgewiesen. Seine
+   Verwendung als zusätzlicher WOL-Rückfall ist eine Adapterentscheidung,
+   kein Nachweis des WOL-Verhaltens eines konkreten TV-Modells.
+
+4. Unbegrenztes Warten und nicht behandelte Promise-Fehler
+   Korrektur: Einzelne Datenbankzugriffe haben zwei Sekunden Zeitbudget.
+   Beim Beenden werden abschließende Statuswrites parallel mit je 200 ms
+   begrenzt. main.js hat einen zusätzlichen Abschluss nach 250 ms.
+   Geprüft: Laufzeitbeenden trotz nie beantworteter Datenbankschreibvorgänge;
+   keine neu begonnenen WOL-Diagnosewrites nach Beginn des Beendens;
+   keine unbehandelte Ablehnung aus einem Hintergrundpoll oder dem
+   Statusabonnement. Async-Abonnement und Fallback wurden geprüft.
+   Bereits vor dem Beenden an die Datenbank übergebene Aufträge können
+   dort noch später gespeichert werden; sie sind nicht rückwirkend abbrechbar.
+
+WEITERE STABILITÄTSÄNDERUNGEN
+- Compact-Unterstützung in den Metadaten deaktiviert. Für bestehende
+  Installationen beschreibt README.md die zusätzliche Instanzumstellung.
+- SOAP-Warteschlange auf 20 laufende oder wartende Vorgänge begrenzt;
+  nach mehr als 30 Sekunden Wartezeit wird ein Vorgang verworfen.
+- Texteingabe hat höchstens 15 Sekunden Gesamtzeit einschließlich Anmeldung.
+  Ein Text kann bei Abbruch teilweise übertragen sein und wird nicht
+  automatisch wiederholt. Vier gezielte Fristtests bestehen.
+- Intervall 0 deaktiviert automatische Statusabfragen einschließlich der
+  Startabfrage. Manuelle Aktualisierung und Einschalten bleiben verfügbar.
+- TV-Antworten maximal 8 MiB; JSON-Datenpunkte maximal 512 KiB und
+  info.lastResponse maximal 64 KiB. Übergroße Werte erhalten einen klaren
+  Hinweis. API-XML wird oberhalb von 512 KiB nicht gespeichert.
+- Drei WOL-Senderunden mit 150 ms Pause; vorhandene echte Netzmasken
+  bestimmen zusätzliche passende Broadcastziele. Kein pauschales /24.
+- WOL über echte UDP-Sockets mit drei empfangenen Magic Packets geprüft.
+- Unvollständige echte HTTP-Antwort läuft in die Frist, während andere
+  Ereignisse weiter verarbeitet werden.
+
+ERGEBNIS DER ZWEITEN APK
+Löwenbändiger Remote 1.15, Paket com.alternone.loeweremote.
+SHA-256: 676e86b962aae77fae3df08607a56e423bdae12a1843589532e0b42d33bff121
+
+Die App bietet keinen nachgewiesenen Einschalt-/Wake-on-LAN-Pfad.
+Die OFF-Taste verwendet den bekannten Ausschaltcode l2700/12.
+UDP-Verwendung betrifft die SSDP-Gerätesuche, keine Magic Packets.
+Neu übernommen wurden die zehn Zifferntasten l2700/0 bis l2700/9 sowie
+der zusätzliche EPG-Code l2700/78. Der bisherige EPG-Code 15 bleibt erhalten.
+Die lokalen App-Werte 1337 und 1338 sind keine TV-Codes.
+Die APK wurde statisch gelesen und nicht ausgeführt.
+Details: Loewenbaendiger_Remote_1.15_Analyse.txt, remote115-protocol.json,
+remote115-keys.json sowie legacy-mac-evidence.txt.
+
+GRENZEN DER AUSSAGEKRAFT
+Die oben genannten Implementierungsfehler wurden reproduziert und korrigiert.
+Ohne TV-Antworten und Laufzeitprotokoll des Nutzers ist nicht bewiesen,
+dass genau diese Fehler seine konkrete ioBroker-Blockade verursacht haben.
+
+Kein Test an einem realen Loewe-Fernseher.
+Kein tatsächlicher Start in einem laufenden ioBroker js-controller.
+Der Bezug von @iobroker/adapter-core war in der Entwicklungsumgebung
+wegen HTTP 403 beim Paketdownload nicht möglich. Diese Abhängigkeit ist
+regulär in package.json deklariert und wird nicht durch eine Attrappe ersetzt.
+Das Installationspaket enthält keine node_modules; ioBroker installiert
+die in package.json angegebenen Abhängigkeiten auf dem Zielsystem.
+
+BEKANNTES PROTOKOLLDETAIL
+SetMute=1 ist in der offiziellen App direkt nachgewiesen. SetMute=0 wurde
+aus ihrem Antwortparser abgeleitet und muss am Zielgerät bestätigt werden.
+Die APK-Vorlage für AddServicesFavoriteList enthält einen nicht passenden
+abschließenden Namespace. Der XML-Builder verwendet eine korrigierte Hülle.
+
+ERSTER ZIELGERÄT-TEST NACH DEM UPDATE
+1. Die vorhandene Instanz stoppen und nach README.md auf 0.1.1 aktualisieren;
+   dabei Compact für diese Instanz deaktivieren.
+2. Passende LAN-/WLAN-MAC manuell eintragen, Intervall auf 0 setzen, speichern.
+3. Instanz starten. info.wakeReady zeigt allein eine bekannte MAC an.
+4. control.powerOn mit true und ack=false auslösen. Den aktuellen Eintrag
+   info.lastWakeOnLan auf macs, targets, repeats und sentAt prüfen.
+5. Nach dem TV-Start control.refresh auslösen und info.connection sowie
+   info.lastError prüfen. Mit Intervall 0 gibt es keine automatische Abfrage.
+6. Danach einzelne Fernbedienungstasten testen und bei Erfolg das Intervall
+   beispielsweise auf 30 Sekunden zurücksetzen.
+
+Ein erfolgreicher UDP-Versand bestätigt weder Paketempfang noch Aufwachen.
+Für verbleibende Probleme: TV-Modell, Firmware, LAN/WLAN, Netzwerkaufbau und
+aktuelle Diagnosewerte aus info.lastWakeOnLan und info.lastError beilegen.

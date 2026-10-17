@@ -1,0 +1,29 @@
+Additional inspection of user-provided original APK, x86_64 libLoeweApp.so
+String m:MAC-Address @0x345a43; generic MAC parsed separately from LAN/WLAN.
+
+  15148e:	48 8b 54 24 28       	mov    rdx,QWORD PTR [rsp+0x28]
+  151493:	48 83 c2 01          	add    rdx,0x1
+  151497:	48 b8 6d 3a 4d 41 43 	movabs rax,0x64412d43414d3a6d
+  15149e:	2d 41 64
+  1514a1:	48 33 02             	xor    rax,QWORD PTR [rdx]
+  1514a4:	48 b9 2d 41 64 64 72 	movabs rcx,0x737365726464412d
+  1514ab:	65 73 73
+  1514ae:	48 33 4a 05          	xor    rcx,QWORD PTR [rdx+0x5]
+  1514b2:	48 09 c1             	or     rcx,rax
+  1514b5:	0f 84 a4 06 00 00    	je     151b5f
+
+  151b5f:	48 8b 44 24 20       	mov    rax,QWORD PTR [rsp+0x20]
+  151b64:	48 05 e0 00 00 00    	add    rax,0xe0
+  151b6a:	48 3b 44 24 10       	cmp    rax,QWORD PTR [rsp+0x10]
+  151b6f:	0f 85 ce 01 00 00    	jne    151d43
+  151b75:	e9 1b d8 ff ff       	jmp    14f395
+
+  151d43:	48 89 c7             	mov    rdi,rax
+  151d46:	48 8b 74 24 10       	mov    rsi,QWORD PTR [rsp+0x10]
+  151d4b:	0f b6 16             	movzx  edx,BYTE PTR [rsi]
+  151d4e:	f6 c2 01             	test   dl,0x1
+  151d51:	0f 85 6f cd ff ff    	jne    14eac6
+  151d57:	48 83 c6 01          	add    rsi,0x1
+  151d5b:	48 d1 ea             	shr    rdx,1
+  151d5e:	e8 ed 69 f6 ff       	call   b8750 <string::assign(char const*, unsigned long)@plt>
+  151d63:	e9 2d d6 ff ff       	jmp    14f395

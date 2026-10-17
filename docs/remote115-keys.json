@@ -1,0 +1,573 @@
+{
+  "source": {
+    "filename": "Loewenbaendiger+Remote_1.15_APKPure.apk",
+    "sha256": "676e86b962aae77fae3df08607a56e423bdae12a1843589532e0b42d33bff121",
+    "package": "com.alternone.loeweremote",
+    "version_name": "1.15",
+    "version_code": 115,
+    "apk_size": 408987,
+    "dex_size": 894760,
+    "native_libraries": [],
+    "analysis": "static DEX/manifest/resource extraction; APK never executed; no TV contacted"
+  },
+  "resource": "assets/configuration.csv",
+  "schema": [
+    "layout_id",
+    "label",
+    "bold",
+    "value",
+    "font",
+    "display",
+    "alphabet"
+  ],
+  "loader": "LoeweRemoteKeyConfiguration.<init>(AssetManager), DEX code_item 0x46a28, CSV field 3 -> keyCode, field 6 -> alpha",
+  "ui_binding": "MainActivity.onStart(), sets Button.id from keyCode and Button.tag from alpha",
+  "dispatch": "MainActivity.onClick(), DEX code_item 0x4864c",
+  "release_dispatch_note": "The source tests value 32 twice, omits 33 and starts separate press/release requests on THREAD_POOL_EXECUTOR without waiting. Do not copy this concurrency pattern.",
+  "keys": [
+    {
+      "line": 1,
+      "layout_id": 1,
+      "label": "OFF",
+      "bold": false,
+      "value": 12,
+      "font": "Roboto-Regular.ttf",
+      "display": "OFF",
+      "alphabet": "l2700",
+      "raw": "1;OFF;0;12;Roboto-Regular.ttf;OFF;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 2,
+      "layout_id": 2,
+      "label": "Audio Toggle",
+      "bold": false,
+      "value": 13,
+      "font": "Android-Dev-Icons-2.ttf",
+      "display": "H",
+      "alphabet": "l2700",
+      "raw": "2;Audio Toggle;0;13;Android-Dev-Icons-2.ttf;H;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 3,
+      "layout_id": 3,
+      "label": "1",
+      "bold": true,
+      "value": 1,
+      "font": "Roboto-Regular.ttf",
+      "display": "1",
+      "alphabet": "l2700",
+      "raw": "3;1;1;1;Roboto-Regular.ttf;1;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 4,
+      "layout_id": 4,
+      "label": "2",
+      "bold": true,
+      "value": 2,
+      "font": "Roboto-Regular.ttf",
+      "display": "2",
+      "alphabet": "l2700",
+      "raw": "4;2;1;2;Roboto-Regular.ttf;2;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 5,
+      "layout_id": 5,
+      "label": "3",
+      "bold": true,
+      "value": 3,
+      "font": "Roboto-Regular.ttf",
+      "display": "3",
+      "alphabet": "l2700",
+      "raw": "5;3;1;3;Roboto-Regular.ttf;3;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 6,
+      "layout_id": 6,
+      "label": "Rewind",
+      "bold": false,
+      "value": 50,
+      "font": "Android-Dev-Icons-2.ttf",
+      "display": "3",
+      "alphabet": "l2700-hdr",
+      "raw": "6;Rewind;0;50;Android-Dev-Icons-2.ttf;3;l2700-hdr",
+      "sends_remote_command": true,
+      "modes": [
+        "press",
+        "release"
+      ]
+    },
+    {
+      "line": 7,
+      "layout_id": 7,
+      "label": "+P",
+      "bold": false,
+      "value": 24,
+      "font": "Roboto-Regular.ttf",
+      "display": "+P",
+      "alphabet": "l2700",
+      "raw": "7;+P;0;24;Roboto-Regular.ttf;+P;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 8,
+      "layout_id": 8,
+      "label": "4",
+      "bold": true,
+      "value": 4,
+      "font": "Roboto-Regular.ttf",
+      "display": "4",
+      "alphabet": "l2700",
+      "raw": "8;4;1;4;Roboto-Regular.ttf;4;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 9,
+      "layout_id": 9,
+      "label": "5",
+      "bold": true,
+      "value": 5,
+      "font": "Roboto-Regular.ttf",
+      "display": "5",
+      "alphabet": "l2700",
+      "raw": "9;5;1;5;Roboto-Regular.ttf;5;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 10,
+      "layout_id": 10,
+      "label": "6",
+      "bold": true,
+      "value": 6,
+      "font": "Roboto-Regular.ttf",
+      "display": "6",
+      "alphabet": "l2700",
+      "raw": "10;6;1;6;Roboto-Regular.ttf;6;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 11,
+      "layout_id": 11,
+      "label": "Play",
+      "bold": false,
+      "value": 53,
+      "font": "Android-Dev-Icons-1.ttf",
+      "display": "c",
+      "alphabet": "l2700-hdr",
+      "raw": "11;Play;0;53;Android-Dev-Icons-1.ttf;c;l2700-hdr",
+      "sends_remote_command": true,
+      "modes": [
+        "press",
+        "release"
+      ]
+    },
+    {
+      "line": 12,
+      "layout_id": 12,
+      "label": "-P",
+      "bold": false,
+      "value": 23,
+      "font": "Roboto-Regular.ttf",
+      "display": "-P",
+      "alphabet": "l2700",
+      "raw": "12;-P;0;23;Roboto-Regular.ttf;-P;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 13,
+      "layout_id": 13,
+      "label": "7",
+      "bold": true,
+      "value": 7,
+      "font": "Roboto-Regular.ttf",
+      "display": "7",
+      "alphabet": "l2700",
+      "raw": "13;7;1;7;Roboto-Regular.ttf;7;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 14,
+      "layout_id": 14,
+      "label": "8",
+      "bold": true,
+      "value": 8,
+      "font": "Roboto-Regular.ttf",
+      "display": "8",
+      "alphabet": "l2700",
+      "raw": "14;8;1;8;Roboto-Regular.ttf;8;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 15,
+      "layout_id": 15,
+      "label": "9",
+      "bold": true,
+      "value": 9,
+      "font": "Roboto-Regular.ttf",
+      "display": "9",
+      "alphabet": "l2700",
+      "raw": "15;9;1;9;Roboto-Regular.ttf;9;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 16,
+      "layout_id": 16,
+      "label": "Pause",
+      "bold": false,
+      "value": 41,
+      "font": "Android-Dev-Icons-1.ttf",
+      "display": "b",
+      "alphabet": "l2700-hdr",
+      "raw": "16;Pause;0;41;Android-Dev-Icons-1.ttf;b;l2700-hdr",
+      "sends_remote_command": true,
+      "modes": [
+        "press",
+        "release"
+      ]
+    },
+    {
+      "line": 17,
+      "layout_id": 17,
+      "label": "RED",
+      "bold": false,
+      "value": 27,
+      "font": "Roboto-Regular.ttf",
+      "display": "RED",
+      "alphabet": "l2700",
+      "raw": "17;RED;0;27;Roboto-Regular.ttf;RED;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 18,
+      "layout_id": 18,
+      "label": "MEDIA",
+      "bold": false,
+      "value": 49,
+      "font": "Roboto-Regular.ttf",
+      "display": "MEDIA",
+      "alphabet": "l2700",
+      "raw": "18;MEDIA;0;49;Roboto-Regular.ttf;MEDIA;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 19,
+      "layout_id": 19,
+      "label": "0",
+      "bold": true,
+      "value": 0,
+      "font": "Roboto-Regular.ttf",
+      "display": "0",
+      "alphabet": "l2700",
+      "raw": "19;0;1;0;Roboto-Regular.ttf;0;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 20,
+      "layout_id": 20,
+      "label": "EPG",
+      "bold": false,
+      "value": 78,
+      "font": "Roboto-Regular.ttf",
+      "display": "EPG",
+      "alphabet": "l2700",
+      "raw": "20;EPG;0;78;Roboto-Regular.ttf;EPG;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 21,
+      "layout_id": 21,
+      "label": "Forward",
+      "bold": false,
+      "value": 52,
+      "font": "Android-Dev-Icons-2.ttf",
+      "display": "2",
+      "alphabet": "l2700-hdr",
+      "raw": "21;Forward;0;52;Android-Dev-Icons-2.ttf;2;l2700-hdr",
+      "sends_remote_command": true,
+      "modes": [
+        "press",
+        "release"
+      ]
+    },
+    {
+      "line": 22,
+      "layout_id": 22,
+      "label": "GREEN",
+      "bold": false,
+      "value": 26,
+      "font": "Roboto-Regular.ttf",
+      "display": "GREEN",
+      "alphabet": "l2700",
+      "raw": "22;GREEN;0;26;Roboto-Regular.ttf;GREEN;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 23,
+      "layout_id": 23,
+      "label": "MENU",
+      "bold": false,
+      "value": 11,
+      "font": "Roboto-Regular.ttf",
+      "display": "MENU",
+      "alphabet": "l2700",
+      "raw": "23;MENU;0;11;Roboto-Regular.ttf;MENU;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 24,
+      "layout_id": 24,
+      "label": "UP",
+      "bold": true,
+      "value": 32,
+      "font": "Android-Dev-Icons-1.ttf",
+      "display": "%",
+      "alphabet": "l2700",
+      "raw": "24;UP;1;32;Android-Dev-Icons-1.ttf;%;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press",
+        "release"
+      ]
+    },
+    {
+      "line": 25,
+      "layout_id": 25,
+      "label": "END",
+      "bold": false,
+      "value": 63,
+      "font": "Roboto-Regular.ttf",
+      "display": "END",
+      "alphabet": "l2700",
+      "raw": "25;END;0;63;Roboto-Regular.ttf;END;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 26,
+      "layout_id": 26,
+      "label": "STOP",
+      "bold": false,
+      "value": 54,
+      "font": "Android-Dev-Icons-1.ttf",
+      "display": "a",
+      "alphabet": "l2700-hdr",
+      "raw": "26;STOP;0;54;Android-Dev-Icons-1.ttf;a;l2700-hdr",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 27,
+      "layout_id": 27,
+      "label": "YELLOW",
+      "bold": false,
+      "value": 43,
+      "font": "Roboto-Regular.ttf",
+      "display": "YELLOW",
+      "alphabet": "l2700",
+      "raw": "27;YELLOW;0;43;Roboto-Regular.ttf;YELLOW;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 28,
+      "layout_id": 28,
+      "label": "LEFT",
+      "bold": true,
+      "value": 17,
+      "font": "Android-Dev-Icons-1.ttf",
+      "display": "*",
+      "alphabet": "l2700",
+      "raw": "28;LEFT;1;17;Android-Dev-Icons-1.ttf;*;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press",
+        "release"
+      ]
+    },
+    {
+      "line": 29,
+      "layout_id": 29,
+      "label": "OK",
+      "bold": true,
+      "value": 38,
+      "font": "Roboto-Regular.ttf",
+      "display": "OK",
+      "alphabet": "l2700",
+      "raw": "29;OK;1;38;Roboto-Regular.ttf;OK;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 30,
+      "layout_id": 30,
+      "label": "RIGHT",
+      "bold": true,
+      "value": 16,
+      "font": "Android-Dev-Icons-1.ttf",
+      "display": "(",
+      "alphabet": "l2700",
+      "raw": "30;RIGHT;1;16;Android-Dev-Icons-1.ttf;(;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press",
+        "release"
+      ]
+    },
+    {
+      "line": 31,
+      "layout_id": 31,
+      "label": "REC",
+      "bold": true,
+      "value": 55,
+      "font": "Genericons-Regular.otf",
+      "display": "",
+      "alphabet": "l2700-hdr",
+      "raw": "31;REC;1;55;Genericons-Regular.otf;;l2700-hdr",
+      "sends_remote_command": true,
+      "modes": [
+        "press",
+        "release"
+      ]
+    },
+    {
+      "line": 32,
+      "layout_id": 32,
+      "label": "BLUE",
+      "bold": false,
+      "value": 40,
+      "font": "Roboto-Regular.ttf",
+      "display": "BLUE",
+      "alphabet": "l2700",
+      "raw": "32;BLUE;0;40;Roboto-Regular.ttf;BLUE;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 33,
+      "layout_id": 33,
+      "label": "CHANNELLIST",
+      "bold": true,
+      "value": 1337,
+      "font": "Genericons-Regular.otf",
+      "display": "",
+      "alphabet": "l2700",
+      "raw": "33;CHANNELLIST;1;1337;Genericons-Regular.otf;;l2700",
+      "sends_remote_command": false,
+      "local_function": "Open app channel list"
+    },
+    {
+      "line": 34,
+      "layout_id": 34,
+      "label": "DOWN",
+      "bold": true,
+      "value": 33,
+      "font": "Android-Dev-Icons-1.ttf",
+      "display": "^",
+      "alphabet": "l2700",
+      "raw": "34;DOWN;1;33;Android-Dev-Icons-1.ttf;^;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 35,
+      "layout_id": 35,
+      "label": "INFO",
+      "bold": false,
+      "value": 79,
+      "font": "Roboto-Regular.ttf",
+      "display": "INFO",
+      "alphabet": "l2700",
+      "raw": "35;INFO;0;79;Roboto-Regular.ttf;INFO;l2700",
+      "sends_remote_command": true,
+      "modes": [
+        "press"
+      ]
+    },
+    {
+      "line": 36,
+      "layout_id": 36,
+      "label": "SEND",
+      "bold": true,
+      "value": 1338,
+      "font": "Android-Dev-Icons-2.ttf",
+      "display": "h",
+      "alphabet": "l2700",
+      "raw": "36;SEND;1;1338;Android-Dev-Icons-2.ttf;h;l2700",
+      "sends_remote_command": false,
+      "local_function": "Open app text entry"
+    }
+  ]
+}

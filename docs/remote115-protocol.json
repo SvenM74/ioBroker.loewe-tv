@@ -1,0 +1,294 @@
+{
+  "source": {
+    "filename": "Loewenbaendiger+Remote_1.15_APKPure.apk",
+    "sha256": "676e86b962aae77fae3df08607a56e423bdae12a1843589532e0b42d33bff121",
+    "package": "com.alternone.loeweremote",
+    "version_name": "1.15",
+    "version_code": 115,
+    "apk_size": 408987,
+    "dex_size": 894760,
+    "native_libraries": [],
+    "analysis": "static DEX/manifest/resource extraction; APK never executed; no TV contacted"
+  },
+  "coverage": {
+    "class_definitions_total": 511,
+    "application_classes": 31,
+    "application_methods": 116,
+    "native_application_methods": [],
+    "unknown_application_opcodes": 0
+  },
+  "power_on": {
+    "implemented": false,
+    "evidence": "Complete own application code has no WoL/magic-packet/MAC retrieval/power-on path. OFF in assets/configuration.csv line 1 is l2700 value 12 and follows ordinary InjectRCKey path. Datagram classes in the APK belong to CyberGarage UPnP discovery library.",
+    "mac_retrieval": false,
+    "get_device_data": false,
+    "warning": "This does not prove a TV cannot be awakened. It proves this APK supplies no additional power-on implementation."
+  },
+  "transport": {
+    "protocol": "HTTP POST",
+    "host": "IP selected by discovery/manual input",
+    "port": 905,
+    "path": "/loewe_tablet_0001",
+    "namespace": "urn:loewe.de:RemoteTV:Tablet",
+    "headers": {
+      "User-Agent": "Assist%20Media/20 CFNetwork/609.1.4 Darwin/13.0.0",
+      "SOAPAction": "<Action name only, unquoted>",
+      "Content-Type": "application/soap+xml;charset=UTF-8",
+      "Accept-Encoding": "gzip, deflate",
+      "Accept": "*/*",
+      "Accept-Language": "de-de",
+      "Connection": "keep-alive"
+    },
+    "body_charset": "UTF-8",
+    "append_nul": false,
+    "body_evidence": "LoeweTV.connect() dex@0x46dea..0x46e12; sendRemoteButton() dex@0x47d26..0x47d3a passes XML directly to StringEntity(String,\"UTF-8\") and HttpPost.setEntity",
+    "http_client": "New DefaultHttpClient() for each request, despite Connection: keep-alive",
+    "soap_timeout": "No explicit connection/read timeout configured for SOAP calls"
+  },
+  "session": {
+    "request_action": "RequestAccess",
+    "request_template": "<?xml version=\"1.0\"?><env:Envelope xmlns:env=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ltv=\"urn:loewe.de:RemoteTV:Tablet\"><env:Body><ltv:RequestAccess><fcid>0</fcid><ClientId>?</ClientId><DeviceType>Apple iPad</DeviceType><DeviceName>Dummy</DeviceName><DeviceUUID>1234</DeviceUUID><RequesterName>Assist Media App</RequesterName></ltv:RequestAccess></env:Body></env:Envelope>",
+    "client_id": "From first m:ClientId element of HTTP 200 response, assigned with setClientID; later PHCLIENTID replacements use it.",
+    "constant_client_id": false,
+    "request_evidence": "LoeweTV.connect() code_item 0x46d1c; HTTP execute dex@0x46e12; m:ClientId dex@0x46e9e; setClientID dex@0x46ece",
+    "initial_fields": {
+      "fcid": "0",
+      "ClientId": "?",
+      "DeviceType": "Apple iPad",
+      "DeviceName": "Dummy",
+      "DeviceUUID": "1234",
+      "RequesterName": "Assist Media App"
+    }
+  },
+  "remote_events": {
+    "events_per_request": 1,
+    "press": "Always on normal button click",
+    "release_extra_request_values": [
+      32,
+      16,
+      17,
+      41,
+      53,
+      50,
+      52,
+      55
+    ],
+    "release_exclusion_bug": "32 checked twice, 33 never checked",
+    "parallel_dispatch": "Both AsyncButton instances use THREAD_POOL_EXECUTOR, no completion wait",
+    "hardware_volume_keys": {
+      "up": 21,
+      "down": 20,
+      "alphabet": "l2700",
+      "mode": "press"
+    },
+    "key_resource": "remote115-keys.json"
+  },
+  "discovery": {
+    "manual_or_scan_probe": {
+      "method": "GET",
+      "port": 1543,
+      "path": "/happy",
+      "success_status": 200,
+      "connect_timeout_ms": 80,
+      "read_timeout_ms": 80,
+      "evidence": "LoeweTV.tryHTTPGet(String) code_item 0x46c74; #80 at dex@0x46c84, timeout setters @0x46c92/@0x46c98, endpoint @0x46cc2"
+    },
+    "subnet": "Own WiFi IPv4 address up to final dot, then sequential scan. Discovery only, no power-on.",
+    "upnp": {
+      "library": "CyberGarage",
+      "search": "ControlPoint.start(); search(); sleep(4500 ms); getDeviceList(); stop()",
+      "filter": "manufacturer string exactly LOEWE",
+      "address": "Host parsed from device.getLocation()",
+      "evidence": "LoeweTV.discoverUPNP(String) code_item 0x46f84"
+    }
+  },
+  "implemented_tablet_actions": [
+    "RequestAccess",
+    "InjectRCKey",
+    "InjectKeyboardKey",
+    "GetChannelList",
+    "GetMediaItem",
+    "ZapToMedia"
+  ],
+  "templates": {
+    "sendButtonTemplate": {
+      "xml": "<?xml version=\"1.0\"?><env:Envelope xmlns:env=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ltv=\"urn:loewe.de:RemoteTV:Tablet\"><env:Body><ltv:InjectRCKey><fcid>0</fcid><ClientId>PHCLIENTID</ClientId><InputEventSequence><RCKeyEvent alphabet=\"PHAPLHA\" value=\"PHNUMBER\" mode=\"PHMODE\"/></InputEventSequence></ltv:InjectRCKey></env:Body></env:Envelope>",
+      "dex_string_offset": "0x46b0a",
+      "dex_string_index": 261
+    },
+    "connectTemplate": {
+      "xml": "<?xml version=\"1.0\"?><env:Envelope xmlns:env=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ltv=\"urn:loewe.de:RemoteTV:Tablet\"><env:Body><ltv:RequestAccess><fcid>0</fcid><ClientId>?</ClientId><DeviceType>Apple iPad</DeviceType><DeviceName>Dummy</DeviceName><DeviceUUID>1234</DeviceUUID><RequesterName>Assist Media App</RequesterName></ltv:RequestAccess></env:Body></env:Envelope>",
+      "dex_string_offset": "0x46b12",
+      "dex_string_index": 262
+    },
+    "getListTemplate": {
+      "xml": "<?xml version=\"1.0\"?><env:Envelope xmlns:env=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ltv=\"urn:loewe.de:RemoteTV:Tablet\"><env:Body><ltv:GetChannelList><fcid>0</fcid><ClientId>PHCLIENTID</ClientId><ChannelListView>PHCHLIST</ChannelListView><QueryParameters><Range startIndex=\"PHMIN\" maxItems=\"PHMAX\"/><OrderField field=\"userChannelNumber\" type=\"ascending\"/></QueryParameters></ltv:GetChannelList></env:Body></env:Envelope>",
+      "dex_string_offset": "0x46b1a",
+      "dex_string_index": 258
+    },
+    "getChannelTemplate": {
+      "xml": "<?xml version=\"1.0\"?><env:Envelope xmlns:env=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ltv=\"urn:loewe.de:RemoteTV:Tablet\"><env:Body><ltv:GetMediaItem><fcid>0</fcid><ClientId>PHCLIENTID</ClientId><MediaItemReference mediaItemUuid=\"PHCHANNEL\"/></ltv:GetMediaItem></env:Body></env:Envelope>",
+      "dex_string_offset": "0x46b22",
+      "dex_string_index": 259
+    },
+    "sendChannelTemplate": {
+      "xml": "<?xml version=\"1.0\"?><env:Envelope xmlns:env=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ltv=\"urn:loewe.de:RemoteTV:Tablet\"><env:Body><ltv:ZapToMedia><fcid>0</fcid><ClientId>PHCLIENTID</ClientId><Player>0</Player><Locator>PHCHLINK</Locator></ltv:ZapToMedia></env:Body></env:Envelope>",
+      "dex_string_offset": "0x46b2a",
+      "dex_string_index": 263
+    },
+    "sendTextTemplate": {
+      "xml": "<?xml version=\"1.0\"?><env:Envelope xmlns:env=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ltv=\"urn:loewe.de:RemoteTV:Tablet\"><env:Body><ltv:InjectKeyboardKey><fcid>26</fcid><ClientId>PHCLIENTID</ClientId><ltv:InputEventSequence>PHTEXT</ltv:InputEventSequence></ltv:InjectKeyboardKey></env:Body></env:Envelope>",
+      "dex_string_offset": "0x46b32",
+      "dex_string_index": 260
+    }
+  },
+  "network_calls_own_application": [
+    {
+      "method": "Lcom/example/loeweremote/LoeweTV;->tryHTTPGet(Ljava/lang/String;)Z",
+      "instruction_offset": "0x46c92",
+      "instruction_pc": "0x7",
+      "target": "Lorg/apache/http/params/HttpConnectionParams;->setConnectionTimeout(Lorg/apache/http/params/HttpParams;I)V"
+    },
+    {
+      "method": "Lcom/example/loeweremote/LoeweTV;->tryHTTPGet(Ljava/lang/String;)Z",
+      "instruction_offset": "0x46c98",
+      "instruction_pc": "0xa",
+      "target": "Lorg/apache/http/params/HttpConnectionParams;->setSoTimeout(Lorg/apache/http/params/HttpParams;I)V"
+    },
+    {
+      "method": "Lcom/example/loeweremote/LoeweTV;->tryHTTPGet(Ljava/lang/String;)Z",
+      "instruction_offset": "0x46cdc",
+      "instruction_pc": "0x2c",
+      "target": "Lorg/apache/http/client/HttpClient;->execute(Lorg/apache/http/client/methods/HttpUriRequest;)Lorg/apache/http/HttpResponse;"
+    },
+    {
+      "method": "Lcom/example/loeweremote/LoeweTV;->connect()V",
+      "instruction_offset": "0x46e12",
+      "instruction_pc": "0x73",
+      "target": "Lorg/apache/http/client/HttpClient;->execute(Lorg/apache/http/client/methods/HttpUriRequest;)Lorg/apache/http/HttpResponse;"
+    },
+    {
+      "method": "Lcom/example/loeweremote/LoeweTV;->discoverUPNP(Ljava/lang/String;)I",
+      "instruction_offset": "0x46fae",
+      "instruction_pc": "0xd",
+      "target": "Lcom/example/loeweremote/MyControlPoint;->start()Z"
+    },
+    {
+      "method": "Lcom/example/loeweremote/LoeweTV;->discoverUPNP(Ljava/lang/String;)I",
+      "instruction_offset": "0x46fb4",
+      "instruction_pc": "0x10",
+      "target": "Lcom/example/loeweremote/MyControlPoint;->search()V"
+    },
+    {
+      "method": "Lcom/example/loeweremote/LoeweTV;->discoverUPNP(Ljava/lang/String;)I",
+      "instruction_offset": "0x46fd4",
+      "instruction_pc": "0x20",
+      "target": "Lcom/example/loeweremote/MyControlPoint;->stop()Z"
+    },
+    {
+      "method": "Lcom/example/loeweremote/LoeweTV;->getChannelDetails(Lcom/example/loeweremote/LoeweChannel;)V",
+      "instruction_offset": "0x471ae",
+      "instruction_pc": "0x8f",
+      "target": "Lorg/apache/http/client/HttpClient;->execute(Lorg/apache/http/client/methods/HttpUriRequest;)Lorg/apache/http/HttpResponse;"
+    },
+    {
+      "method": "Lcom/example/loeweremote/LoeweTV;->getChannelList()V",
+      "instruction_offset": "0x474b8",
+      "instruction_pc": "0xea",
+      "target": "Lorg/apache/http/client/HttpClient;->execute(Lorg/apache/http/client/methods/HttpUriRequest;)Lorg/apache/http/HttpResponse;"
+    },
+    {
+      "method": "Lcom/example/loeweremote/LoeweTV;->sendChannel(Ljava/lang/String;)V",
+      "instruction_offset": "0x47be6",
+      "instruction_pc": "0x5f",
+      "target": "Lorg/apache/http/client/HttpClient;->execute(Lorg/apache/http/client/methods/HttpUriRequest;)Lorg/apache/http/HttpResponse;"
+    },
+    {
+      "method": "Lcom/example/loeweremote/LoeweTV;->sendRemoteButton(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
+      "instruction_offset": "0x47d3a",
+      "instruction_pc": "0x69",
+      "target": "Lorg/apache/http/client/HttpClient;->execute(Lorg/apache/http/client/methods/HttpUriRequest;)Lorg/apache/http/HttpResponse;"
+    },
+    {
+      "method": "Lcom/example/loeweremote/LoeweTV;->sendText(Ljava/lang/String;)V",
+      "instruction_offset": "0x47f04",
+      "instruction_pc": "0x9a",
+      "target": "Lorg/apache/http/client/HttpClient;->execute(Lorg/apache/http/client/methods/HttpUriRequest;)Lorg/apache/http/HttpResponse;"
+    }
+  ],
+  "socket_senders_all_classes": [
+    {
+      "caller": "Lorg/cybergarage/http/HTTPSocket;-><init>(Lorg/cybergarage/http/HTTPSocket;)V",
+      "instruction_offset": "0x4b52c",
+      "callee": "Lorg/cybergarage/http/HTTPSocket;->getOutputStream()Ljava/io/OutputStream;"
+    },
+    {
+      "caller": "Lorg/cybergarage/http/HTTPSocket;->post(Lorg/cybergarage/http/HTTPResponse;Ljava/io/InputStream;JJZ)Z",
+      "instruction_offset": "0x4b576",
+      "callee": "Lorg/cybergarage/http/HTTPSocket;->getOutputStream()Ljava/io/OutputStream;"
+    },
+    {
+      "caller": "Lorg/cybergarage/http/HTTPSocket;->post(Lorg/cybergarage/http/HTTPResponse;[BJJZ)Z",
+      "instruction_offset": "0x4b6fc",
+      "callee": "Lorg/cybergarage/http/HTTPSocket;->getOutputStream()Ljava/io/OutputStream;"
+    },
+    {
+      "caller": "Lorg/cybergarage/http/HTTPSocket;->open()Z",
+      "instruction_offset": "0x4b934",
+      "callee": "Ljava/net/Socket;->getOutputStream()Ljava/io/OutputStream;"
+    },
+    {
+      "caller": "Lorg/cybergarage/upnp/ssdp/HTTPMUSocket;->send(Ljava/lang/String;Ljava/lang/String;I)Z",
+      "instruction_offset": "0x4fdf4",
+      "callee": "Ljava/net/MulticastSocket;->send(Ljava/net/DatagramPacket;)V"
+    },
+    {
+      "caller": "Lorg/cybergarage/upnp/ssdp/HTTPUSocket;->post(Ljava/lang/String;ILjava/lang/String;)Z",
+      "instruction_offset": "0x500b6",
+      "callee": "Ljava/net/DatagramSocket;->send(Ljava/net/DatagramPacket;)V"
+    },
+    {
+      "caller": "Lorg/cybergarage/http/HTTPRequest;->post(Ljava/lang/String;IZ)Lorg/cybergarage/http/HTTPResponse;",
+      "instruction_offset": "0x604de",
+      "callee": "Ljava/net/Socket;->getOutputStream()Ljava/io/OutputStream;"
+    }
+  ],
+  "comparison_with_official_app_1_4_7": {
+    "same_endpoint": true,
+    "new_numeric_rc_keys": {
+      "alphabet": "l2700",
+      "values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "source": "assets/configuration.csv, parsed at LoeweRemoteKeyConfiguration.<init>"
+    },
+    "epg_difference": {
+      "official_1_4_7": 15,
+      "loewenbaendiger_1_15": 78,
+      "must_not_silently_replace": true
+    },
+    "handshake": "Different RequestAccess fields, User-Agent, SOAPAction/Content-Type style, no NUL",
+    "short_press": "Original combines press+release in one request; Loewenbaendiger often press only, otherwise separate concurrent requests",
+    "power_on": "Only official app has extracted WoL; new APK has none"
+  },
+  "additional_official_app_finding": {
+    "source": "Loewe app 1.4.7.apk, lib/x86_64/libLoeweApp.so",
+    "legacy_mac_element": "m:MAC-Address",
+    "string_offset": "0x345a43",
+    "parser": "CloeweSoap::Parse",
+    "compare_offset": "0x151497",
+    "match_branch": "0x1514b5 -> 0x151b5f",
+    "destination": "SOAP object +0xe0",
+    "assign_routine": "0x151d43..0x151d5e",
+    "assessment": "Additional accepted MAC source, useful as adapter fallback when LAN/WLAN tags absent. Not a proof of the user failure or of original app WakeOn using this generic field."
+  }
+}

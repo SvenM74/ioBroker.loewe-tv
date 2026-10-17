@@ -1,6 +1,6 @@
 # Loewe TV für ioBroker
 
-Version **0.1.2** steuert einen Loewe-Fernseher über ioBroker-Datenpunkte. Du kannst die Fernbedienungstasten auslösen, Lautstärke und Stummschaltung setzen, Text eingeben, Senderlisten abfragen, über einen Sender-Locator umschalten und Wake-on-LAN auslösen.
+Version **0.1.3** steuert einen Loewe-Fernseher über ioBroker-Datenpunkte. Du kannst die Fernbedienungstasten auslösen, Lautstärke und Stummschaltung setzen, Text eingeben, Senderlisten abfragen, einzelne TV- und Radiosender über eigene Taster anwählen und Wake-on-LAN auslösen.
 
 Die Grundlage ist die aus der Android-App **Loewe App 1.4.7** extrahierte Netzwerkschnittstelle. Die zusätzliche Analyse von **Löwenbändiger Remote 1.15** ergänzt Zifferntasten und einen weiteren EPG-Code. Beim erneuten Prüfen der ursprünglichen Loewe-App wurde außerdem ein älteres MAC-Adressformat nachgewiesen, das der Adapter jetzt ebenfalls auswertet. Jede Instanz steuert genau einen Fernseher. Für einen zweiten Fernseher wird eine zweite Instanz angelegt.
 
@@ -13,10 +13,10 @@ Die Grundlage ist die aus der Android-App **Loewe App 1.4.7** extrahierte Netzwe
 | Software | **V5.4.6.0** |
 | Fernbedienung | Nach Rückmeldung des Nutzers scheinen sämtliche bereits vorhandenen Datenpunkte unter `remote` zu funktionieren. |
 | EPG-Tasten | `remote.epg` (15) und `remote.epg_alt` (78) öffnen dieselbe Anzeige am TV. Das ist noch kein Abruf von EPG-Daten. |
-| Senderabfrage | Im bisher installierten Stand nicht erfolgreich. |
+| Senderabfrage | Eine echte `GetChannelListResponse` für **ASTRA LCN** liegt vor. Der TV meldet 372 Listeneinträge mit TV- und Radiosendern. Die ersten drei TV-Programme stimmen nach Prüfung des Nutzers mit seiner Konfiguration überein. |
 | Einschalten | Im bisher installierten Stand nicht erfolgreich, obwohl das Einschalten über LAN am TV aktiviert ist. |
 
-**Die neuen Korrekturen in 0.1.2 sind auf diesem Gerät noch nicht bestätigt.** Dazu gehören die automatische Auswahl einer tatsächlich gemeldeten Senderliste und der Einschaltablauf aus Wake-on-LAN plus gezieltem `TV_ON`-Befehl. Die Rückmeldung zu den bisherigen Fernbedienungstasten schließt den neu hinzugefügten Datenpunkt `remote.power_on` nicht ein. Sie ist auch keine Zusage für andere Modelle oder Firmwarestände.
+**Der Senderabruf ist damit am SL420 grundsätzlich nachgewiesen.** Die Zahl 372 umfasst TV- und Radioeinträge sowie mehrere Programmplätze desselben Dienstes und bezeichnet nicht 372 verschiedene TV-Sender. Aus der Antwort allein folgt noch keine Bestätigung der automatischen Listenauswahl oder des Umschaltens über die neuen Sendertaster. Der Einschaltablauf aus Wake-on-LAN plus gezieltem `TV_ON`-Befehl und die neuen Senderobjekte in 0.1.3 benötigen weiterhin einen Gerätetest. Die Rückmeldung zu den bisherigen Fernbedienungstasten schließt den in 0.1.2 hinzugefügten Datenpunkt `remote.power_on` nicht ein. Sie ist auch keine Zusage für andere Modelle oder Firmwarestände.
 
 Die ergänzende [Loewe Remote API 1.0.47](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf) dokumentiert die Senderlisten, das Netzwerkaufwecken und einen lokalen EPG-Zugriff. Diese Herstellerangaben ergänzen die App-Analyse; die jeweilige Wirkung wird weiterhin am Gerät geprüft. Der Adapter wird als lokale Paketdatei installiert und ist nicht im ioBroker-Adapterkatalog oder auf npm veröffentlicht.
 
@@ -24,7 +24,7 @@ Die ergänzende [Loewe Remote API 1.0.47](https://cdn.loewe.tv/manuals/de/plus/R
 
 Der geplante Ausbau soll ioBroker ermöglichen, Programmdaten auszuwerten, passende Sendungen zu erkennen und dafür im Voraus Aufnahmetimer im Loewe-TV anzulegen. Regeln, beispielsweise für bestimmte Titel, Sender und Zeiträume, werden in ioBroker gesteuert. Der Adapter soll die Sender- und EPG-Daten bereitstellen, Aufnahmeaufträge übertragen und anhand der TV-Timerliste bestätigen.
 
-Diese Automatik ist in 0.1.2 noch nicht umgesetzt. Die [Roadmap für EPG und automatische Aufnahmen](docs/ROADMAP.md) beschreibt die vorhandenen Schnittstellen, die geplanten Datenpunkte und die noch erforderlichen Gerätetests.
+Diese Automatik ist in 0.1.3 noch nicht umgesetzt. Jedes neue Senderobjekt enthält bereits einen `epg`-Unterordner mit dem Status `notImplemented`. Die [Roadmap für EPG und automatische Aufnahmen](docs/ROADMAP.md) beschreibt die vorhandenen Schnittstellen, die geplanten Datenpunkte direkt am Sender und die noch erforderlichen Gerätetests.
 
 ## Voraussetzungen
 
@@ -38,7 +38,7 @@ Der laufende Adapter arbeitet lokal. Für die Installation kann ioBroker benöti
 
 ## Installationspaket aus dem Quellcode erzeugen
 
-Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Ein fertiges `.tgz`-Paket ist dort derzeit nicht als Release hinterlegt. Du kannst es mit den folgenden Schritten selbst erzeugen. Wenn du `iobroker.loewe-tv-0.1.2.tgz` bereits erhalten hast, kannst du diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung verwenden.
+Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Ein fertiges `.tgz`-Paket ist dort derzeit nicht als Release hinterlegt. Du kannst es mit den folgenden Schritten selbst erzeugen. Wenn du `iobroker.loewe-tv-0.1.3.tgz` bereits erhalten hast, kannst du diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung verwenden.
 
 Zum Erzeugen des Pakets brauchst du Git und Node.js ab 22. Öffne ein Terminal in einem eigenen Arbeitsverzeichnis und führe aus:
 
@@ -50,42 +50,40 @@ npm test
 npm pack
 ```
 
-`npm pack` erzeugt im Projektverzeichnis die Datei **`iobroker.loewe-tv-0.1.2.tgz`**. Die Entwicklungsbefehle gehören in diese Projektkopie, nicht in das produktive ioBroker-Hauptverzeichnis. Kopiere anschließend die erzeugte Paketdatei auf den ioBroker-Rechner und verwende die passende Anleitung unten.
+`npm pack` erzeugt im Projektverzeichnis die Datei **`iobroker.loewe-tv-0.1.3.tgz`**. Die Entwicklungsbefehle gehören in diese Projektkopie, nicht in das produktive ioBroker-Hauptverzeichnis. Kopiere anschließend die erzeugte Paketdatei auf den ioBroker-Rechner und verwende die passende Anleitung unten.
 
-## Update von 0.1.0 oder 0.1.1 auf 0.1.2
+## Update von 0.1.0 bis 0.1.2 auf 0.1.3
 
-Die vorhandene Instanz weiterverwenden. Erzeuge `iobroker.loewe-tv-0.1.2.tgz` wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Kopiere sie unverändert auf den ioBroker-Rechner, beispielsweise nach `/tmp`. Führe dort diese Befehle in der angegebenen Reihenfolge aus:
+Die vorhandene Instanz weiterverwenden. Erzeuge `iobroker.loewe-tv-0.1.3.tgz` wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Kopiere sie unverändert auf den ioBroker-Rechner, beispielsweise nach `/tmp`. Führe dort diese Befehle in der angegebenen Reihenfolge aus:
 
 ```bash
 iobroker stop loewe-tv.0
 iobroker compact loewe-tv.0 disable
-iobroker url /tmp/iobroker.loewe-tv-0.1.2.tgz loewe-tv
+iobroker url /tmp/iobroker.loewe-tv-0.1.3.tgz loewe-tv
 ```
 
-Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Ab Version 0.1.1 läuft der Adapter in einem eigenen Prozess; das gilt auch für 0.1.2. Die Umstellung erfolgt vor dem Paketupdate, damit sie auch bei einer vorhandenen Instanz wirksam wird. Die Syntax ist in der [offiziellen ioBroker-CLI-Dokumentation](https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/config/cli.md) beschrieben.
+Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Ab Version 0.1.1 läuft der Adapter in einem eigenen Prozess; das gilt auch für 0.1.3. Die Umstellung erfolgt vor dem Paketupdate, damit sie auch bei einer vorhandenen Instanz wirksam wird. Die Syntax ist in der [offiziellen ioBroker-CLI-Dokumentation](https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/config/cli.md) beschrieben.
 
-Öffne anschließend die Einstellungen von `loewe-tv.0`. Für die erste Prüfung nach dem Update:
-
-1. TV-IP-Adresse kontrollieren und die zur verwendeten Netzwerkverbindung gehörende TV-MAC-Adresse im LAN- oder WLAN-Feld manuell eintragen.
-2. Das **Aktualisierungsintervall zunächst auf 0** setzen. Dadurch entfallen automatische Statusabfragen einschließlich der Abfrage direkt beim Start.
-3. Speichern und die Instanz wieder starten:
+Starte anschließend die vorhandene Instanz wieder. Die bisherige Konfiguration und eine eingetragene Senderlistenkennung bleiben erhalten:
 
 ```bash
 iobroker start loewe-tv.0
 ```
 
-Prüfe dann `info.wakeReady`. Warte nach dem Wechsel des TVs in den Standby mindestens 30 Sekunden und löse `control.powerOn` mit `true` und `ack: false` aus. Unter `info.lastWakeOnLan` stehen die verwendeten Zieladressen und der Zeitpunkt des Paketversands; `info.powerOn` zeigt den anschließenden Einschaltablauf. Der Abschnitt [Ein- und Ausschalten](#ein--und-ausschalten) erklärt die Auswertung. Die neuen Datenpunkte werden beim Start ergänzt, eine bereits eingetragene Senderlistenkennung bleibt erhalten.
+Beim Update von 0.1.2 kann der Adapter eine bereits gespeicherte gültige Antwort in `channels.items` direkt in TV- und Radioobjekte übernehmen. Dafür wird der Fernseher nicht kontaktiert. Den Fortschritt zeigt `channels.catalogStatus`. Falls noch keine verwendbare Senderantwort gespeichert ist, den TV einschalten und `channels.getChannels` auslösen. Die neue Struktur steht unter [TV- und Radiosender einzeln anwählen](#tv--und-radiosender-einzeln-anwählen).
 
-Wenn der Fernseher erreichbar ist, kannst du mit `control.refresh` gezielt eine Statusabfrage auslösen. Für den späteren Normalbetrieb das Intervall beispielsweise wieder auf 30 Sekunden setzen. Bei ausgeschalteter Automatik bleibt `info.connection` nach dem Start zunächst `false`, bis ein erfolgreicher manueller TV-Befehl oder eine manuelle Abfrage die Verbindung bestätigt.
+Für die gemeldete Liste mit 372 Einträgen sind `channels.start=0`, `channels.count=500` und ein leeres `channels.mediaType` passende Abfrageparameter. Nach `channels.getChannels=true` und abgeschlossener Aufbereitung (`channels.catalogStatus=ready`) lassen sich TV und Radio getrennt öffnen und die jeweiligen `.select`-Taster prüfen. Alle Steuerwerte mit `ack:false` schreiben. Eine Senderwahl setzt einen erreichbaren Fernseher voraus; sie startet keinen eigenen Einschaltablauf.
+
+Wenn du zugleich das bisher erfolglose Einschalten prüfen möchtest, beschreibt [Ein- und Ausschalten](#ein--und-ausschalten) den separaten Test mit `control.powerOn` und `info.powerOn`. Für eine gezielte Diagnose kann das Aktualisierungsintervall vorübergehend auf 0 gesetzt werden. Bei Intervall 0 bleibt `info.connection` nach dem Start zunächst `false`, bis eine erfolgreiche manuelle TV-Abfrage oder ein Befehl die Verbindung bestätigt.
 
 ## Erstinstallation aus der Paketdatei
 
-1. Erzeuge **`iobroker.loewe-tv-0.1.2.tgz`** wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Die Datei nicht entpacken.
-2. Kopiere sie auf den Rechner, auf dem ioBroker läuft, beispielsweise nach `/tmp/iobroker.loewe-tv-0.1.2.tgz`.
+1. Erzeuge **`iobroker.loewe-tv-0.1.3.tgz`** wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Die Datei nicht entpacken.
+2. Kopiere sie auf den Rechner, auf dem ioBroker läuft, beispielsweise nach `/tmp/iobroker.loewe-tv-0.1.3.tgz`.
 3. Öffne dort ein Terminal oder eine SSH-Verbindung und führe aus:
 
 ```bash
-iobroker url /tmp/iobroker.loewe-tv-0.1.2.tgz loewe-tv
+iobroker url /tmp/iobroker.loewe-tv-0.1.3.tgz loewe-tv
 ```
 
 4. Lege beim ersten Installieren eine Instanz an:
@@ -270,8 +268,8 @@ setState('loewe-tv.0.remote.digit_1', true, false);
 | `channels.getChannels` | Taster | Fragt eine Senderseite ab `channels.start` ab; löst bei leerer Kennung zuerst die automatische Listenauswahl aus. |
 | `channels.availableLists` | JSON-Text, lesen | Aufbereitete Listen der zuletzt abgefragten Seite, mit `view`, `name`, `totalResults` und `hash`. Anfangswert `[]`. |
 | `channels.entries` | JSON-Text, lesen | Aufbereitete Sender der zuletzt abgefragten Seite. Anfangswert `[]`. |
-| `channels.totalNumber` | Zahl, lesen | Vom TV gemeldete Gesamtzahl der Sender in dieser Abfrage; `-1`, wenn unbekannt. |
-| `channels.returnedNumber` | Zahl, lesen | Anzahl der Sender auf der zuletzt empfangenen Seite. |
+| `channels.totalNumber` | Zahl, lesen | Vom TV gemeldete Gesamtzahl der Listeneinträge in dieser Abfrage; `-1`, wenn unbekannt. Mehrfachbelegungen werden mitgezählt. |
+| `channels.returnedNumber` | Zahl, lesen | Anzahl der Listeneinträge auf der zuletzt empfangenen Seite. |
 | `channels.nextStart` | Zahl, lesen | Startindex der nächsten Senderseite. `-1`, wenn keine weitere Seite ermittelt wurde. |
 | `channels.nextListStart` | Zahl, lesen | Startindex der nächsten Senderlistenseite. `-1`, wenn keine weitere Seite ermittelt wurde. |
 | `channels.lastUpdate` | Zeitstempel, lesen | Letzte erfolgreiche Sender- oder Senderlistenabfrage, Unixzeit in Millisekunden. |
@@ -283,9 +281,9 @@ setState('loewe-tv.0.remote.digit_1', true, false);
 
 Für eine andere Liste zuerst `channels.getLists` auslösen und die gewünschte `view` aus `channels.availableLists` übernehmen. Danach `channels.start` auf 0 setzen und `channels.getChannels` auslösen. Falls der TV noch seine Listen synchronisiert, meldet `channels.lastError` diesen Zustand; die Abfrage später erneut starten.
 
-**Jede Abfrage liefert eine Seite.** Sobald sie abgeschlossen ist und `channels.nextStart` einen Wert ab 0 enthält, diesen Wert nach `channels.start` übernehmen und erneut `channels.getChannels` auslösen. Für weitere Senderlistenseiten entsprechend `channels.nextListStart` nach `channels.listStart` übernehmen und `channels.getLists` auslösen. Die Antworten werden nicht zu einem Gesamtbestand zusammengefügt; die nächste Seite ersetzt die vorherigen Seitendaten. Es entstehen noch keine eigenen Datenpunkte je Sender. `-1` ist kein pauschaler Vollständigkeitsnachweis, wenn die TV-Antwort keine ausreichenden Seitenangaben enthält.
+**Jede Abfrage fordert eine Seite an.** Sobald sie abgeschlossen ist und `channels.nextStart` einen Wert ab 0 enthält, diesen Wert nach `channels.start` übernehmen und erneut `channels.getChannels` auslösen. Für weitere Senderlistenseiten entsprechend `channels.nextListStart` nach `channels.listStart` übernehmen und `channels.getLists` auslösen. Die nächste Seite ersetzt die vorherigen Seitendaten in `channels.items` und `channels.entries`. Ab Version 0.1.3 entstehen daraus zusätzlich die unten beschriebenen Senderobjekte. `-1` ist kein pauschaler Vollständigkeitsnachweis, wenn die TV-Antwort keine ausreichenden Seitenangaben enthält.
 
-Das Schreiben der Auswahl- und Seitenparameter allein löst keine Abfrage aus. Wird eine Antwort wegen ihrer Größe ausgelassen, `channels.count` verringern. Die zusätzlichen Informationen zu TV und Radio folgen dem dokumentierten Anfrageformat in Kapitel 9.7 der [Loewe Remote API 1.0.47](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf). Die Abfrage ist auf dem gemeldeten SL420 noch zu bestätigen.
+Das Schreiben der Auswahl- und Seitenparameter allein löst keine Abfrage aus. Wird eine Antwort wegen ihrer Größe ausgelassen, `channels.count` verringern. Die zusätzlichen Informationen zu TV und Radio folgen dem dokumentierten Anfrageformat in Kapitel 9.7 der [Loewe Remote API 1.0.47](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf). In der eingereichten SL420-Antwort sind beide Medienarten vorhanden: `itemClass=video` für TV und `itemClass=audio` für Radio. Das übergeordnete `ItemClass` hat dort den Textwert `undefined`; für die Zuordnung zählt deshalb die Medienart am einzelnen Listeneintrag.
 
 Beispiel für den ersten Abruf mit automatischer Listenauswahl:
 
@@ -301,6 +299,60 @@ senderlisteAbfragen();
 ```
 
 `setStateAsync` bestätigt hier das Schreiben in ioBroker. Die TV-Abfrage folgt anschließend; Ergebnis und Fehler stehen in den oben genannten Datenpunkten.
+
+### TV- und Radiosender einzeln anwählen
+
+Nach `channels.getChannels` legt der Adapter für die eingelesenen Dienste eigene Objekte unter **`channels.tv`** und **`channels.radio`** an. Die Objektnamen in ioBroker zeigen den Sendernamen und die zugehörige Programmnummer. Für jeden Dienst gibt es einen `select`-Taster und einen eigenen `epg`-Unterordner. Die Objektaufbereitung läuft in begrenzten Abschnitten im Hintergrund und belegt die TV-Befehlswarteschlange nicht. Bei einer größeren Liste können die Objekte deshalb nach und nach erscheinen; `channels.catalogStatus` meldet den Abschluss.
+
+Diese kleine Übersicht ist schematisch. Die Kennungen sind absichtlich verkürzt; tatsächliche IDs enthalten nach `service_` einen vollständigen SHA-256-Wert.
+
+| Beispiel eines Objekts | Bedeutung |
+|---|---|
+| `channels.tv.service_a1b2c3` | TV-Dienst, beispielsweise Das Erste HD. |
+| `channels.tv.service_a1b2c3.select` | Taster zum Umschalten auf diesen TV-Dienst. |
+| `channels.tv.service_a1b2c3.epg.status` | Status des EPG-Abrufs für diesen TV-Dienst; derzeit `notImplemented`. |
+| `channels.radio.service_d4e5f6` | Radiodienst, beispielsweise Bayern 1, mit denselben Unterpunkten. |
+
+**Zum Umschalten `select = true` mit `ack: false` schreiben.** In ioBroker Admin also die Bestätigung beim Schreiben nicht aktivieren; in Blockly den Block zum Steuern verwenden. Der Taster kehrt nach der Verarbeitung auf `false` zurück. Er ist ein Befehl zum Anwählen des Senders und kein dauerhafter Ein/Aus-Zustand. Der Fernseher muss erreichbar sein. Der Taster startet kein Wake-on-LAN; dafür gibt es weiterhin `control.powerOn`.
+
+Während eine neu empfangene Senderantwort in den Bestand übernommen wird, kann die Auswahl kurz mit `CHANNEL_UPDATING` abgewiesen werden. Das gilt auch für einen wartenden Tastendruck, wenn inzwischen eine weitere Senderliste empfangen wurde. Nach der Aktualisierung erneut auswählen; der Adapter sendet dadurch keinen veralteten Umschaltauftrag.
+
+| Datenpunkt im Senderobjekt | Inhalt |
+|---|---|
+| `select` | Taster zum Umschalten über den vom TV gelieferten Locator. |
+| `name` | Sendername. |
+| `number` | Bevorzugte numerische Programmnummer; `-1`, wenn die Beschriftung keine gültige nichtnegative Ganzzahl ist. |
+| `numbers` | JSON-Liste der zugeordneten Programmnummern beziehungsweise Beschriftungen. |
+| `mediaItemUuid` | Dienstkennung aus der TV-Antwort. |
+| `locator` | Für `select` verwendeter Original-Locator. |
+| `locators` | JSON-Liste der zugeordneten Original-Locators. |
+| `positions` | JSON-Liste mit der genauen Zuordnung von `caption` und `locator` für jeden Programmplatz. |
+| `listView` | Kennung der zugehörigen Senderliste. |
+| `available` | Ob der Dienst im zuletzt geladenen aktiven Senderbestand mit einem verwendbaren Locator enthalten ist; kein Empfangs-, Wiedergabe- oder Bildschirmstatus. |
+| `epg.status` | In 0.1.3 fest `notImplemented`: Der Ordner ist für den späteren EPG-Import vorbereitet. |
+
+Ein Dienst kann in einer Liste an mehreren Programmplätzen stehen. Die eingereichte Antwort enthält beispielsweise Das Erste HD unter 1, 100 und 1000 mit derselben `mediaItemUuid`. Dafür entsteht ein gemeinsames Senderobjekt; die zusätzlichen Plätze bleiben in `numbers`, `locators` und `positions` erhalten. Für den Auswahltaster wird die kleinste bekannte numerische Programmnummer mit verwendbarem Locator bevorzugt. TV- und Radiosender können dieselbe Programmnummer haben und erhalten trotzdem verschiedene Objekte.
+
+Die Objekt-ID wird aus Listenkennung, Medienart und `mediaItemUuid` gebildet. Dadurch bleibt sie bei Umbenennungen und Umnummerierungen innerhalb derselben Liste stabil. Derselbe Dienst in einer anderen Senderliste erhält ein eigenes Objekt. Neue Listen- oder Dienstkennungen, etwa nach einer Neuerstellung der Liste, ergeben neue IDs. Liefert ein TV keine `mediaItemUuid`, verwendet der Adapter den gültigen Sender-Locator als Ersatzkennung; Änderungen dieses Locators können dann ebenfalls eine neue ID ergeben.
+
+#### Gespeicherter Senderbestand und Aktualisierung
+
+Die Zuordnung bleibt über einen Adapterneustart hinweg erhalten. Der Adapter stellt sie aus seinem gespeicherten Katalog und den verwalteten Senderobjekten wieder her. Beim ersten Start nach dem Update von 0.1.2 verwendet er gegebenenfalls die bereits gespeicherte Antwort aus `channels.items`. Wiederherstellung und Übernahme lösen keine TV-Abfrage und kein Umschalten aus; gespeicherte Tasterwerte werden zurückgesetzt.
+
+Teilseiten ergänzen den Bestand der aktiven Liste, ohne nicht enthaltene Dienste sofort zu deaktivieren. Erst eine vollständig auswertbare Antwort für den gesamten angefragten Bereich, ab Startindex 0 und mit allen gemeldeten Einträgen, erlaubt den Abgleich fehlender Dienste. Bei einem vollständigen Abruf mit Filter `video` bleibt der Radiobestand dieser Liste erhalten; bei `audio` entsprechend der TV-Bestand. Mehrere nacheinander geladene Teilseiten werden nicht als verlässlicher Nachweis dafür verwendet, dass ältere Dienste entfernt wurden.
+
+Beim Abruf einer anderen Senderliste wird der bisherige Bestand inaktiv. Objekte von inaktiven oder nach einem vollständigen Abgleich entfernten Diensten bleiben samt ihrem `epg`-Unterordner bestehen, erhalten aber `available=false`. Ihre Auswahltaster sind dann gesperrt. Ein erneuter Abruf der zugehörigen Liste kann sie wieder aktivieren.
+
+| Datenpunkt | Bedeutung |
+|---|---|
+| `channels.catalog` | Versionierter JSON-Katalog für die Wiederherstellung und Zusammenführung der eingelesenen Senderdaten. |
+| `channels.catalogStatus` | `empty`: noch kein Bestand aufgebaut; `updating`: Aufbereitung läuft; `ready`: Aufbereitung abgeschlossen; `error`: Aufbereitung fehlgeschlagen. |
+| `channels.catalogError` | Fehler beim Wiederherstellen oder Aufbereiten des Senderbestands. |
+| `channels.catalogLastUpdate` | Letzte erfolgreiche Objektaufbereitung als Unixzeit in Millisekunden. Eine Wiederherstellung kann diesen Wert aktualisieren; er belegt weder einen frischen TV-Abruf noch TV-Erreichbarkeit. |
+
+`channels.lastError` betrifft die Senderabfrage, `channels.catalogError` die anschließende Objektaufbereitung. Eine erfolgreiche Abfrage kann daher bereits in `channels.items` stehen, während die Senderobjekte noch erstellt werden. `ready` bestätigt die abgeschlossene Aufbereitung des bekannten Bestands und keine vollständige oder gerade empfangbare Programmliste.
+
+**EPG-Inhalte werden in dieser Version noch nicht geladen.** Spätere Sendungslisten, Aktualisierungszeiten und EPG-Fehler sollen direkt unter `channels.tv.<Sender-ID>.epg` beziehungsweise `channels.radio.<Sender-ID>.epg` liegen. Die bisherigen Seitendaten unter `channels.items` und `channels.entries` bleiben für Skripte und Diagnose verfügbar.
 
 ### Status und Gerätedaten
 
@@ -415,7 +467,7 @@ Die Tabelle nennt die XML-Elemente innerhalb von `parametersXml`. `A/B` bezeichn
 | `GetDeviceData` | Keine. |
 | `GetFeature` | `Name`. |
 | `GetListOfChannelLists` | `QueryParameters/Range` mit `@startIndex` und `@maxItems`. |
-| `GetChannelList` | `ChannelListView`; `QueryParameters/Range` mit `@startIndex` und `@maxItems`. Die ursprüngliche App ergänzt `OrderField` mit `field="userChannelNumber"`, `type="ascending"`, `MediaItemInformation=true` und `MediaItemClass=video`. Der Komfortabruf in 0.1.2 setzt den Medienfilter nur bei entsprechend gewähltem `channels.mediaType`. |
+| `GetChannelList` | `ChannelListView`; `QueryParameters/Range` mit `@startIndex` und `@maxItems`. Die ursprüngliche App ergänzt `OrderField` mit `field="userChannelNumber"`, `type="ascending"`, `MediaItemInformation=true` und `MediaItemClass=video`. Der Komfortabruf ab 0.1.2 setzt den Medienfilter nur bei entsprechend gewähltem `channels.mediaType`. |
 | `GetMediaItem` | `MediaItemReference` mit `@mediaItemUuid`. |
 | `GetMediaEvent` | `MediaEventReference` mit `@mediaEventUuid`. |
 | `GetDRPlusArchive` | `QueryParameters/Range` mit `@startIndex` und `@maxItems`; optional `VolumeId`. |
@@ -449,7 +501,7 @@ Die Extraktion liefert die Namen und den Aufbau dieser Parameter. Für `ProgramT
 
 ## Ein- und Ausschalten
 
-Die [Loewe Remote API 1.0.47, Kapitel 9.4.3](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf), unterscheidet das Aufwecken des Netzwerkdiensts vom interaktiven Einschalten. Abhängig von `WolInteractive` kann ein Magic Packet allein den Bildschirm ausgeschaltet lassen. Deshalb ergänzt 0.1.2 den anschließenden gezielten `TV_ON`-Befehl 22. Diese dokumentierte Unterscheidung erklärt einen möglichen Fehler im bisherigen Ansatz; ob sie Svens konkretes Einschaltproblem vollständig behebt, ist erst nach dem Gerätetest bekannt.
+Die [Loewe Remote API 1.0.47, Kapitel 9.4.3](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf), unterscheidet das Aufwecken des Netzwerkdiensts vom interaktiven Einschalten. Abhängig von `WolInteractive` kann ein Magic Packet allein den Bildschirm ausgeschaltet lassen. Deshalb verwendet der Adapter ab 0.1.2 den anschließenden gezielten `TV_ON`-Befehl 22. Diese dokumentierte Unterscheidung erklärt einen möglichen Fehler im bisherigen Ansatz; ob sie Svens konkretes Einschaltproblem vollständig behebt, ist erst nach dem Gerätetest bekannt.
 
 Zum Einschalten:
 
@@ -505,14 +557,16 @@ Die zweite App Löwenbändiger Remote 1.15 lieferte keinen nachgewiesenen WOL-Ab
 | `info.wakeReady` ist `false` | Die passende TV-MAC-Adresse manuell konfigurieren oder bei eingeschaltetem TV `control.refresh` auslösen. Bei Intervall 0 wird die MAC-Adresse beim Start nicht automatisch abgefragt. |
 | `info.wakeReady` ist `true`, aber der TV startet nicht | Den aktuellen Eintrag in `info.lastWakeOnLan` und den Ablauf in `info.powerOn` prüfen. Nach dem Ausschalten mindestens 30 Sekunden warten. `powerKeySent` bestätigt nur die Antwort auf den Einschaltbefehl, kein Bild. |
 | Ein Einschaltversuch aktualisiert `info.lastWakeOnLan` nicht | `info.lastError` lesen und prüfen, ob `control.powerOn` mit `true` und `ack: false` geschrieben wurde. Eine frühere Versandmeldung ist kein Nachweis für den aktuellen Versuch. |
-| ioBroker wird nach dem Aktivieren der bisherigen Version träge | `loewe-tv.0` stoppen und die Updateanleitung auf 0.1.2 einschließlich der instanzbezogenen Compact-Umstellung ausführen. Für die anschließende Prüfung automatische Abfragen mit Intervall 0 deaktivieren. |
+| ioBroker wird nach dem Aktivieren der bisherigen Version träge | `loewe-tv.0` stoppen und die Updateanleitung auf 0.1.3 einschließlich der instanzbezogenen Compact-Umstellung ausführen. Für die anschließende Prüfung automatische Abfragen mit Intervall 0 deaktivieren. |
 | Senderabfrage scheitert | `channels.lastError`, `channels.lists` und `channels.items` prüfen. Zum erneuten automatischen Auswählen `channels.view` leeren und `channels.getChannels` auslösen; alternativ eine Kennung aus `channels.availableLists` setzen. Bei Synchronisierung später wiederholen. |
+| `channels.items` enthält Sender, unter `channels.tv` oder `channels.radio` fehlen noch Objekte | `channels.catalogStatus` prüfen und bei `updating` die Hintergrundaufbereitung abwarten. Bei `error` steht die Ursache in `channels.catalogError`; danach die passende Senderliste erneut abfragen. |
+| Ein Sendertaster meldet `CHANNEL_UNAVAILABLE` | Die Liste dieses Senders erneut abfragen. Bei `available=false` gehört er nicht zum aktiven Bestand oder es fehlt ein verwendbarer Locator. Nach Änderungen während der Wartezeit den Sender erneut auswählen. |
 | Texteingabe erscheint nicht | Erst ein passendes Eingabefeld am TV fokussieren. Nicht jede TV-Oberfläche nimmt Tastatureingaben an. |
 | `api` fehlt | Zusätzliche TV-Befehle in der Konfiguration aktivieren, speichern und die Instanz neu starten. |
 | Eine JSON-Antwort enthält `omitted: true` oder API-XML ist leer mit Größenhinweis | Kleinere Sender- oder Archivbereiche abfragen, beispielsweise `channels.count` reduzieren. Der Hinweis beschreibt die ausgelassene Speicherung einer großen Antwort. |
 | Ein Befehl meldet eine volle Warteschlange oder zu lange Wartezeit | Befehle langsamer senden, laufende TV-Zeitüberschreitungen prüfen und für die Diagnose Intervall 0 verwenden. |
 
-Für einen Fehlerbericht sind TV-Modell, Firmware, Adapterversion und der konkrete Fehlertext hilfreich. Bei Einschaltproblemen zusätzlich die verwendete LAN-/WLAN-Verbindung, `info.wakeReady`, `info.lastWakeOnLan` und `info.powerOn` angeben. Bei Senderproblemen helfen `channels.lastError`, `channels.lists` und `channels.items`; bei Wiedergabeproblemen die zugehörige TV-Antwort. Persönliche Senderlisten, Gerätekennungen oder MAC-Adressen können darin enthalten sein.
+Für einen Fehlerbericht sind TV-Modell, Firmware, Adapterversion und der konkrete Fehlertext hilfreich. Bei Einschaltproblemen zusätzlich die verwendete LAN-/WLAN-Verbindung, `info.wakeReady`, `info.lastWakeOnLan` und `info.powerOn` angeben. Bei Senderproblemen helfen `channels.lastError`, `channels.catalogStatus`, `channels.catalogError`, `channels.lists` und `channels.items`; bei Wiedergabeproblemen die zugehörige TV-Antwort. Persönliche Senderlisten, Gerätekennungen oder MAC-Adressen können darin enthalten sein.
 
 ## Stabilitätsänderungen in 0.1.1
 
@@ -538,7 +592,7 @@ Die universellen API-Datenpunkte erschließen die extrahierten Aktionen. Sie ent
 
 Die Weiterentwicklung findet im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv) statt. Das Abrufen des Quellcodes, die Tests und das Erzeugen des installierbaren `.tgz`-Pakets sind unter [Installationspaket aus dem Quellcode erzeugen](#installationspaket-aus-dem-quellcode-erzeugen) beschrieben.
 
-Die Tests verwenden simulierte TV-Antworten sowie echte HTTP- und UDP-Verbindungen ausschließlich über die lokale Loopback-Schnittstelle. Sie prüfen das Verhalten der Implementierung, ersetzen aber keinen Start in einem tatsächlichen ioBroker-Controller und keinen Modell- und Firmwaretest am realen Fernseher. Die Prüfungen der neuen Funktionen stehen im [Prüfbericht zu 0.1.2](docs/PRUEFBERICHT_0.1.2.md). Der historische [Prüfbericht zu 0.1.1](docs/PRUEFBERICHT.txt) bleibt als Nachweis für den damaligen Stand erhalten. Der Nutzerbericht zum tatsächlichen bild 7.55 ist oben gesondert aufgeführt; die neuen Sender- und Einschaltfunktionen sind am Gerät noch nicht bestätigt.
+Die Tests verwenden simulierte TV-Antworten sowie echte HTTP- und UDP-Verbindungen ausschließlich über die lokale Loopback-Schnittstelle. Sie prüfen das Verhalten der Implementierung, ersetzen aber keinen Start in einem tatsächlichen ioBroker-Controller und keinen Modell- und Firmwaretest am realen Fernseher. Die Prüfungen der neuen Funktionen stehen im [Prüfbericht zu 0.1.3](docs/PRUEFBERICHT_0.1.3.md). Die historischen Prüfberichte zu [0.1.2](docs/PRUEFBERICHT_0.1.2.md) und [0.1.1](docs/PRUEFBERICHT.txt) bleiben als Nachweise für die damaligen Stände erhalten. Der Nutzerbericht zum tatsächlichen bild 7.55 ist oben gesondert aufgeführt. Er bestätigt den Senderabruf und die ersten drei TV-Programmplätze; die neuen Sendertaster und der Einschaltablauf sind am Gerät noch nicht bestätigt.
 
 Offizielle ioBroker-Grundlagen:
 
@@ -552,6 +606,14 @@ Offizielle ioBroker-Grundlagen:
 Der neu geschriebene Adaptercode steht unter der MIT-Lizenz. Siehe [LICENSE](LICENSE).
 
 ## Änderungsverlauf
+
+### 0.1.3
+
+- Getrennte Senderobjekte unter `channels.tv` und `channels.radio` mit einem `select`-Taster je Dienst. Umschalten verwendet den tatsächlich gelieferten Locator.
+- Stabile Objektkennungen aus Senderliste, Medienart und Dienstkennung; mehrere Programmplätze desselben Dienstes werden in `numbers` und `locators` zusammengefasst.
+- Senderbestand über Neustarts erhalten, vorhandene Antworten aus 0.1.2 ohne TV-Kontakt übernehmen und Senderobjekte im Hintergrund aufbereiten. Teilseiten deaktivieren keine fehlenden Dienste; inaktive Objekte bleiben mit gesperrtem Auswahltaster erhalten.
+- Metadaten und ein eigener `epg`-Unterordner je Dienst. `epg.status=notImplemented` kennzeichnet den noch ausstehenden EPG-Import.
+- Echte ASTRA-LCN-Senderantwort des bild 7.55 mit SL420 dokumentiert: TV und Radio sowie wiederholte Dienstkennungen auf unterschiedlichen Programmplätzen. Der Nutzer hat die ersten drei TV-Sender mit seiner Konfiguration abgeglichen.
 
 ### 0.1.2
 

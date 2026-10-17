@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "news": {
+      "0.1.3": {
+        "en": "Separate TV and radio channel objects with selection buttons, stable service IDs, grouped programme positions and per-channel EPG placeholders. Actual channel-list response from bild 7.55 (SL420, V5.4.6.0) documented; EPG import and recording automation remain planned.",
+        "de": "Getrennte TV- und Radiosender mit Auswahltastern, stabilen Dienstkennungen, zusammengefassten Programmplätzen und EPG-Platzhaltern je Sender. Echte Senderlistenantwort des bild 7.55 (SL420, V5.4.6.0) dokumentiert; EPG-Import und Aufnahmeautomatik bleiben geplant."
+      },
       "0.1.2": {
         "en": "Automatic channel-list selection, separate list pagination and normalized channel data; Wake-on-LAN followed by the documented TV-on command (22) with a time limit and diagnostics. Remote-key test report for bild 7.55, SL420, V5.4.6.0 documented; device validation of channel retrieval and wake-up remains open.",
         "de": "Automatische Senderlistenauswahl, getrennte Listenseiten und aufbereitete Senderdaten; Wake-on-LAN mit anschließendem dokumentierten Einschaltbefehl (22), Zeitlimit und Diagnose. Fernbedienungstest am bild 7.55, SL420, V5.4.6.0 dokumentiert; Gerätetest von Senderabruf und Einschalten steht noch aus."

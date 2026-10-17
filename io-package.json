@@ -39,7 +39,7 @@
     "mode": "daemon",
     "enabled": false,
     "compact": false,
-    "icon": "loewe-tv.svg",
+    "icon": "loewe-tv.png",
     "type": "multimedia",
     "connectionType": "local",
     "dataSource": "poll",

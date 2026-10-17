@@ -171,6 +171,7 @@ class FakeAdapter {
             appendNul: true,
             pollInterval: 30,
             channelRefreshInterval: 0,
+            epgEnabled: false,
             channelListView: 'fastscan-fixture',
             pollPlayback: true,
             maxVolume: 99,

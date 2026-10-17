@@ -74,7 +74,7 @@ class FakeClient {
 class FakeAdapter {
     constructor(config) {
         this.namespace = 'loewe-tv.0';
-        this.config = { host: 'fixture.invalid', pollInterval: 0, channelRefreshInterval: 300, pollPlayback: false,
+        this.config = { host: 'fixture.invalid', pollInterval: 0, channelRefreshInterval: 300, pollPlayback: false, epgEnabled: false,
             channelListView: VIEW, ...config };
         this.states = new Map([['channels.view', { val: VIEW, ack: true }]]);
         this.objects = new Map();

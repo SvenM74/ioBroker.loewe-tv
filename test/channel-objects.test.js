@@ -7,6 +7,7 @@ const { createHash } = require('node:crypto');
 const { AdapterRuntime } = require('../lib/adapter-runtime');
 const { parseChannelPage } = require('../lib/loewe-client');
 const { MAX_CATALOG_BYTES } = require('../lib/channel-catalog');
+const { createEpgDefinitions, EPG_CHILD_TYPES } = require('../lib/epg-states');
 
 const VIEW = 'fastscan-integration-fixture';
 const DYNAMIC = /^channels\.(tv|radio)\.[A-Za-z0-9_]+(?:\.|$)/u;
@@ -153,11 +154,19 @@ class FakeAdapter {
     subscribeStates() {}
 }
 
-async function harness(t, prepare = () => {}, { idle = true } = {}) {
+function fakeEpgManager() {
+    // These tests isolate catalogue materialization. Programme acquisition and
+    // value initialization have their own manager tests and must not make extra
+    // TV requests while the catalogue transport assertions below are running.
+    return { start() {}, stop() {}, connected() {}, async prepareCatalog() {}, catalogReady() {}, async retire() {} };
+}
+
+async function harness(t, prepare = () => {}, { idle = true, epgFactory = fakeEpgManager } = {}) {
     const adapter = new FakeAdapter();
     const client = new FakeClient();
     prepare(adapter, client);
     const runtime = new AdapterRuntime(adapter, { clientFactory: () => client });
+    runtime.epg = epgFactory(runtime);
     t.after(() => runtime.stop());
     await runtime.start();
     if (idle) await runtime.channelObjects.whenIdle();
@@ -217,7 +226,7 @@ test('a mixed list creates only named TV folders and preserves TV positions plus
     assert.equal(state(h, `${first.id}.number`).val, 1);
     assert.equal(state(h, `${first.id}.locator`).val, 'channel://1:ch-first:sl-fixture');
     assert.deepEqual(JSON.parse(state(h, `${first.id}.locators`).val), [1, 100, 1000].map(number => `channel://${number}:ch-first:sl-fixture`));
-    assert.equal(state(h, `${first.id}.epg.status`).val, 'notImplemented');
+    assert.equal(h.adapter.objects.get(`${first.id}.epg.status`).common.def, 'waiting');
     assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
     assert.equal(h.client.calls.length, 1, 'Object materialization must not make extra TV requests.');
     assert.equal(state(h, 'channels.returnedNumber').val, 5);
@@ -1111,7 +1120,7 @@ test('a timed-out reset must really settle before cleanup or a newer occupant ca
     gate.resolve();
     await h.runtime.channelObjects.whenIdle();
     assert.equal(state(h, 'channels.tv.Fixture_first.mediaItemUuid').val, 'replacement');
-    assert.equal(state(h, 'channels.tv.Fixture_first.epg.status').val, 'notImplemented');
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_first.epg.status').common.def, 'waiting');
     assert.deepEqual(state(h, button), { val: false, ack: true });
     assert.equal(h.runtime.channelObjects.resetWrites.size, 0);
     await write(h, button, true);
@@ -1139,7 +1148,7 @@ test('a timed-out delete must settle before a new service using the same name ID
     gate.resolve();
     await h.runtime.channelObjects.whenIdle();
     assert.equal(state(h, 'channels.tv.Fixture_first.mediaItemUuid').val, 'replacement');
-    assert.equal(state(h, 'channels.tv.Fixture_first.epg.status').val, 'notImplemented');
+    assert.equal(h.adapter.objects.get('channels.tv.Fixture_first.epg.status').common.def, 'waiting');
     await write(h, 'channels.tv.Fixture_first.select', true);
     assert.deepEqual(h.client.calls.filter(call => call.method === 'zap').at(-1).args, ['channel://1:ch-replacement:sl-fixture']);
 });
@@ -1157,4 +1166,212 @@ test('stop during cleanup prevents further database calls after the current dele
     gate.resolve();
     await h.runtime.channelObjects.whenIdle();
     assert.equal(h.adapter.dynamicCalls.length, callsAtStop);
+});
+
+test('EPG definitions are read-only TV descendants with one complete retirement allow-list', () => {
+    const root = 'channels.tv.Das_Erste_HD';
+    const definitions = createEpgDefinitions(root);
+    assert.deepEqual(Object.fromEntries(definitions.map(definition => [definition.id.slice(root.length + 1), definition.type])),
+        EPG_CHILD_TYPES);
+    for (const slot of ['now', 'next']) {
+        for (const field of ['available', 'title', 'subtitle', 'description', 'eventId', 'start', 'end', 'endEstimated']) {
+            const definition = definitions.find(value => value.id === `${root}.epg.${slot}.${field}`);
+            assert.ok(definition, `Missing ${slot}.${field}`);
+            assert.equal(definition.common.read, true);
+            assert.equal(definition.common.write, false);
+        }
+    }
+    assert.ok(definitions.every(definition => definition.native.managedBy === 'loewe-tv-channel-catalog'));
+    assert.ok(definitions.filter(definition => definition.type === 'state')
+        .every(definition => Object.hasOwn(definition.common, 'def')));
+    assert.equal(definitions.find(value => value.id === `${root}.epg.cache`).common.expert, true);
+    for (const invalid of ['channels.radio.Bayern_1', 'media', 'channels.tv', 'channels.tv.Station.epg', 'channels.tv.a-b']) {
+        assert.throws(() => createEpgDefinitions(invalid), /TV channel root/u);
+    }
+});
+
+test('EPG catalogue preparation precedes materialization and ready follows registered current-epoch objects', async t => {
+    const gate = deferred();
+    t.after(() => gate.resolve());
+    let preparing = false;
+    const snapshots = [];
+    const ready = [];
+    const h = await harness(t, () => {}, { epgFactory: runtime => ({
+        ...fakeEpgManager(),
+        async prepareCatalog(services) {
+            snapshots.push(structuredClone(services));
+            if (services.length) {
+                preparing = true;
+                assert.equal(runtime.channelObjects.services.get(services[0].id).mediaItemUuid, services[0].mediaItemUuid);
+                await gate.promise;
+            }
+        },
+        catalogReady() {
+            ready.push({ epoch: runtime.channelObjects.appliedSelectionEpoch,
+                acceptedEpoch: runtime.channelObjects.selectionEpoch,
+                registered: [...runtime.channelObjects.services].every(([id]) => runtime._objects.has(`${id}.epg.now.title`)),
+            });
+        },
+    }) });
+    assert.deepEqual(snapshots, [[]]);
+    await query(h, [entry('first'), entry('radio', '2', 'audio')], { idle: false });
+    await until(() => preparing, 'Expected the EPG preparation hook to hold the new catalogue.');
+    assert.equal(h.adapter.objects.has('channels.tv.Fixture_first'), false);
+    assert.equal(ready.length, 1);
+    await within(write(h, 'remote.home', true), 'EPG preparation blocked the remote command queue.');
+    gate.resolve();
+    await h.runtime.channelObjects.whenIdle();
+    assert.equal(snapshots.at(-1).length, 1);
+    assert.equal(snapshots.at(-1)[0].itemClass, 'video');
+    assert.deepEqual(ready.at(-1), { epoch: h.runtime.channelObjects.selectionEpoch,
+        acceptedEpoch: h.runtime.channelObjects.selectionEpoch, registered: true });
+    assert.equal(h.adapter.objects.has('channels.radio'), false);
+});
+
+test('a programme position update cannot reset EPG values or a stored programme cache', async t => {
+    const h = await harness(t);
+    await query(h, [entry('first')]);
+    const root = 'channels.tv.Fixture_first';
+    const values = {
+        status: 'ready', source: 'xmltv', lastUpdate: 1790000000000,
+        'now.available': true, 'now.title': 'Running programme', 'now.start': 1790000000000, 'now.end': 1790003600000,
+        'next.title': 'Following programme', data: '{"now":{"title":"Running programme"}}', cache: '{"schemaVersion":1}',
+    };
+    for (const [suffix, val] of Object.entries(values)) await h.adapter.setStateAsync(`${root}.epg.${suffix}`, { val, ack: true });
+    const start = h.adapter.writes.length;
+    await query(h, [entry('first', '42')]);
+    assert.equal(state(h, `${root}.number`).val, 42);
+    for (const [suffix, val] of Object.entries(values)) assert.equal(state(h, `${root}.epg.${suffix}`).val, val);
+    assert.deepEqual(h.adapter.writes.slice(start).filter(value => value.id.startsWith(`${root}.epg.`)), []);
+});
+
+test('a same-name replacement waits for the EPG manager to settle a real old programme write', async t => {
+    const h = await harness(t);
+    await query(h, [entry('first')]);
+    const root = 'channels.tv.Fixture_first';
+    const gate = deferred();
+    t.after(() => gate.resolve());
+    let writing = false;
+    let preparing = false;
+    h.adapter.stateHook = (id, value) => {
+        if (id === `${root}.epg.now.title` && value.val === 'Old programme') {
+            writing = true;
+            return gate.promise;
+        }
+    };
+    const programmeWrite = h.adapter.setStateAsync(`${root}.epg.now.title`, { val: 'Old programme', ack: true });
+    await until(() => writing, 'Expected an old EPG write to enter the state database.');
+    h.runtime.epg.prepareCatalog = async services => {
+        assert.equal(services[0].mediaItemUuid, 'replacement');
+        preparing = true;
+        await programmeWrite;
+        await h.adapter.setStateAsync(`${root}.epg.now.title`, { val: '', ack: true });
+    };
+    await query(h, [{ ...entry('replacement'), '@_shortInfo': 'Fixture first' }], { idle: false });
+    await until(() => preparing, 'Expected replacement to await EPG preparation.');
+    assert.equal(h.adapter.objects.get(root).native.channelService.service.mediaItemUuid, 'first');
+    assert.equal(state(h, `${root}.mediaItemUuid`).val, 'first');
+    await within(write(h, 'remote.home', true), 'Replacing an EPG owner blocked remote control.');
+    gate.resolve();
+    await h.runtime.channelObjects.whenIdle();
+    assert.equal(h.adapter.objects.get(root).native.channelService.service.mediaItemUuid, 'replacement');
+    assert.equal(state(h, `${root}.epg.now.title`).val, '');
+    assert.equal(state(h, `${root}.mediaItemUuid`).val, 'replacement');
+});
+
+test('EPG retirement settles a real pending programme write before deleting every managed EPG descendant', async t => {
+    const h = await harness(t);
+    await query(h, [entry('first')]);
+    const root = 'channels.tv.Fixture_first';
+    const gate = deferred();
+    t.after(() => gate.resolve());
+    let writing = false;
+    let retiring = false;
+    h.adapter.stateHook = (id, value) => {
+        if (id === `${root}.epg.now.title` && value.val === 'Late programme') {
+            writing = true;
+            return gate.promise;
+        }
+    };
+    const programmeWrite = h.adapter.setStateAsync(`${root}.epg.now.title`, { val: 'Late programme', ack: true });
+    await until(() => writing, 'Expected the EPG write to enter the state database.');
+    h.runtime.epg.retire = async (id, options) => {
+        assert.equal(id, root);
+        assert.equal(options, undefined);
+        retiring = true;
+        await programmeWrite;
+    };
+    await query(h, [], { idle: false });
+    await until(() => retiring, 'Expected EPG retirement before channel deletion.');
+    assert.ok(h.adapter.objects.has(root));
+    assert.equal(h.adapter.dynamicCalls.some(call => call.operation === 'delete'), false);
+    await within(write(h, 'remote.home', true), 'EPG retirement blocked the remote command queue.');
+    gate.resolve();
+    await h.runtime.channelObjects.whenIdle();
+    assert.equal(h.adapter.objects.has(root), false);
+    assert.equal([...h.adapter.objects.keys()].some(id => id.startsWith(`${root}.`)), false);
+    assert.equal([...h.adapter.states.keys()].some(id => id.startsWith(`${root}.`)), false);
+    assert.equal([...h.runtime._objects.keys()].some(id => id.startsWith(`${root}.`)), false);
+});
+
+test('a protected EPG descendant retires with retained states before the old root is unregistered', async t => {
+    const h = await harness(t);
+    await query(h, [entry('first')]);
+    const root = 'channels.tv.Fixture_first';
+    const protectedId = `${root}.epg.now.title`;
+    h.adapter.objects.get(protectedId).common.custom = { 'history.0': { enabled: true } };
+    await h.adapter.setStateAsync(protectedId, { val: 'Former programme', ack: true });
+    const retired = [];
+    h.runtime.epg.retire = async (id, options) => {
+        retired.push({ id, options });
+        assert.equal(h.runtime._objects.has(protectedId), true);
+        assert.equal(h.adapter.objects.has(protectedId), true);
+        await h.adapter.setStateAsync(protectedId, { val: '', ack: true });
+        await h.adapter.setStateAsync(`${root}.epg.status`, { val: 'inactive', ack: true });
+    };
+    await query(h, []);
+    assert.deepEqual(retired, [{ id: root, options: { retain: true } }]);
+    assert.equal(h.adapter.objects.get(root).native.channelRetired, true);
+    assert.equal(h.adapter.objects.get(protectedId).common.custom['history.0'].enabled, true);
+    assert.equal(state(h, protectedId).val, '');
+    assert.equal(state(h, `${root}.epg.status`).val, 'inactive');
+    assert.equal(h.runtime._objects.has(protectedId), false);
+    assert.equal(h.adapter.dynamicCalls.some(call => call.operation === 'delete'), false);
+});
+
+test('stop while EPG preparation waits prevents all subsequent channel materialization and ready hooks', async t => {
+    const h = await harness(t);
+    const gate = deferred();
+    t.after(() => gate.resolve());
+    let preparing = false;
+    let ready = 0;
+    h.runtime.epg.prepareCatalog = async () => { preparing = true; await gate.promise; };
+    h.runtime.epg.catalogReady = () => { ready++; };
+    await query(h, [entry('first')], { idle: false });
+    await until(() => preparing, 'Expected EPG preparation to wait.');
+    await h.runtime.stop();
+    const callsAtStop = h.adapter.dynamicCalls.length;
+    gate.resolve();
+    await h.runtime.channelObjects.whenIdle();
+    assert.equal(h.adapter.dynamicCalls.length, callsAtStop);
+    assert.equal(h.adapter.objects.has('channels.tv.Fixture_first'), false);
+    assert.equal(ready, 0);
+});
+
+test('stop while EPG retirement waits prevents subsequent deletion of the channel folder', async t => {
+    const h = await harness(t);
+    await query(h, [entry('first')]);
+    const gate = deferred();
+    t.after(() => gate.resolve());
+    let retiring = false;
+    h.runtime.epg.retire = async () => { retiring = true; await gate.promise; };
+    await query(h, [], { idle: false });
+    await until(() => retiring, 'Expected EPG retirement to wait.');
+    await h.runtime.stop();
+    const callsAtStop = h.adapter.dynamicCalls.length;
+    gate.resolve();
+    await h.runtime.channelObjects.whenIdle();
+    assert.equal(h.adapter.dynamicCalls.length, callsAtStop);
+    assert.equal(h.adapter.dynamicCalls.some(call => call.operation === 'delete'), false);
+    assert.ok(h.adapter.objects.has('channels.tv.Fixture_first'));
 });

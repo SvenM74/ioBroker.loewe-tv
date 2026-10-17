@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "news": {
+      "0.1.7": {
+        "en": "Add current and next programme information for each selected TV channel. Prefer TV EPG with optional XMLTV fallback, configurable guide URL and exact channel mapping. Add manual and scheduled refresh, per-channel status and cached programme data.",
+        "de": "Aktuelle und nächste Sendung für jeden ausgewählten TV-Sender ergänzen. TV-EPG bevorzugen, mit optionalem XMLTV-Ersatz, konfigurierbarer Guide-URL und exakter Senderzuordnung. Manuellen und regelmäßigen Abruf, Status je Sender und zwischengespeicherte Programmdaten ergänzen."
+      },
       "0.1.6": {
         "en": "Choose a TV channel list in the adapter configuration after loading all available lists. Only the configured list is restored and synchronized under channels.tv. Remove radio, api and media data point trees, including existing objects on startup. Add a build identifier to distinguish revisions. Version remains 0.1.6; reinstall this package and select a channel list in Admin.",
         "de": "TV-Senderliste nach Abruf aller verfügbaren Listen in der Adapter-Konfiguration auswählen. Nur die konfigurierte Liste unter channels.tv wiederherstellen und synchronisieren. Radio-, api- und media-Datenpunktbäume einschließlich vorhandener Objekte beim Start entfernen. Build-Kennung zur Unterscheidung der überarbeiteten Pakete ergänzen. Version bleibt 0.1.6; Paket erneut installieren und Senderliste in Admin auswählen."
@@ -37,8 +41,8 @@
       "de": "Loewe TV"
     },
     "desc": {
-      "en": "Control a Loewe TV locally through its Tablet SOAP interface.",
-      "de": "Einen Loewe-Fernseher lokal über die Tablet-SOAP-Schnittstelle steuern."
+      "en": "Control a Loewe TV locally and show current and next programmes per TV channel, with optional XMLTV data.",
+      "de": "Einen Loewe-Fernseher lokal steuern und aktuelle sowie nächste Sendungen je TV-Sender anzeigen, optional mit XMLTV-Daten."
     },
     "authors": [
       "Loewe TV adapter contributors"
@@ -78,6 +82,11 @@
     "pollInterval": 30,
     "channelRefreshInterval": 300,
     "channelListView": "",
+    "epgEnabled": true,
+    "epgSource": "auto",
+    "epgRefreshInterval": 900,
+    "epgXmltvUrl": "",
+    "epgXmltvMappings": [],
     "pollPlayback": true,
     "appendNul": true,
     "macLan": "",

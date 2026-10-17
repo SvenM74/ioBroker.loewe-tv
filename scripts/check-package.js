@@ -32,13 +32,26 @@ assert.equal(admin.i18n, true);
 
 const configFields = new Set();
 const translationKeys = new Set();
-function visit(items) {
+function visit(items, nativeFields = true) {
     for (const [key, item] of Object.entries(items || {})) {
-        if (!key.startsWith('_')) configFields.add(key);
-        for (const name of ['label', 'help', 'text', 'validatorErrorText']) {
+        if (nativeFields && !key.startsWith('_')) configFields.add(key);
+        for (const name of ['label', 'title', 'help', 'text', 'validatorErrorText']) {
             if (typeof item[name] === 'string') translationKeys.add(item[name]);
         }
-        visit(item.items);
+        for (const option of Array.isArray(item.options) ? item.options : []) {
+            if (typeof option.label === 'string') translationKeys.add(option.label);
+        }
+        if (item.type === 'table') {
+            // Admin 7 table items are row columns, each identified by attr.
+            // They need translations but are not separate native settings.
+            assert.ok(Array.isArray(item.items), `Table columns must be an array: ${key}`);
+            const attrs = item.items.map(column => column.attr);
+            assert.ok(attrs.every(attr => typeof attr === 'string' && attr), `Missing table column attr: ${key}`);
+            assert.equal(new Set(attrs).size, attrs.length, `Duplicate table column attr: ${key}`);
+            visit(item.items, false);
+        } else {
+            visit(item.items, nativeFields);
+        }
     }
 }
 visit(admin.items);
@@ -49,6 +62,9 @@ for (const language of ['de', 'en']) {
 }
 
 const config = normalizeConfig({ ...io.native, host: 'fixture.invalid' });
+for (const key of ['epgEnabled', 'epgSource', 'epgRefreshInterval', 'epgXmltvUrl', 'epgXmltvMappings']) {
+    assert.deepEqual(config[key], io.native[key], `Runtime must preserve the EPG default: ${key}`);
+}
 for (const advanced of [false, true]) {
     const objects = createDefinitions({ ...config, enableAdvanced: advanced });
     const ids = new Set();
@@ -69,10 +85,14 @@ for (const advanced of [false, true]) {
         }
     }
     assert.equal([...ids].filter(id => /^remote\.[^.]+$/.test(id)).length, 42);
-    assert.equal(objects.length, 102);
+    assert.equal(objects.length, 107);
     assert.ok(![...ids].some(id => /^(?:api|media|channels\.radio)(?:\.|$)/.test(id)));
     assert.ok(ids.has('info.adapterBuild'));
     assert.equal(objects.find(object => object.id === 'channels.view').common.write, false);
+    assert.equal(objects.find(object => object.id === 'channels.epgRefresh')?.common.role, 'button');
+    for (const id of ['channels.epgStatus', 'channels.epgLastUpdate', 'channels.epgLastError', 'channels.epgProgress']) {
+        assert.equal(objects.find(object => object.id === id)?.common.write, false, `Missing read-only EPG state: ${id}`);
+    }
     assert.ok(!ids.has('channels.mediaType'));
     assert.ok(!ids.has('remote.radio_mode_on'));
     console.log(`Object definitions valid: ${objects.length} objects (${advanced ? 'legacy advanced setting ignored' : 'standard'}).`);

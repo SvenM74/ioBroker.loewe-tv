@@ -1,7 +1,7 @@
 {
   "name": "iobroker.loewe-tv",
-  "version": "0.1.6",
-  "description": "Local control of Loewe TVs using the Tablet SOAP interface",
+  "version": "0.1.7",
+  "description": "Local Loewe TV control with per-channel current and next programme information",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SvenM74/ioBroker.loewe-tv.git"
@@ -42,6 +42,8 @@
     "loewe",
     "tv",
     "remote",
+    "epg",
+    "xmltv",
     "soap",
     "smart-home"
   ],

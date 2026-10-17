@@ -596,7 +596,9 @@ test('folder ID contains the station name, common name is its preferred position
     assert.deepEqual(JSON.parse(values[prefix + '.numbers']), ['001', '100']);
     assert.deepEqual(JSON.parse(values[prefix + '.positions']), one.positions);
     assert.deepEqual(JSON.parse(values[prefix + '.locators']), ['channel://001:ch-one:sl-fixture', 'channel://100:ch-one:sl-fixture']);
-    assert.equal(values[prefix + '.epg.status'], 'notImplemented');
+    assert.ok(!Object.keys(values).some(id => id.startsWith(prefix + '.epg.')),
+        'Programme values are owned by the EPG manager, not by ordinary station metadata updates.');
+    assert.equal(definitions.find(definition => definition.id === prefix + '.epg.status').common.def, 'waiting');
     assert.ok(definitions.some(definition => definition.id === prefix + '.epg' && definition.type === 'channel'));
     assert.ok(definitions.filter(definition => definition.type === 'state' && definition.id !== button.id)
         .every(definition => definition.common.read === true && definition.common.write === false));

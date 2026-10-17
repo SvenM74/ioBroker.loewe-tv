@@ -1,18 +1,30 @@
 # Loewe TV für ioBroker
 
-Version **0.1.1** steuert einen Loewe-Fernseher über ioBroker-Datenpunkte. Du kannst die Fernbedienungstasten auslösen, Lautstärke und Stummschaltung setzen, Text eingeben, Senderlisten abfragen, über einen Sender-Locator umschalten und Wake-on-LAN auslösen.
+Version **0.1.2** steuert einen Loewe-Fernseher über ioBroker-Datenpunkte. Du kannst die Fernbedienungstasten auslösen, Lautstärke und Stummschaltung setzen, Text eingeben, Senderlisten abfragen, über einen Sender-Locator umschalten und Wake-on-LAN auslösen.
 
 Die Grundlage ist die aus der Android-App **Loewe App 1.4.7** extrahierte Netzwerkschnittstelle. Die zusätzliche Analyse von **Löwenbändiger Remote 1.15** ergänzt Zifferntasten und einen weiteren EPG-Code. Beim erneuten Prüfen der ursprünglichen Loewe-App wurde außerdem ein älteres MAC-Adressformat nachgewiesen, das der Adapter jetzt ebenfalls auswertet. Jede Instanz steuert genau einen Fernseher. Für einen zweiten Fernseher wird eine zweite Instanz angelegt.
 
-**Diese eigenständige Implementierung ist noch nicht an einem echten Loewe-Fernseher verifiziert.** Ob dein Modell und seine Firmware die Schnittstelle, einzelne Aktionen und das Aufwecken aus dem Standby unterstützen, lässt sich erst am Gerät prüfen. Der Adapter wird als lokale Paketdatei installiert und ist nicht im ioBroker-Adapterkatalog oder auf npm veröffentlicht.
+## Rückmeldung vom getesteten Fernseher
 
-0.1.1 behebt einen reproduzierbaren Fehler beim Verarbeiten bestimmter fehlerhafter TV-Antworten und trennt das Aufwecken von wartenden TV-Abfragen. Ob genau dieser Fehler eine konkrete gemeldete ioBroker-Störung verursacht hat, ist ohne entsprechende Protokolle nicht belegt.
+| Merkmal | Gemeldeter Stand vom 17.10.2026 |
+|---|---|
+| Modell | **Loewe bild 7.55** |
+| Chassis | **SL420** |
+| Software | **V5.4.6.0** |
+| Fernbedienung | Nach Rückmeldung des Nutzers scheinen sämtliche bereits vorhandenen Datenpunkte unter `remote` zu funktionieren. |
+| EPG-Tasten | `remote.epg` (15) und `remote.epg_alt` (78) öffnen dieselbe Anzeige am TV. Das ist noch kein Abruf von EPG-Daten. |
+| Senderabfrage | Im bisher installierten Stand nicht erfolgreich. |
+| Einschalten | Im bisher installierten Stand nicht erfolgreich, obwohl das Einschalten über LAN am TV aktiviert ist. |
+
+**Die neuen Korrekturen in 0.1.2 sind auf diesem Gerät noch nicht bestätigt.** Dazu gehören die automatische Auswahl einer tatsächlich gemeldeten Senderliste und der Einschaltablauf aus Wake-on-LAN plus gezieltem `TV_ON`-Befehl. Die Rückmeldung zu den bisherigen Fernbedienungstasten schließt den neu hinzugefügten Datenpunkt `remote.power_on` nicht ein. Sie ist auch keine Zusage für andere Modelle oder Firmwarestände.
+
+Die ergänzende [Loewe Remote API 1.0.47](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf) dokumentiert die Senderlisten, das Netzwerkaufwecken und einen lokalen EPG-Zugriff. Diese Herstellerangaben ergänzen die App-Analyse; die jeweilige Wirkung wird weiterhin am Gerät geprüft. Der Adapter wird als lokale Paketdatei installiert und ist nicht im ioBroker-Adapterkatalog oder auf npm veröffentlicht.
 
 ## Projektziel: Aufnahmen anhand von EPG-Regeln
 
 Der geplante Ausbau soll ioBroker ermöglichen, Programmdaten auszuwerten, passende Sendungen zu erkennen und dafür im Voraus Aufnahmetimer im Loewe-TV anzulegen. Regeln, beispielsweise für bestimmte Titel, Sender und Zeiträume, werden in ioBroker gesteuert. Der Adapter soll die Sender- und EPG-Daten bereitstellen, Aufnahmeaufträge übertragen und anhand der TV-Timerliste bestätigen.
 
-Diese Automatik ist in 0.1.1 noch nicht umgesetzt. Die [Roadmap für EPG und automatische Aufnahmen](docs/ROADMAP.md) beschreibt die vorhandenen Schnittstellen, die geplanten Datenpunkte und die noch erforderlichen Gerätetests.
+Diese Automatik ist in 0.1.2 noch nicht umgesetzt. Die [Roadmap für EPG und automatische Aufnahmen](docs/ROADMAP.md) beschreibt die vorhandenen Schnittstellen, die geplanten Datenpunkte und die noch erforderlichen Gerätetests.
 
 ## Voraussetzungen
 
@@ -26,7 +38,7 @@ Der laufende Adapter arbeitet lokal. Für die Installation kann ioBroker benöti
 
 ## Installationspaket aus dem Quellcode erzeugen
 
-Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Ein fertiges `.tgz`-Paket ist dort derzeit nicht als Release hinterlegt. Du kannst es mit den folgenden Schritten selbst erzeugen. Wenn du `iobroker.loewe-tv-0.1.1.tgz` bereits erhalten hast, kannst du diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung verwenden.
+Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Ein fertiges `.tgz`-Paket ist dort derzeit nicht als Release hinterlegt. Du kannst es mit den folgenden Schritten selbst erzeugen. Wenn du `iobroker.loewe-tv-0.1.2.tgz` bereits erhalten hast, kannst du diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung verwenden.
 
 Zum Erzeugen des Pakets brauchst du Git und Node.js ab 22. Öffne ein Terminal in einem eigenen Arbeitsverzeichnis und führe aus:
 
@@ -38,19 +50,19 @@ npm test
 npm pack
 ```
 
-`npm pack` erzeugt im Projektverzeichnis die Datei **`iobroker.loewe-tv-0.1.1.tgz`**. Die Entwicklungsbefehle gehören in diese Projektkopie, nicht in das produktive ioBroker-Hauptverzeichnis. Kopiere anschließend die erzeugte Paketdatei auf den ioBroker-Rechner und verwende die passende Anleitung unten.
+`npm pack` erzeugt im Projektverzeichnis die Datei **`iobroker.loewe-tv-0.1.2.tgz`**. Die Entwicklungsbefehle gehören in diese Projektkopie, nicht in das produktive ioBroker-Hauptverzeichnis. Kopiere anschließend die erzeugte Paketdatei auf den ioBroker-Rechner und verwende die passende Anleitung unten.
 
-## Update von 0.1.0 auf 0.1.1
+## Update von 0.1.0 oder 0.1.1 auf 0.1.2
 
-Die vorhandene Instanz weiterverwenden. Erzeuge `iobroker.loewe-tv-0.1.1.tgz` wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Kopiere sie unverändert auf den ioBroker-Rechner, beispielsweise nach `/tmp`. Führe dort diese Befehle in der angegebenen Reihenfolge aus:
+Die vorhandene Instanz weiterverwenden. Erzeuge `iobroker.loewe-tv-0.1.2.tgz` wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Kopiere sie unverändert auf den ioBroker-Rechner, beispielsweise nach `/tmp`. Führe dort diese Befehle in der angegebenen Reihenfolge aus:
 
 ```bash
 iobroker stop loewe-tv.0
 iobroker compact loewe-tv.0 disable
-iobroker url /tmp/iobroker.loewe-tv-0.1.1.tgz loewe-tv
+iobroker url /tmp/iobroker.loewe-tv-0.1.2.tgz loewe-tv
 ```
 
-Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Version 0.1.1 wird in einem eigenen Adapterprozess betrieben. Die Umstellung erfolgt vor dem Paketupdate, damit sie auch bei einer vorhandenen Instanz wirksam wird. Die Syntax ist in der [offiziellen ioBroker-CLI-Dokumentation](https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/config/cli.md) beschrieben.
+Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Ab Version 0.1.1 läuft der Adapter in einem eigenen Prozess; das gilt auch für 0.1.2. Die Umstellung erfolgt vor dem Paketupdate, damit sie auch bei einer vorhandenen Instanz wirksam wird. Die Syntax ist in der [offiziellen ioBroker-CLI-Dokumentation](https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/config/cli.md) beschrieben.
 
 Öffne anschließend die Einstellungen von `loewe-tv.0`. Für die erste Prüfung nach dem Update:
 
@@ -62,18 +74,18 @@ Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Version 0.1.1 wird in eine
 iobroker start loewe-tv.0
 ```
 
-Prüfe dann `info.wakeReady` und löse `control.powerOn` mit `true` und `ack: false` aus. Unter `info.lastWakeOnLan` stehen die verwendeten Zieladressen und der Zeitpunkt des Paketversands. Der Abschnitt [Ein- und Ausschalten](#ein--und-ausschalten) erklärt die Auswertung.
+Prüfe dann `info.wakeReady`. Warte nach dem Wechsel des TVs in den Standby mindestens 30 Sekunden und löse `control.powerOn` mit `true` und `ack: false` aus. Unter `info.lastWakeOnLan` stehen die verwendeten Zieladressen und der Zeitpunkt des Paketversands; `info.powerOn` zeigt den anschließenden Einschaltablauf. Der Abschnitt [Ein- und Ausschalten](#ein--und-ausschalten) erklärt die Auswertung. Die neuen Datenpunkte werden beim Start ergänzt, eine bereits eingetragene Senderlistenkennung bleibt erhalten.
 
 Wenn der Fernseher erreichbar ist, kannst du mit `control.refresh` gezielt eine Statusabfrage auslösen. Für den späteren Normalbetrieb das Intervall beispielsweise wieder auf 30 Sekunden setzen. Bei ausgeschalteter Automatik bleibt `info.connection` nach dem Start zunächst `false`, bis ein erfolgreicher manueller TV-Befehl oder eine manuelle Abfrage die Verbindung bestätigt.
 
 ## Erstinstallation aus der Paketdatei
 
-1. Erzeuge **`iobroker.loewe-tv-0.1.1.tgz`** wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Die Datei nicht entpacken.
-2. Kopiere sie auf den Rechner, auf dem ioBroker läuft, beispielsweise nach `/tmp/iobroker.loewe-tv-0.1.1.tgz`.
+1. Erzeuge **`iobroker.loewe-tv-0.1.2.tgz`** wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Die Datei nicht entpacken.
+2. Kopiere sie auf den Rechner, auf dem ioBroker läuft, beispielsweise nach `/tmp/iobroker.loewe-tv-0.1.2.tgz`.
 3. Öffne dort ein Terminal oder eine SSH-Verbindung und führe aus:
 
 ```bash
-iobroker url /tmp/iobroker.loewe-tv-0.1.1.tgz loewe-tv
+iobroker url /tmp/iobroker.loewe-tv-0.1.2.tgz loewe-tv
 ```
 
 4. Lege beim ersten Installieren eine Instanz an:
@@ -110,6 +122,7 @@ Diese Installation verwendet den ioBroker-Befehl für eine eigene Paketquelle. D
 | LAN-MAC-Adresse | leer | MAC-Adresse des kabelgebundenen TV-Netzwerkanschlusses. |
 | WLAN-MAC-Adresse | leer | MAC-Adresse des TV-WLAN-Anschlusses. Die Möglichkeit zum Aufwecken über WLAN hängt vom TV ab. |
 | Broadcastadresse | `255.255.255.255` | Beim Standardwert wird zusätzlich eine passende lokale Broadcastadresse versucht, wenn die konfigurierte TV-Adresse eine IPv4-Adresse im gemeinsamen lokalen Subnetz ist. Eine ausdrücklich eingetragene andere Adresse wird genau so verwendet. |
+| Zeitlimit für Einschalten | 60 Sekunden | Gesamtzeit für Wake-on-LAN und den anschließenden gezielten Einschaltbefehl. Einstellbar von 5 bis 120 Sekunden; nach Ablauf wird der Versuch beendet. |
 
 Der Adapter liest MAC-Adressen auch aus den Gerätedaten des erreichbaren Fernsehers, einschließlich des älteren Antwortfelds `MAC-Address`. Diese Geräteabfrage erfolgt vor den Abfragen von Lautstärke und Stummschaltung. Wenn der Fernseher bereits im Standby ist und noch keine MAC-Adresse bekannt ist, muss die passende TV-MAC-Adresse für den ersten Einschaltversuch manuell eingetragen werden. Bei Intervall 0 findet auch keine automatische MAC-Erkennung beim Start statt.
 
@@ -144,8 +157,8 @@ Im Objektbaum von Admin beim Schreiben die Bestätigung nicht aktivieren. In Blo
 |---|---|---|
 | `control.volume` | Zahl, lesen/schreiben | Zum Setzen eine ganze TV-Stufe von 0 bis 99 schreiben. Die konfigurierte Obergrenze gilt zusätzlich. Der Lesewert stammt aus der TV-Rückmeldung. |
 | `control.mute` | Wahrheitswert, lesen/schreiben | `true` zum Stummschalten, `false` zum Aufheben. |
-| `control.powerOn` | Taster | `true` sendet Wake-on-LAN unabhängig von wartenden TV-Abfragen. Voraussetzung ist eine bekannte TV-MAC-Adresse. |
-| `control.powerOff` | Taster | `true` sendet den extrahierten Ausschaltbefehl. |
+| `control.powerOn` | Taster | Startet Wake-on-LAN sofort und sendet anschließend den gezielten Einschaltbefehl 22, sobald die Schnittstelle antwortet. Bekannte TV-MAC-Adresse erforderlich; begrenzte Gesamtdauer und Ablauf in `info.powerOn`. |
+| `control.powerOff` | Taster | Bricht einen laufenden Einschaltversuch ab und sendet den gezielten Ausschaltbefehl 25. |
 | `control.refresh` | Taster | `true` fragt den TV-Status sowie die Geräteinformationen und Einstellungen erneut ab. |
 | `media.text` | Text, schreiben | Schickt einen nicht leeren Text mit höchstens 2.048 Unicode-Zeichen als Tastatureingabe an das aktive Eingabefeld des TVs. |
 | `media.backspace` | Taster | Sendet einmal die Rücktaste. |
@@ -176,7 +189,7 @@ Es handelt sich bei `control.volume` um die Stufen der App. **Nicht mit 10.000 m
 
 Alle folgenden Datenpunkte sind Taster. Der normale Tastendruck enthält Drücken und Loslassen. Langes Halten oder automatische Tastenwiederholung ist in diesen Tastern nicht eingebaut.
 
-| Datenpunkt unter `remote` | Funktion | Extrahierter Code |
+| Datenpunkt unter `remote` | Funktion | Code |
 |---|---|---:|
 | `home` | Startbildschirm | 49 |
 | `menu` | Menü | 11 |
@@ -196,7 +209,8 @@ Alle folgenden Datenpunkte sind Taster. Der normale Tastendruck enthält Drücke
 | `channel_up` | Nächstes Programm | 24 |
 | `channel_down` | Vorheriges Programm | 23 |
 | `mute` | Stummschaltung umschalten | 13 |
-| `power_off` | Ausschalten | 12 |
+| `power_off` | Bisherige Ein-/Ausschalttaste; laut API ein Umschaltbefehl | 12 |
+| `power_on` | Erreichbaren TV gezielt einschalten, ohne Wake-on-LAN | 22 |
 | `red` | Rot | 27 |
 | `green` | Grün | 26 |
 | `yellow` | Gelb | 43 |
@@ -207,7 +221,7 @@ Alle folgenden Datenpunkte sind Taster. Der normale Tastendruck enthält Drücke
 | `record` | Aufnahme | 55 |
 | `pause` | Pause | 41 |
 | `stop` | Stopp | 54 |
-| `power_all_code` | Separater „Power all“-Code der App | 25 |
+| `power_all_code` | Gezieltes Ausschalten; bisheriger Datenpunktname bleibt erhalten | 25 |
 | `digit_0` | Ziffer 0 | 0 |
 | `digit_1` | Ziffer 1 | 1 |
 | `digit_2` | Ziffer 2 | 2 |
@@ -221,7 +235,7 @@ Alle folgenden Datenpunkte sind Taster. Der normale Tastendruck enthält Drücke
 
 Die sechs Wiedergabetasten von `rewind` bis `stop` verwenden das Tastenalphabet `l2700-hdr`. Die übrigen Tasten verwenden `l2700`. Du musst das bei den Datenpunkten nicht selbst einstellen.
 
-`remote.power_all_code` wird nur an den Fernseher dieser Instanz gesendet. Der Name stammt aus der App und bedeutet im Adapter nicht, dass alle Instanzen gemeinsam angesprochen werden. Die konkrete Gerätewirkung dieses zusätzlichen Codes ist noch nicht am Fernseher bestätigt. Zum gewöhnlichen Ausschalten `control.powerOff` oder `remote.power_off` verwenden.
+`remote.power_all_code` wird nur an den Fernseher dieser Instanz gesendet. Der Name stammt aus der App und bleibt für vorhandene Skripte erhalten. Die [Remote API 1.0.47](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf) unterscheidet den Umschaltbefehl 12 von `TV_ON` (22) und dem gezielten Ausschaltbefehl 25. **Ab 0.1.2 verwendet `control.powerOff` den Code 25.** `remote.power_off` behält den bisherigen Code 12. Zum Aufwecken aus dem Standby `control.powerOn` verwenden; `remote.power_on` sendet allein die Taste 22 über die bereits erreichbare Steuerschnittstelle.
 
 ```javascript
 // Einen einzelnen Tastendruck senden.
@@ -235,7 +249,7 @@ setState('loewe-tv.0.remote.home', true, false);
 setState('loewe-tv.0.media.text', 'Hallo', false);
 ```
 
-Die zehn Zifferntasten und `epg_alt` wurden in 0.1.1 anhand von Löwenbändiger Remote 1.15 ergänzt. Die bisherigen 29 Tastenbelegungen bleiben unverändert. `epg_alt` kann auf Modellen ausprobiert werden, die den bisherigen EPG-Code nicht wie erwartet behandeln. Die Zifferntasten senden einzelne Tastendrücke; ob eine Ziffernfolge eine Senderwahl auslöst, hängt vom TV und vom gerade geöffneten Bildschirm ab.
+Die zehn Zifferntasten und `epg_alt` wurden in 0.1.1 anhand von Löwenbändiger Remote 1.15 ergänzt. Die bisherigen 29 Tastenbelegungen bleiben unverändert. Auf dem oben beschriebenen bild 7.55 führten die EPG-Codes 15 und 78 laut Nutzer zur gleichen TV-Anzeige. Die Zifferntasten senden einzelne Tastendrücke; ob eine Ziffernfolge eine Senderwahl auslöst, hängt vom TV und vom gerade geöffneten Bildschirm ab.
 
 ```javascript
 setState('loewe-tv.0.remote.digit_1', true, false);
@@ -243,38 +257,50 @@ setState('loewe-tv.0.remote.digit_1', true, false);
 
 ### Senderlisten und Umschalten
 
+**Zum ersten Abruf bei eingeschaltetem TV genügt `channels.getChannels = true`.** Ist `channels.view` leer, fragt der Adapter zunächst die tatsächlich vorhandenen Listen mit `startIndex=0` und `maxItems=100` ab und wählt daraus eine Senderliste. Nach Möglichkeit wird eine nichtleere `fastscan`-Liste bevorzugt; `avlist`-Eingangslisten werden nicht automatisch gewählt. Die gewählte Kennung wird in `channels.view` eingetragen. Eine bereits gesetzte Kennung bleibt erhalten.
+
 | Datenpunkt | Typ | Bedeutung |
 |---|---|---|
-| `channels.view` | Text, lesen/schreiben | Kennung der abzufragenden Senderliste aus der TV-Antwort. |
-| `channels.start` | Zahl, lesen/schreiben | Startindex der Abfrage, standardmäßig 0. |
-| `channels.count` | Zahl, lesen/schreiben | Anzahl pro Abfrage, standardmäßig 100, höchstens 500. |
-| `channels.getLists` | Taster | Lädt die verfügbaren Senderlisten. |
-| `channels.lists` | JSON-Text, lesen | Antwort mit den verfügbaren Senderlisten. |
-| `channels.getChannels` | Taster | Lädt die Sender der unter `channels.view` gewählten Liste. |
-| `channels.items` | JSON-Text, lesen | Antwort mit den Sendern der abgefragten Seite. |
+| `channels.view` | Text, lesen/schreiben | Gewünschte Listenkennung aus der TV-Antwort. Leer bedeutet automatische Auswahl. |
+| `channels.start` | Zahl, lesen/schreiben | Startindex innerhalb der gewählten Senderliste, Standard 0. |
+| `channels.listStart` | Zahl, lesen/schreiben | Eigener Startindex für `channels.getLists`, Standard 0. Wird nicht vom Senderindex übernommen. |
+| `channels.count` | Zahl, lesen/schreiben | Seitengröße für beide Abfragen, Standard 100, erlaubte Werte 1 bis 500. |
+| `channels.mediaType` | Text, lesen/schreiben | Leer für TV und Radio, `video` nur für TV, `audio` nur für Radio. Standard ist leer. |
+| `channels.getLists` | Taster | Fragt die Senderlisten ab `channels.listStart` ab. |
+| `channels.getChannels` | Taster | Fragt eine Senderseite ab `channels.start` ab; löst bei leerer Kennung zuerst die automatische Listenauswahl aus. |
+| `channels.availableLists` | JSON-Text, lesen | Aufbereitete Listen der zuletzt abgefragten Seite, mit `view`, `name`, `totalResults` und `hash`. Anfangswert `[]`. |
+| `channels.entries` | JSON-Text, lesen | Aufbereitete Sender der zuletzt abgefragten Seite. Anfangswert `[]`. |
+| `channels.totalNumber` | Zahl, lesen | Vom TV gemeldete Gesamtzahl der Sender in dieser Abfrage; `-1`, wenn unbekannt. |
+| `channels.returnedNumber` | Zahl, lesen | Anzahl der Sender auf der zuletzt empfangenen Seite. |
+| `channels.nextStart` | Zahl, lesen | Startindex der nächsten Senderseite. `-1`, wenn keine weitere Seite ermittelt wurde. |
+| `channels.nextListStart` | Zahl, lesen | Startindex der nächsten Senderlistenseite. `-1`, wenn keine weitere Seite ermittelt wurde. |
+| `channels.lastUpdate` | Zeitstempel, lesen | Letzte erfolgreiche Sender- oder Senderlistenabfrage, Unixzeit in Millisekunden. |
+| `channels.lastError` | Text, lesen | Letzter Fehler dieser Abfragen; wird nach erfolgreicher Abfrage geleert. |
+| `channels.lists` | JSON-Text, lesen | Unveränderte Struktur der Senderlistenantwort, auch zur Fehlersuche. |
+| `channels.items` | JSON-Text, lesen | Unveränderte Struktur der Senderantwort der zuletzt abgefragten Seite. |
 
-So gehst du vor:
+`channels.entries` enthält pro Sender die Felder `mediaItemUuid`, `name`, `locator`, `caption`, `itemClass`, `attributes`, `thumbnailUrl`, `streamingUrl` und `originalStreamingUrl`. Nicht gelieferte optionale Texte bleiben leer. Für das Umschalten den tatsächlich gelieferten `locator` in `media.locator` schreiben. Eine Senderreferenz oder der sichtbare Name ersetzt diesen Locator nicht.
 
-1. `channels.getLists` auf `true` schreiben.
-2. Aus `channels.lists` die gewünschte Listenkennung übernehmen und in `channels.view` schreiben.
-3. `channels.getChannels` auf `true` schreiben.
-4. In `channels.items` den Locator des gewünschten Senders suchen und genau diesen Wert in `media.locator` schreiben.
+Für eine andere Liste zuerst `channels.getLists` auslösen und die gewünschte `view` aus `channels.availableLists` übernehmen. Danach `channels.start` auf 0 setzen und `channels.getChannels` auslösen. Falls der TV noch seine Listen synchronisiert, meldet `channels.lastError` diesen Zustand; die Abfrage später erneut starten.
 
-Die JSON-Struktur stammt vom Fernseher und kann sich je nach Firmware unterscheiden. Der Adapter speichert die Antwort und erzeugt keine zusätzlichen, automatisch benannten Datenpunkte für jeden einzelnen Sender. Für weitere Seiten `channels.start` erhöhen und dieselbe Abfrage erneut auslösen. Das Schreiben von `view`, `start` und `count` allein sendet noch keine Senderabfrage. Wird eine Antwort wegen ihrer Größe ausgelassen, `channels.count` verringern und kleinere Seiten abfragen.
+**Jede Abfrage liefert eine Seite.** Sobald sie abgeschlossen ist und `channels.nextStart` einen Wert ab 0 enthält, diesen Wert nach `channels.start` übernehmen und erneut `channels.getChannels` auslösen. Für weitere Senderlistenseiten entsprechend `channels.nextListStart` nach `channels.listStart` übernehmen und `channels.getLists` auslösen. Die Antworten werden nicht zu einem Gesamtbestand zusammengefügt; die nächste Seite ersetzt die vorherigen Seitendaten. Es entstehen noch keine eigenen Datenpunkte je Sender. `-1` ist kein pauschaler Vollständigkeitsnachweis, wenn die TV-Antwort keine ausreichenden Seitenangaben enthält.
 
-Eine vorhandene Senderkennung aus dem TV kann beispielsweise so gewählt werden; `LISTENKENNUNG_AUS_TV` vorher ersetzen:
+Das Schreiben der Auswahl- und Seitenparameter allein löst keine Abfrage aus. Wird eine Antwort wegen ihrer Größe ausgelassen, `channels.count` verringern. Die zusätzlichen Informationen zu TV und Radio folgen dem dokumentierten Anfrageformat in Kapitel 9.7 der [Loewe Remote API 1.0.47](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf). Die Abfrage ist auf dem gemeldeten SL420 noch zu bestätigen.
+
+Beispiel für den ersten Abruf mit automatischer Listenauswahl:
 
 ```javascript
 async function senderlisteAbfragen() {
-    await setStateAsync('loewe-tv.0.channels.view', 'LISTENKENNUNG_AUS_TV', false);
+    await setStateAsync('loewe-tv.0.channels.view', '', false);
     await setStateAsync('loewe-tv.0.channels.start', 0, false);
     await setStateAsync('loewe-tv.0.channels.count', 100, false);
+    await setStateAsync('loewe-tv.0.channels.mediaType', '', false);
     await setStateAsync('loewe-tv.0.channels.getChannels', true, false);
 }
 senderlisteAbfragen();
 ```
 
-`setStateAsync` bestätigt hier das Schreiben in ioBroker. Die Antwort des Fernsehers folgt anschließend in `channels.items`.
+`setStateAsync` bestätigt hier das Schreiben in ioBroker. Die TV-Abfrage folgt anschließend; Ergebnis und Fehler stehen in den oben genannten Datenpunkten.
 
 ### Status und Gerätedaten
 
@@ -289,6 +315,7 @@ senderlisteAbfragen();
 | `info.commandPending` | Ob gerade ein Steuerbefehl oder eine Statusabfrage bearbeitet wird beziehungsweise weitere Vorgänge warten. |
 | `info.wakeReady` | `true`, wenn eine formal gültige TV-MAC-Adresse zum Paketversand bekannt ist. Dies ist keine Bestätigung der Wake-on-LAN-Fähigkeit des TVs. |
 | `info.lastWakeOnLan` | Letzter erfolgreicher Wake-on-LAN-Paketversand als JSON mit `macs`, `broadcast`, `targets`, `port`, `repeats` und `sentAt`. `sentAt` ist der Auslösezeitpunkt als Unix-Zeit in Millisekunden. |
+| `info.powerOn` | Einschaltablauf als JSON, unter anderem mit `phase`, `startedAt`, `updatedAt`, `deadline`, `attempts` und `wakeBursts`. Die Phase `powerKeySent` bestätigt keinen sichtbaren Bildschirminhalt. |
 | `status.volume` | Zuletzt vom Fernseher gelesene Lautstärke in App-Stufen. |
 | `status.volumeRaw` | Rohwert der Lautstärke im Loewe-Protokoll. |
 | `status.mute` | Zuletzt vom Fernseher gelesene Stummschaltung. |
@@ -298,6 +325,8 @@ senderlisteAbfragen();
 | `device.macLan` | Ermittelte LAN-MAC-Adresse. |
 | `device.macWlan` | Ermittelte WLAN-MAC-Adresse. |
 | `device.mac` | MAC-Adresse aus dem älteren TV-Antwortfeld `MAC-Address`, als zusätzliche Quelle für Wake-on-LAN. |
+| `device.wolEnabled` | Gültig vom TV gemeldete Wake-on-LAN-Einstellung. Bleibt bis zur ersten gültigen Antwort unbekannt. |
+| `device.wolInteractive` | Gültig vom TV gemeldete Einstellung `WolInteractive`. Bleibt bis zur ersten gültigen Antwort unbekannt. |
 
 **`info.connection` ist kein verlässlicher Bildschirm-Ein/Aus-Zustand.** Ein Fernseher kann im Standby noch auf Netzwerkbefehle antworten. Umgekehrt kann ein eingeschalteter Fernseher bei einem Netzwerkfehler unerreichbar sein. `control.powerOn` und `control.powerOff` sind deshalb bewusst Befehls-Taster.
 
@@ -307,7 +336,7 @@ Bei einem Intervall größer als 0 werden Lautstärke und Stummschaltung regelm�
 
 SOAP-Anfragen werden nacheinander ausgeführt. Die Warteschlange ist auf 20 laufende oder wartende Vorgänge begrenzt. Ein Vorgang, der beim Erreichen seines Platzes mehr als 30 Sekunden gewartet hat, wird verworfen. **Wake-on-LAN läuft unabhängig von dieser Warteschlange**, damit ein nicht antwortender Fernseher seinen eigenen Einschaltversuch nicht verzögert.
 
-Ein fehlgeschlagener SOAP-Steuerbefehl wird nicht automatisch wiederholt, weil der Fernseher ihn vor einem Verbindungsabbruch bereits ausgeführt haben könnte. Nach einem solchen Fehler stellt der nächste Versuch die Anmeldung bei Bedarf neu her. Die drei vorgesehenen Wake-on-LAN-Sendungen sind davon unabhängig.
+Gewöhnliche SOAP-Steuerbefehle werden nach einem Fehler nicht automatisch wiederholt, weil der Fernseher sie vor einem Verbindungsabbruch bereits ausgeführt haben könnte. Nach einem solchen Fehler stellt der nächste Versuch die Anmeldung bei Bedarf neu her. Eine gezielte Ausnahme ist der zeitlich begrenzte Einschaltablauf: Er darf den dokumentierten Befehl `TV_ON` bei vorübergehenden Verbindungsproblemen wiederholen. Er verwendet dabei keinen Umschaltbefehl. Die Wartephasen zwischen diesen Versuchen belegen die SOAP-Warteschlange nicht.
 
 JSON-Antworten werden bis 512 KiB in einem Datenpunkt gespeichert. Größere Antworten werden durch einen JSON-Hinweis mit `omitted`, `bytes`, `limit` und `reason` ersetzt. Für `info.lastResponse` gilt eine Grenze von 64 KiB. Diese Grenzen halten große Sender- oder Archivlisten aus häufig aktualisierten Diagnosewerten heraus.
 
@@ -386,7 +415,7 @@ Die Tabelle nennt die XML-Elemente innerhalb von `parametersXml`. `A/B` bezeichn
 | `GetDeviceData` | Keine. |
 | `GetFeature` | `Name`. |
 | `GetListOfChannelLists` | `QueryParameters/Range` mit `@startIndex` und `@maxItems`. |
-| `GetChannelList` | `ChannelListView`; `QueryParameters/Range` mit `@startIndex` und `@maxItems`. Die App ergänzt in `QueryParameters` außerdem `OrderField` mit `field="userChannelNumber"`, `type="ascending"`, `MediaItemInformation=true` und `MediaItemClass=video`. |
+| `GetChannelList` | `ChannelListView`; `QueryParameters/Range` mit `@startIndex` und `@maxItems`. Die ursprüngliche App ergänzt `OrderField` mit `field="userChannelNumber"`, `type="ascending"`, `MediaItemInformation=true` und `MediaItemClass=video`. Der Komfortabruf in 0.1.2 setzt den Medienfilter nur bei entsprechend gewähltem `channels.mediaType`. |
 | `GetMediaItem` | `MediaItemReference` mit `@mediaItemUuid`. |
 | `GetMediaEvent` | `MediaEventReference` mit `@mediaEventUuid`. |
 | `GetDRPlusArchive` | `QueryParameters/Range` mit `@startIndex` und `@maxItems`; optional `VolumeId`. |
@@ -420,11 +449,7 @@ Die Extraktion liefert die Namen und den Aufbau dieser Parameter. Für `ProgramT
 
 ## Ein- und Ausschalten
 
-Zum Ausschalten:
-
-```javascript
-setState('loewe-tv.0.control.powerOff', true, false);
-```
+Die [Loewe Remote API 1.0.47, Kapitel 9.4.3](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf), unterscheidet das Aufwecken des Netzwerkdiensts vom interaktiven Einschalten. Abhängig von `WolInteractive` kann ein Magic Packet allein den Bildschirm ausgeschaltet lassen. Deshalb ergänzt 0.1.2 den anschließenden gezielten `TV_ON`-Befehl 22. Diese dokumentierte Unterscheidung erklärt einen möglichen Fehler im bisherigen Ansatz; ob sie Svens konkretes Einschaltproblem vollständig behebt, ist erst nach dem Gerätetest bekannt.
 
 Zum Einschalten:
 
@@ -432,18 +457,41 @@ Zum Einschalten:
 setState('loewe-tv.0.control.powerOn', true, false);
 ```
 
-Wake-on-LAN sendet Magic Packets per UDP an Port 9. In 0.1.1 wird jedes Paar aus MAC-Adresse und Zieladresse dreimal bedient, mit 150 Millisekunden Pause zwischen den Senderunden. Der Versand läuft unabhängig von SOAP-Anfragen, die noch auf den ausgeschalteten Fernseher warten.
+Der Ablauf ist zeitlich begrenzt:
+
+1. Sofort drei Wake-on-LAN-Senderunden per UDP an Port 9, mit 150 Millisekunden Abstand. Der Versand wartet nicht auf offene SOAP-Abfragen.
+2. Nach dem ersten Versand und einer Wartezeit von einer Sekunde beginnt der Versuch, den gezielten Einschaltbefehl 22 zu senden. Ein einzelner Versuch einschließlich Warteschlange und Anmeldung hat höchstens drei Sekunden Zeit.
+3. Bei vorübergehenden Netzwerk- oder Anmeldeproblemen folgt nach zwei Sekunden ein weiterer Versuch. Wenn der Ablauf noch läuft, wird frühestens nach 35 Sekunden einmal ein weiterer WOL-Burst gesendet.
+4. Nach der eingestellten Gesamtfrist endet der Vorgang. Standard sind 60 Sekunden, einstellbar sind 5 bis 120 Sekunden. Ein Ausschaltbefehl oder das Beenden des Adapters bricht die Sequenz ab, damit wartende Versuche den TV nicht später wieder einschalten.
+
+Die Wartezeiten laufen asynchron. Bereits gesendete Netzwerkpakete lassen sich beim Abbruch nicht zurückholen; noch wartende Einschaltversuche werden vor ihrem Versand erneut auf Abbruch und Zeitlimit geprüft.
+
+Zum gezielten Ausschalten:
+
+```javascript
+setState('loewe-tv.0.control.powerOff', true, false);
+```
+
+Ab 0.1.2 verwendet dieser Datenpunkt den dokumentierten Code 25. Der bisherige Datenpunkt `remote.power_off` bleibt beim Umschaltcode 12, `remote.power_all_code` bleibt beim gezielten Ausschaltcode 25. `remote.power_on` sendet nur Code 22 und führt keinen WOL-Ablauf aus.
 
 ### Den Einschaltversuch prüfen
 
-1. Trage für die erste Prüfung aus dem Standby die tatsächliche TV-MAC-Adresse manuell in der Konfiguration ein. Sie lässt sich beispielsweise in den TV-Netzwerkeinstellungen oder im Router nachsehen. Alternativ den TV einschalten und einmal `control.refresh` auslösen, damit die MAC-Adresse ausgelesen werden kann.
-2. Kontrolliere `info.wakeReady`. `true` bedeutet nur, dass eine MAC-Adresse zum Senden bekannt ist. Es sagt nichts darüber aus, ob das Modell Wake-on-LAN unterstützt oder die passende Standby-Einstellung aktiviert ist.
-3. Löse `control.powerOn` aus und prüfe anschließend `info.lastWakeOnLan`. `sentAt` muss zum aktuellen Versuch gehören. `targets` zeigt die verwendeten Broadcastadressen, `macs` die MAC-Adressen und `repeats` die Anzahl der Senderunden. Bleibt der Eintrag unverändert, auch `info.lastError` lesen.
-4. Wenn der Fernseher startet, warte, bis er wieder auf Steuerbefehle reagiert. Bei Intervall 0 eine manuelle Abfrage über `control.refresh` auslösen; ohne Abfrage wird `info.connection` nach einem reinen Wake-on-LAN-Versand nicht automatisch auf `true` gesetzt.
+1. Den Fernseher zum Einrichten einschalten. Die passende LAN- oder WLAN-MAC-Adresse manuell konfigurieren oder mit `control.refresh` aus den Gerätedaten lernen. Das Einschalten über LAN muss am TV aktiviert sein.
+2. `info.wakeReady` prüfen. `true` bedeutet, dass eine MAC-Adresse bekannt ist. Nach einer gültigen Geräteabfrage zeigen außerdem `device.wolEnabled` und `device.wolInteractive` die vom TV gemeldeten Einstellungen. Ein unbekannter Wert bedeutet keine bestätigte Deaktivierung.
+3. Den TV in Standby versetzen und **mindestens 30 Sekunden warten**. Diesen Mindestabstand nennt das [Loewe-Benutzerhandbuch für bild-Geräte mit SL3xx/SL4xx](https://cdn.loewe.tv/manuals_new/TV_BA/SL3xx_SL4xx/universelles%20Benutzerhandbuch%20f%C3%BCr%20alle%20bild%20Ger%C3%A4te/36960000_UH_bild_universal_3l_DE_180813.pdf) für das erneute Einschalten über LAN/WLAN.
+4. `control.powerOn` mit `true` und `ack: false` auslösen. In `info.lastWakeOnLan` müssen `sentAt`, `targets` und `macs` zum aktuellen Versuch passen. `info.powerOn` zeigt den anschließenden Ablauf und gegebenenfalls einen Fehler.
 
-Ein erfolgreicher UDP-Versand ist keine Empfangs- oder Einschaltbestätigung des Fernsehers. Wenn das Gerät nicht aufwacht, sind TV-Einstellung, tatsächliche MAC-Adresse, Broadcastziel und die Erreichbarkeit über das Netzwerk zu prüfen. Manche Geräte reagieren nur über LAN oder nur in bestimmten Standby-Modi.
+| Phase in `info.powerOn` | Bedeutung |
+|---|---|
+| `waking` | Wake-on-LAN wird gesendet. |
+| `waiting` | Warten vor dem ersten oder einem weiteren TV_ON-Versuch. |
+| `powerKeySent` | Die Steuerschnittstelle hat den gezielten Einschaltbefehl erfolgreich beantwortet. **Kein Nachweis, dass ein Bild sichtbar ist.** |
+| `failed` | Fehler oder Gesamtzeitlimit erreicht; den gemeldeten Fehler lesen. |
+| `cancelled` | Der Einschaltablauf wurde abgebrochen. |
 
-**Die zusätzlich analysierte App Löwenbändiger Remote 1.15 enthält keinen nachgewiesenen Einschalt- oder Wake-on-LAN-Befehl.** Ihre zusätzlichen Tastencodes liefern deshalb keine andere belegte Methode zum Einschalten. Die Analyse ist unter [docs/Loewenbaendiger_Remote_1.15_Analyse.txt](docs/Loewenbaendiger_Remote_1.15_Analyse.txt) dokumentiert.
+Ein erfolgreicher UDP-Versand bestätigt nicht den Empfang am TV. Auch eine erfolgreiche SOAP-Antwort ist kein verlässlicher Bildschirmstatus. `info.connection` zeigt die Erreichbarkeit der Schnittstelle. Bleiben die Diagnosen unverändert, `info.lastError` auf einen vor Beginn erkannten Fehler wie eine fehlende MAC-Adresse prüfen.
+
+Die zweite App Löwenbändiger Remote 1.15 lieferte keinen nachgewiesenen WOL-Ablauf. Der neue zweistufige Einschaltweg stützt sich auf die Hersteller-API. Eine lesbare [Textfassung der Remote-API-Spezifikation](https://github.com/gadgetbazza/hass-loewetv-remoteapi/blob/main/supporting_files/remote_api_1.0.47_Loewe.txt) wird im unabhängigen Home-Assistant-Projekt bereitgestellt.
 
 ## Fehler eingrenzen
 
@@ -455,16 +503,16 @@ Ein erfolgreicher UDP-Versand ist keine Empfangs- oder Einschaltbestätigung des
 | Schreiben eines Datenpunkts bewirkt nichts | Mit `ack: false` schreiben. Taster erwarten `true`; Parameterfelder der API führen ohne den zugehörigen `send`-Taster keine Anfrage aus. |
 | Lautstärke lässt sich nicht hoch genug setzen | Den Wert und die konfigurierte maximale Lautstärke prüfen. `control.volume` erwartet eine ganze App-Stufe, keinen Protokollrohwert. |
 | `info.wakeReady` ist `false` | Die passende TV-MAC-Adresse manuell konfigurieren oder bei eingeschaltetem TV `control.refresh` auslösen. Bei Intervall 0 wird die MAC-Adresse beim Start nicht automatisch abgefragt. |
-| `info.wakeReady` ist `true`, aber der TV startet nicht | Den aktuellen Eintrag in `info.lastWakeOnLan` prüfen: MAC-Adressen, Zieladressen und Auslösezeitpunkt. Danach Netzwerk-Wakeup-Einstellung und Standby-Modus des TVs prüfen. `wakeReady` bestätigt allein die bekannte MAC-Adresse. |
+| `info.wakeReady` ist `true`, aber der TV startet nicht | Den aktuellen Eintrag in `info.lastWakeOnLan` und den Ablauf in `info.powerOn` prüfen. Nach dem Ausschalten mindestens 30 Sekunden warten. `powerKeySent` bestätigt nur die Antwort auf den Einschaltbefehl, kein Bild. |
 | Ein Einschaltversuch aktualisiert `info.lastWakeOnLan` nicht | `info.lastError` lesen und prüfen, ob `control.powerOn` mit `true` und `ack: false` geschrieben wurde. Eine frühere Versandmeldung ist kein Nachweis für den aktuellen Versuch. |
-| ioBroker wird nach dem Aktivieren der bisherigen Version träge | `loewe-tv.0` stoppen und die Updateanleitung auf 0.1.1 einschließlich der instanzbezogenen Compact-Umstellung ausführen. Für die anschließende Prüfung automatische Abfragen mit Intervall 0 deaktivieren. |
-| Senderabfrage scheitert | Eine echte Listenkennung aus `channels.lists` in `channels.view` verwenden. Für `media.locator` einen vollständigen Locator aus der TV-Antwort verwenden. |
+| ioBroker wird nach dem Aktivieren der bisherigen Version träge | `loewe-tv.0` stoppen und die Updateanleitung auf 0.1.2 einschließlich der instanzbezogenen Compact-Umstellung ausführen. Für die anschließende Prüfung automatische Abfragen mit Intervall 0 deaktivieren. |
+| Senderabfrage scheitert | `channels.lastError`, `channels.lists` und `channels.items` prüfen. Zum erneuten automatischen Auswählen `channels.view` leeren und `channels.getChannels` auslösen; alternativ eine Kennung aus `channels.availableLists` setzen. Bei Synchronisierung später wiederholen. |
 | Texteingabe erscheint nicht | Erst ein passendes Eingabefeld am TV fokussieren. Nicht jede TV-Oberfläche nimmt Tastatureingaben an. |
 | `api` fehlt | Zusätzliche TV-Befehle in der Konfiguration aktivieren, speichern und die Instanz neu starten. |
 | Eine JSON-Antwort enthält `omitted: true` oder API-XML ist leer mit Größenhinweis | Kleinere Sender- oder Archivbereiche abfragen, beispielsweise `channels.count` reduzieren. Der Hinweis beschreibt die ausgelassene Speicherung einer großen Antwort. |
 | Ein Befehl meldet eine volle Warteschlange oder zu lange Wartezeit | Befehle langsamer senden, laufende TV-Zeitüberschreitungen prüfen und für die Diagnose Intervall 0 verwenden. |
 
-Für einen Fehlerbericht sind TV-Modell, Firmware, Adapterversion und der konkrete Fehlertext hilfreich. Bei Einschaltproblemen zusätzlich die verwendete LAN-/WLAN-Verbindung, `info.wakeReady` und den aktuellen Inhalt von `info.lastWakeOnLan` angeben. Bei einem Problem mit Senderlisten oder Wiedergabedaten außerdem die zugehörige TV-Antwort beilegen. Persönliche Senderlisten, Gerätekennungen oder MAC-Adressen können darin enthalten sein.
+Für einen Fehlerbericht sind TV-Modell, Firmware, Adapterversion und der konkrete Fehlertext hilfreich. Bei Einschaltproblemen zusätzlich die verwendete LAN-/WLAN-Verbindung, `info.wakeReady`, `info.lastWakeOnLan` und `info.powerOn` angeben. Bei Senderproblemen helfen `channels.lastError`, `channels.lists` und `channels.items`; bei Wiedergabeproblemen die zugehörige TV-Antwort. Persönliche Senderlisten, Gerätekennungen oder MAC-Adressen können darin enthalten sein.
 
 ## Stabilitätsänderungen in 0.1.1
 
@@ -472,15 +520,17 @@ Im bisherigen Empfangspfad konnte ein regulärer Ausdruck zum Entfernen nachgest
 
 Zusätzlich läuft der Adapter in einem eigenen Prozess und unterstützt ab dieser Version keinen Compact-Betrieb mehr. So teilt seine JavaScript-Verarbeitung keinen Compact-Prozess mit anderen Adaptern oder dem Hauptcontroller. Die Wartezeit auf einzelne Datenbankoperationen ist auf zwei Sekunden begrenzt; beim Beenden ist auch das Warten auf abschließende Statusmeldungen begrenzt. Der Unload-Pfad ist auf eine Rückgabe innerhalb von höchstens 250 Millisekunden ausgelegt.
 
-Diese Änderungen beheben nachgewiesene Schwachstellen der Implementierung. Ohne passende Laufzeitprotokolle lässt sich daraus nicht ableiten, dass genau diese Schwachstellen jede gemeldete Störung verursacht haben. Ein Modell- und Firmwaretest am tatsächlichen Fernseher bleibt erforderlich.
+Diese Änderungen beheben nachgewiesene Schwachstellen der Implementierung. Ohne passende Laufzeitprotokolle lässt sich daraus nicht ableiten, dass genau diese Schwachstellen jede gemeldete Störung verursacht haben. Die inzwischen vorliegende Rückmeldung zur Fernbedienung steht oben; sie ist kein vollständiger Stabilitätsnachweis.
 
 ## Protokoll und Grenzen dieser Version
 
 Die Netzwerkschnittstelle verwendet `POST /loewe_tablet_0001` mit dem SOAP-Namensraum `urn:loewe.de:RemoteTV:Tablet`. Die Anmeldung erfolgt mit `RequestAccess`; die Antwort liefert die `ClientId` für Folgeanfragen. Die Original-App hängt ein NUL-Byte an den XML-Body an. Der Adapter übernimmt dieses Verhalten standardmäßig.
 
-Die ursprünglichen Tastencodes, Requestvorlagen und die Lautstärkeskalierung stammen aus Loewe App 1.4.7. Die Zifferntasten und der alternative EPG-Code stammen aus Löwenbändiger Remote 1.15. Die App-Stufe 20 entspricht im Protokoll dem Wert 200000. `SetMute` mit `Value=1` ist im App-Sendepfad nachgewiesen. Das Aufheben mit `Value=0` ist aus dem Antwortparser und der Gegenoperation abgeleitet; die Toggle-Taste `remote.mute` ist separat nachgewiesen.
+Die ursprünglichen Tastencodes, Requestvorlagen und die Lautstärkeskalierung stammen aus Loewe App 1.4.7. Die Zifferntasten und der alternative EPG-Code stammen aus Löwenbändiger Remote 1.15. Der neue TV_ON-Code 22 und die ergänzte Bedeutung der Ein-/Ausschaltcodes folgen der Remote API 1.0.47. Die App-Stufe 20 entspricht im Protokoll dem Wert 200000. `SetMute` mit `Value=1` ist im App-Sendepfad nachgewiesen. Das Aufheben mit `Value=0` ist aus dem Antwortparser und der Gegenoperation abgeleitet; die Toggle-Taste `remote.mute` ist separat nachgewiesen.
 
 Bei `AddServicesFavoriteList` enthält die extrahierte Originalvorlage einen falschen XML-Endtag. Der Adapter erzeugt für diese Aktion wohlgeformtes XML.
+
+Ein lokaler EPG-Abruf über `CreateIterator` und die Tabelle `de.loewe.sl2.epg` ist inzwischen in Kapitel 9.22 der Hersteller-API dokumentiert. Dieser Import ist noch nicht umgesetzt; Details und belegte Feldkennungen stehen in der [Aufnahme-Roadmap](docs/ROADMAP.md#lokales-epg-über-die-dokumentierte-iterator-schnittstelle). Gracenote ist damit keine notwendige Voraussetzung für den geplanten ersten EPG-Weg.
 
 Die universellen API-Datenpunkte erschließen die extrahierten Aktionen. Sie enthalten keine bestätigte Kompatibilitätsliste aller Loewe-Modelle und bilden komplexe Aufnahme- und Favoritenverwaltung noch nicht als eigene Formularoberfläche ab. Die UPnP/DLNA-Mediensteuerung aus der App, WS-Eventing, automatische Gerätesuche und lange Fernbedienungstastendrücke gehören nicht zum Funktionsumfang dieser Version.
 
@@ -488,7 +538,7 @@ Die universellen API-Datenpunkte erschließen die extrahierten Aktionen. Sie ent
 
 Die Weiterentwicklung findet im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv) statt. Das Abrufen des Quellcodes, die Tests und das Erzeugen des installierbaren `.tgz`-Pakets sind unter [Installationspaket aus dem Quellcode erzeugen](#installationspaket-aus-dem-quellcode-erzeugen) beschrieben.
 
-Die Tests verwenden simulierte TV-Antworten sowie echte HTTP- und UDP-Verbindungen ausschließlich über die lokale Loopback-Schnittstelle. Sie prüfen das Verhalten der Implementierung, ersetzen aber keinen Start in einem tatsächlichen ioBroker-Controller und keinen Modell- und Firmwaretest am realen Fernseher. Einzelheiten und ausgeführte Prüfungen stehen in [docs/PRUEFBERICHT.txt](docs/PRUEFBERICHT.txt).
+Die Tests verwenden simulierte TV-Antworten sowie echte HTTP- und UDP-Verbindungen ausschließlich über die lokale Loopback-Schnittstelle. Sie prüfen das Verhalten der Implementierung, ersetzen aber keinen Start in einem tatsächlichen ioBroker-Controller und keinen Modell- und Firmwaretest am realen Fernseher. Die Prüfungen der neuen Funktionen stehen im [Prüfbericht zu 0.1.2](docs/PRUEFBERICHT_0.1.2.md). Der historische [Prüfbericht zu 0.1.1](docs/PRUEFBERICHT.txt) bleibt als Nachweis für den damaligen Stand erhalten. Der Nutzerbericht zum tatsächlichen bild 7.55 ist oben gesondert aufgeführt; die neuen Sender- und Einschaltfunktionen sind am Gerät noch nicht bestätigt.
 
 Offizielle ioBroker-Grundlagen:
 
@@ -502,6 +552,15 @@ Offizielle ioBroker-Grundlagen:
 Der neu geschriebene Adaptercode steht unter der MIT-Lizenz. Siehe [LICENSE](LICENSE).
 
 ## Änderungsverlauf
+
+### 0.1.2
+
+- Nutzerbericht zum Loewe bild 7.55 mit SL420 und Software V5.4.6.0 ergänzt: bisherige Fernbedienungstasten scheinen zu funktionieren; beide EPG-Tasten öffnen dieselbe Anzeige.
+- Automatische Auswahl einer tatsächlich vom TV gemeldeten Senderliste, aufbereitete Sender- und Listenantworten sowie getrennte Seitenindizes ergänzt. TV und Radio sind ohne zusätzlichen Filter abfragbar.
+- Einschaltablauf um den dokumentierten TV_ON-Code 22 ergänzt: asynchrone Versuche mit Gesamtzeitlimit, gezieltem Abbruch und Diagnose in `info.powerOn`.
+- `control.powerOff` verwendet nun den gezielten Ausschaltcode 25; bestehende Remote-Codes bleiben erhalten. `remote.power_on` ergänzt den gezielten Einschaltcode 22.
+- Gemeldete WOL-Einstellungen als zusätzliche Gerätedaten; unbekannte Werte werden nicht als `false` vorbelegt.
+- Dokumentierten lokalen EPG-Weg in die Roadmap aufgenommen. Der EPG-Import und die Aufnahmeautomatik sind weiterhin geplant; Senderabruf und Einschaltkorrekturen benötigen die Rückmeldung vom Gerät.
 
 ### 0.1.1
 

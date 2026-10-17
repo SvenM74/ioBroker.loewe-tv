@@ -96,7 +96,11 @@ test('golden APK access/OK XML, 33 actions and verified remote alphabets', () =>
     assert.equal(buildEnvelope('InjectRCKey', buildKeyParameters('ok'), 'CLIENT_ID_AUS_REQUEST_ACCESS'), OK_XML);
     assert.equal(TABLET_ACTIONS.length, 33);
     assert.equal(new Set(TABLET_ACTIONS).size, 33);
-    assert.equal(Object.keys(KEYS).length, 40); // 29 original values plus 11 from the private app.
+    assert.equal(Object.keys(KEYS).length, 41); // 40 APK keys plus TV_ON from the official API.
+    assert.deepEqual(KEYS.power_on, { alphabet: 'l2700', value: 22 });
+    assert.equal(buildKeyParameters('power_on'), '<InputEventSequence>'
+        + '<RCKeyEvent alphabet="l2700" mode="press" value="22"/>'
+        + '<RCKeyEvent alphabet="l2700" mode="release" value="22"/></InputEventSequence>');
     assert.deepEqual(KEYS.left, { alphabet: 'l2700', value: 17 });
     assert.deepEqual(KEYS.right, { alphabet: 'l2700', value: 16 });
     assert.deepEqual(KEYS.play, { alphabet: 'l2700-hdr', value: 53 });

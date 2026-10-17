@@ -47,6 +47,7 @@ function makeHarness(AdapterRuntimeClass, config = {}) {
         async getSettings() { calls.push('getSettings'); return response('GetSettings'); },
         async getCurrentPlayback() { calls.push('getCurrentPlayback'); return response('GetCurrentPlayback'); },
         async wake() { calls.push('wake'); return { port: 9 }; },
+        async key(name) { calls.push(`key:${name}`); return response('InjectRCKey'); },
         close() { client.closed = true; },
     };
     const runtime = new AdapterRuntimeClass(adapter, { clientFactory: () => client });
@@ -151,7 +152,10 @@ test('a legacy MAC address is discovered even when GetVolume is unsupported', as
         assert.ok(h.client.calls.indexOf('getDeviceData') < h.client.calls.indexOf('getVolume'));
         assert.equal(h.adapter.states.get('status.mute').val, false, 'Other supported status queries still run');
         await h.runtime.handleStateChange('loewe-tv.0.control.powerOn', { val: true, ack: false });
-        assert.deepEqual(wakeArgs, [[legacyMac], '255.255.255.255', { repeats: 3, autoBroadcast: true }]);
+        assert.deepEqual(wakeArgs.slice(0, 2), [[legacyMac], '255.255.255.255']);
+        assert.equal(wakeArgs[2].repeats, 3);
+        assert.equal(wakeArgs[2].autoBroadcast, true);
+        assert.ok(wakeArgs[2].signal instanceof AbortSignal);
         assert.equal(JSON.parse(h.adapter.states.get('info.lastWakeOnLan').val).repeats, 3);
     } finally {
         await h.runtime.stop();
@@ -166,8 +170,9 @@ test('pollInterval zero starts without TV queries and still permits wake and exp
         assert.equal(h.adapter.timer, undefined);
         assert.equal(h.adapter.states.get('info.wakeReady').val, true);
         await h.runtime.handleStateChange('loewe-tv.0.control.powerOn', { val: true, ack: false });
-        assert.deepEqual(h.client.calls, ['wake']);
-        assert.equal(h.adapter.states.get('info.connection').val, false, 'Sent WOL is not a confirmed TV reply');
+        assert.deepEqual(h.client.calls, ['wake', 'key:power_on']);
+        assert.equal(h.adapter.states.get('info.connection').val, true, 'A SOAP reply confirms reachability, not a visible picture');
+        assert.equal(JSON.parse(h.adapter.states.get('info.powerOn').val).phase, 'powerKeySent');
         await h.runtime.handleStateChange('loewe-tv.0.control.refresh', { val: true, ack: false });
         assert.ok(h.client.calls.includes('getDeviceData'));
         assert.ok(h.client.calls.includes('getVolume'));

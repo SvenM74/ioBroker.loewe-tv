@@ -6,6 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { AdapterRuntime } = require('../lib/adapter-runtime');
+const { runPowerOn } = require('../lib/power-on');
 
 function deferred() {
     let resolve;
@@ -107,11 +108,26 @@ class FakeClient extends EventEmitter {
     }
 
     getChannelLists(start = 0, count = 100) {
-        return this.invoke('getChannelLists', [start, count], response('GetListOfChannelLists'));
+        return this.invoke('getChannelLists', [start, count], response('GetListOfChannelLists', {
+            Result: 'OK',
+            ResultItemChannelLists: {
+                '@_startIndex': String(start), '@_totalResults': '1', '@_returnedResults': start === 0 ? '1' : '0',
+                ...(start === 0 ? { ResultItemChannelList: { View: 'fastscan-fixture', Name: 'TV', TotalResults: '1' } } : {}),
+            },
+        }));
     }
 
-    getChannels(view, start = 0, count = 100) {
-        return this.invoke('getChannels', [view, start, count], response('GetChannelList'));
+    getChannels(view, start = 0, count = 100, mediaType = 'video') {
+        return this.invoke('getChannels', [view, start, count, mediaType], response('GetChannelList', {
+            ChannelListView: view,
+            ResultItemFragment: {
+                '@_startIndex': String(start), '@_totalResults': '1', '@_returnedResults': start === 0 ? '1' : '0',
+                ...(start === 0 ? { ResultItemReference: {
+                    '@_mediaItemUuid': 'fixture-service-1', '@_shortInfo': 'Fixture TV',
+                    '@_locator': 'channel://fixture/service-1', '@_caption': '001', '@_itemClass': 'video',
+                } } : {}),
+            },
+        }));
     }
 
     request(action, parametersXml = '') {
@@ -224,6 +240,7 @@ async function harness(t, config = {}, prepare = () => {}) {
     prepare(adapter, client);
     let clientOptions;
     const runtime = new AdapterRuntime(adapter, {
+        powerOnSequence: options => runPowerOn({ ...options, firstKeyDelayMs: 0 }),
         clientFactory(options) {
             clientOptions = options;
             return client;
@@ -364,11 +381,137 @@ test('channel parameters are staged and used only when the query button is press
     assert.equal(h.adapter.states.get('channels.view').ack, true);
     await write(h, 'channels.getChannels', true);
     assert.deepEqual(calls(h.client, 'getChannels').map(call => call.args), [
-        ['fixture-list', 100, 25],
+        ['fixture-list', 100, 25, ''],
     ]);
     assert.equal(h.adapter.states.get('channels.getChannels').val, false);
     assert.equal(h.adapter.states.get('channels.getChannels').ack, true);
     assert.doesNotThrow(() => JSON.parse(h.adapter.states.get('channels.items').val));
+});
+
+for (const savedView of [undefined, '   ']) {
+    test(`channel discovery resolves an empty ${savedView === undefined ? 'new' : 'upgraded'} selection`, async t => {
+        const h = await harness(t, { pollInterval: 0 }, adapter => {
+            if (savedView !== undefined) adapter.states.set('channels.view', { val: savedView, ack: true });
+        });
+        await write(h, 'channels.getChannels', true);
+        assert.deepEqual(calls(h.client, 'getChannelLists').map(call => call.args), [[0, 100]]);
+        assert.deepEqual(calls(h.client, 'getChannels').map(call => call.args), [['fastscan-fixture', 0, 100, '']]);
+        assert.equal(h.adapter.states.get('channels.view').val, 'fastscan-fixture');
+        const [entry] = JSON.parse(h.adapter.states.get('channels.entries').val);
+        assert.equal(entry.name, 'Fixture TV');
+        assert.equal(entry.caption, '001');
+        assert.equal(entry.locator, 'channel://fixture/service-1');
+        assert.equal(h.adapter.states.get('channels.totalNumber').val, 1);
+        assert.equal(h.adapter.states.get('channels.nextStart').val, -1);
+        assert.equal(h.adapter.states.get('channels.lastError').val, '');
+    });
+}
+
+test('list discovery uses its own offset and preserves an explicit favorite selection', async t => {
+    const h = await harness(t, { pollInterval: 0 });
+    await write(h, 'channels.view', ' favlist-personal ');
+    await write(h, 'channels.start', 100);
+    await write(h, 'channels.count', 25);
+    await write(h, 'channels.getLists', true);
+    assert.deepEqual(calls(h.client, 'getChannelLists').at(-1).args, [0, 25]);
+    assert.equal(h.adapter.states.get('channels.view').val, 'favlist-personal');
+    await write(h, 'channels.listStart', 2);
+    await write(h, 'channels.getLists', true);
+    assert.deepEqual(calls(h.client, 'getChannelLists').at(-1).args, [2, 25]);
+    await write(h, 'channels.mediaType', 'audio');
+    await write(h, 'channels.getChannels', true);
+    assert.deepEqual(calls(h.client, 'getChannels').at(-1).args, ['favlist-personal', 100, 25, 'audio']);
+});
+
+test('TV list synchronization remains visible without sending a fabricated channel view', async t => {
+    const h = await harness(t, { pollInterval: 0 }, (_adapter, client) => {
+        client.hooks.getChannelLists = () => response('GetListOfChannelLists', { Result: 'SYNC' });
+    });
+    await write(h, 'channels.getChannels', true);
+    assert.equal(calls(h.client, 'getChannels').length, 0);
+    assert.match(h.adapter.states.get('channels.lastError').val, /TV_SYNC.*synchronisiert/);
+    assert.equal(JSON.parse(h.adapter.states.get('channels.lists').val).Envelope.Body.GetListOfChannelListsResponse.Result, 'SYNC');
+    assert.equal(h.adapter.states.get('channels.lastUpdate').val, 0);
+});
+
+test('a malformed channel reply retains raw evidence and the last successful channel page', async t => {
+    const h = await harness(t, { pollInterval: 0 });
+    await write(h, 'channels.getChannels', true);
+    const entries = h.adapter.states.get('channels.entries').val;
+    const lastUpdate = h.adapter.states.get('channels.lastUpdate').val;
+    h.client.hooks.getChannels = () => response('GetChannelList', { UnexpectedShape: 'fixture' });
+    await write(h, 'channels.getChannels', true);
+    assert.match(h.adapter.states.get('channels.lastError').val, /INVALID_RESPONSE/);
+    assert.equal(h.adapter.states.get('channels.entries').val, entries);
+    assert.equal(h.adapter.states.get('channels.lastUpdate').val, lastUpdate);
+    assert.equal(JSON.parse(h.adapter.states.get('channels.items').val).Envelope.Body.GetChannelListResponse.UnexpectedShape, 'fixture');
+});
+
+test('power on sends WOL then discrete TV_ON while retaining transport-only diagnostics', async t => {
+    const h = await harness(t, { pollInterval: 0, macLan: '02:00:00:00:00:01' });
+    await write(h, 'control.powerOn', true);
+    assert.deepEqual(h.client.calls.map(call => call.method), ['wake', 'key']);
+    assert.deepEqual(calls(h.client, 'key').at(-1).args, ['power_on']);
+    assert.equal(JSON.parse(h.adapter.states.get('info.powerOn').val).phase, 'powerKeySent');
+    assert.equal(h.adapter.states.get('info.connection').val, true);
+    assert.equal(h.adapter.states.get('control.powerOn').val, false);
+    await write(h, 'control.powerOff', true);
+    assert.deepEqual(calls(h.client, 'key').at(-1).args, ['power_all_code']);
+});
+
+test('power off cancels a waiting TV_ON attempt before it enters the SOAP transport', async t => {
+    const h = await harness(t, { pollInterval: 0, macLan: '02:00:00:00:00:01' });
+    const blocked = deferred();
+    h.runtime._tail = blocked.promise;
+    const waking = write(h, 'control.powerOn', true);
+    await waitUntil(() => h.runtime._pendingCount > 0, 'TV_ON should wait behind the existing operation');
+    assert.equal(calls(h.client, 'wake').length, 1, 'WOL must already have been sent');
+    const off = write(h, 'control.powerOff', true);
+    blocked.resolve();
+    await Promise.all([waking, off]);
+    assert.deepEqual(calls(h.client, 'key').map(call => call.args[0]), ['power_all_code']);
+    assert.equal(h.runtime._pendingCount, 0);
+});
+
+test('a second off also cancels power on waiting for an older aborted sequence to finish', async t => {
+    const h = await harness(t, { pollInterval: 0, macLan: '02:00:00:00:00:01' });
+    const cleanup = deferred();
+    let cleanupStarted = false;
+    const originalSetState = h.adapter.setStateAsync.bind(h.adapter);
+    h.adapter.setStateAsync = async (id, state) => {
+        if (id === 'control.powerOn' && state.val === false && !cleanupStarted) {
+            cleanupStarted = true;
+            await cleanup.promise;
+        }
+        return originalSetState(id, state);
+    };
+    const blocked = deferred();
+    h.runtime._tail = blocked.promise;
+    const firstOn = write(h, 'control.powerOn', true);
+    await waitUntil(() => h.runtime._pendingCount > 0, 'First TV_ON should be queued');
+    const firstOff = write(h, 'control.powerOff', true);
+    await waitUntil(() => cleanupStarted, 'Cancelled sequence should reach cleanup');
+    const secondOn = write(h, 'control.powerOn', true);
+    const secondOff = write(h, 'control.powerOff', true);
+    cleanup.resolve();
+    blocked.resolve();
+    await Promise.all([firstOn, firstOff, secondOn, secondOff]);
+    assert.equal(calls(h.client, 'wake').length, 1, 'No delayed second wake may start after the latest off');
+    assert.ok(calls(h.client, 'key').every(call => call.args[0] === 'power_all_code'));
+});
+
+test('WOL setting flags preserve unknown values until valid TV settings are read', async t => {
+    const h = await harness(t, { pollInterval: 0 }, (_adapter, client) => {
+        client.hooks.getSettings = () => response('GetSettings', { WolEnable: '1', WolInteractive: '0' });
+    });
+    assert.equal(h.adapter.states.has('device.wolEnabled'), false);
+    await write(h, 'control.refresh', true);
+    assert.equal(h.adapter.states.get('device.wolEnabled').val, true);
+    assert.equal(h.adapter.states.get('device.wolInteractive').val, false);
+    h.client.hooks.getSettings = () => response('GetSettings', { WolEnable: 'unknown' });
+    await write(h, 'control.refresh', true);
+    assert.equal(h.adapter.states.get('device.wolEnabled').val, null);
+    assert.equal(h.adapter.states.get('device.wolInteractive').val, null);
 });
 
 test('disabled advanced controls cannot be dispatched through manually written states', async t => {

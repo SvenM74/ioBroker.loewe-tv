@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "news": {
+      "0.1.2": {
+        "en": "Automatic channel-list selection, separate list pagination and normalized channel data; Wake-on-LAN followed by the documented TV-on command (22) with a time limit and diagnostics. Remote-key test report for bild 7.55, SL420, V5.4.6.0 documented; device validation of channel retrieval and wake-up remains open.",
+        "de": "Automatische Senderlistenauswahl, getrennte Listenseiten und aufbereitete Senderdaten; Wake-on-LAN mit anschließendem dokumentierten Einschaltbefehl (22), Zeitlimit und Diagnose. Fernbedienungstest am bild 7.55, SL420, V5.4.6.0 dokumentiert; Gerätetest von Senderabruf und Einschalten steht noch aus."
+      },
       "0.1.1": {
         "en": "Fix response parser stalls and shutdown; independent Wake-on-LAN, legacy MAC discovery, diagnostic states and additional verified remote keys.",
         "de": "Blockaden beim Antwortparser und Beenden behoben; unabhängiges Wake-on-LAN, MAC-Erkennung älterer TVs, Diagnose und zusätzliche belegte Fernbedienungstasten."
@@ -60,6 +64,7 @@
     "macLan": "",
     "macWlan": "",
     "broadcastAddress": "255.255.255.255",
+    "powerOnTimeout": 60,
     "maxVolume": 99,
     "enableAdvanced": false
   },

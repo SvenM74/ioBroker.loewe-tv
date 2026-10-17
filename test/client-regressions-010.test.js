@@ -211,10 +211,53 @@ test('invalid Wake-on-LAN repeat options do not create a socket', async () => {
     const client = new LoeweClient({ host: 'tv.example' }, transport);
     try {
         for (const options of [null, [], { repeats: 0 }, { repeats: 6 }, { repeats: 1.5 },
-            { intervalMs: -1 }, { intervalMs: Infinity }, { autoBroadcast: 'true' }]) {
+            { intervalMs: -1 }, { intervalMs: Infinity }, { autoBroadcast: 'true' },
+            { signal: null }, { signal: {} }, { signal: { aborted: false } }]) {
             await assert.rejects(client.wake('02:00:00:00:00:01', '255.255.255.255', options), { code: 'VALIDATION' });
         }
         assert.equal(transport.sockets.length, 0);
+    } finally {
+        client.close();
+    }
+});
+
+test('an already cancelled Wake-on-LAN signal rejects before a socket is created', async () => {
+    const transport = udpTransport();
+    const client = new LoeweClient({ host: 'tv.example' }, transport);
+    const controller = new AbortController();
+    controller.abort();
+    try {
+        await assert.rejects(client.wake('02:00:00:00:00:01', '255.255.255.255', {
+            signal: controller.signal,
+        }), { code: 'CANCELLED' });
+        assert.equal(transport.sockets.length, 0);
+        assert.equal(require('node:events').getEventListeners(controller.signal, 'abort').length, 0);
+    } finally {
+        client.close();
+    }
+});
+
+test('cancelling Wake-on-LAN between rounds closes the socket and prevents all later packets', async () => {
+    const transport = udpTransport();
+    const client = new LoeweClient({ host: 'tv.example', timeout: 1000 }, transport);
+    const controller = new AbortController();
+    const operation = client.wake('02:00:00:00:00:01', '255.255.255.255', {
+        repeats: 3, intervalMs: 40, signal: controller.signal,
+    });
+    const rejection = assert.rejects(operation, { code: 'CANCELLED' });
+    try {
+        await nextTurn();
+        const socket = transport.sockets[0];
+        assert.equal(socket.sent.length, 1);
+        controller.abort();
+        await rejection;
+        assert.equal(socket.closed, true);
+        assert.equal(require('node:events').getEventListeners(controller.signal, 'abort').length, 0);
+        // A transport error arriving after cancellation must remain handled and
+        // must not replace the cancellation or restart another sender round.
+        socket.emit('error', Object.assign(new Error('Late UDP error'), { code: 'ECONNRESET' }));
+        await delay(70);
+        assert.equal(socket.sent.length, 1);
     } finally {
         client.close();
     }
@@ -249,7 +292,7 @@ test('the total Wake-on-LAN deadline cancels later repetition timers', async () 
     }
 });
 
-function delayedTextTransport(delayMs) {
+function delayedTextTransport(delayMs, shouldRespond = () => true) {
     const calls = [];
     return {
         calls,
@@ -265,6 +308,7 @@ function delayedTextTransport(delayMs) {
             request.end = body => {
                 call.body = Buffer.from(body);
                 calls.push(call);
+                if (!shouldRespond(call, calls)) return;
                 responseTimer = setTimeout(() => {
                     if (request.destroyed) return;
                     const response = new EventEmitter();
@@ -285,38 +329,64 @@ function delayedTextTransport(delayMs) {
     };
 }
 
-test('text has one total deadline across successful characters and the last pending HTTP request', async () => {
-    const transport = delayedTextTransport(20);
+test('text has one total deadline across successful characters and the last pending HTTP request', async t => {
+    // Reply to the handshake and two characters, then deliberately leave the
+    // third character unanswered. A wall-clock deadline can otherwise fall
+    // after a response arrived, where destroying that completed request is not
+    // required. The mocked clock makes the outstanding request unambiguous.
+    t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 1000 });
+    const transport = delayedTextTransport(20, (_call, calls) => calls.length <= 3);
     const client = new LoeweClient({ host: 'tv.example', timeout: 500 }, transport);
     try {
-        const started = performance.now();
-        await assert.rejects(client.text('ABCDEFGHIJKLMNOPQRST', { timeoutMs: 85 }), {
+        const rejection = assert.rejects(client.text('ABCDEFGHIJKLMNOPQRST', { timeoutMs: 85 }), {
             code: 'NETWORK', transportCode: 'ETIMEDOUT',
         });
-        assert.ok(performance.now() - started < 250, 'The text command exceeded its overall time budget.');
+        for (let response = 0; response < 3; response++) {
+            t.mock.timers.tick(20);
+            await nextTurn();
+        }
+        assert.equal(Date.now(), 1060);
+        assert.deepEqual(transport.calls.map(call => call.action), [
+            'RequestAccess', 'InjectKeyboardKey', 'InjectKeyboardKey', 'InjectKeyboardKey',
+        ]);
         const sent = transport.calls.filter(call => call.action === 'InjectKeyboardKey');
-        assert.ok(sent.length >= 1 && sent.length < 20, 'Text was not stopped during its character sequence.');
-        assert.ok(sent.some(call => call.responded), 'No successful character preceded the deadline.');
+        assert.deepEqual(sent.map(call => !!call.responded), [true, true, false]);
+        t.mock.timers.tick(24);
+        assert.equal(transport.calls.at(-1).request.destroyed, undefined);
+        t.mock.timers.tick(1);
+        await rejection;
+        assert.equal(Date.now(), 1085, 'The text command exceeded its overall time budget.');
         assert.equal(transport.calls.at(-1).request.destroyed, true);
         const count = transport.calls.length;
-        await delay(40);
+        t.mock.timers.tick(1000);
+        await nextTurn();
         assert.equal(transport.calls.length, count, 'Another character was sent after the deadline.');
     } finally {
         client.close();
+        t.mock.timers.reset();
     }
 });
 
-test('the text deadline includes a new access handshake', async () => {
+test('the text deadline includes a new access handshake', async t => {
+    // Run both the caller's wait deadline and the HTTP abort deadline against
+    // the same controlled clock, including all callbacks due at the boundary.
+    t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 1000 });
     const transport = delayedTextTransport(100);
     const client = new LoeweClient({ host: 'tv.example', timeout: 500 }, transport);
     try {
-        await assert.rejects(client.text('A', { timeoutMs: 15 }), {
+        const rejection = assert.rejects(client.text('A', { timeoutMs: 15 }), {
             code: 'NETWORK', transportCode: 'ETIMEDOUT',
         });
         assert.deepEqual(transport.calls.map(call => call.action), ['RequestAccess']);
+        t.mock.timers.tick(14);
+        assert.equal(transport.calls[0].request.destroyed, undefined);
+        t.mock.timers.tick(1);
+        await rejection;
         assert.equal(transport.calls[0].request.destroyed, true);
+        assert.deepEqual(transport.calls.map(call => call.action), ['RequestAccess']);
     } finally {
         client.close();
+        t.mock.timers.reset();
     }
 });
 

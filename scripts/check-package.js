@@ -65,7 +65,7 @@ for (const advanced of [false, true]) {
             }
         }
     }
-    assert.equal([...ids].filter(id => /^remote\.[^.]+$/.test(id)).length, 40);
+    assert.equal([...ids].filter(id => /^remote\.[^.]+$/.test(id)).length, 41);
     assert.equal([...ids].filter(id => /^api\.[^.]+\.send$/.test(id)).length, advanced ? 33 : 0);
     console.log(`Object definitions valid: ${objects.length} objects (${advanced ? 'advanced enabled' : 'standard'}).`);
 }
@@ -90,7 +90,7 @@ for (const template of catalog.templates) {
 }
 assert.deepEqual([...actions].sort(), [...TABLET_ACTIONS].sort());
 const sourceKeys = catalog.remote_keymap.map(key => `${key.alphabet}:${key.sent_code}`).sort();
-const clientKeys = Object.entries(KEYS).filter(([name]) => !/^digit_\d$/.test(name) && name !== 'epg_alt')
+const clientKeys = Object.entries(KEYS).filter(([name]) => !/^digit_\d$/.test(name) && !['epg_alt', 'power_on'].includes(name))
     .map(([, key]) => `${key.alphabet}:${key.value}`).sort();
 assert.deepEqual(clientKeys, sourceKeys, 'Original remote keys differ from Loewe App extraction');
 for (let digit = 0; digit <= 9; digit++) {
@@ -101,8 +101,11 @@ for (let digit = 0; digit <= 9; digit++) {
 const epg = remote115.keys.find(key => key.value === 78 && key.sends_remote_command);
 assert.ok(epg);
 assert.deepEqual(KEYS.epg_alt, { alphabet: epg.alphabet, value: epg.value });
+// Loewe Remote API 1.0.47, section 9.4.3 documents l2700 key 22 as TV_ON.
+// This additional official API mapping is not part of the original APK oracle.
+assert.deepEqual(KEYS.power_on, { alphabet: 'l2700', value: 22 });
 assert.ok(!Object.values(KEYS).some(key => [1337, 1338].includes(key.value)), 'Local app UI actions are not TV keys');
-console.log(`APK contract valid: ${catalog.templates.length} exact XML templates, ${actions.size} actions, 29 original and 11 additional key mappings.`);
+console.log(`APK contract valid: ${catalog.templates.length} exact XML templates, ${actions.size} actions, 29 original and 11 additional APK key mappings; dedicated TV_ON verified against Remote API 1.0.47, section 9.4.3.`);
 
 // Check syntax without importing adapter-core or starting an ioBroker process.
 for (const directory of ['', 'lib', 'scripts', 'test']) {

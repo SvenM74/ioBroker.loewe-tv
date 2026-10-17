@@ -66,7 +66,7 @@
       "items": {
         "_wakeHelp": {
           "type": "staticText",
-          "text": "Wake-on-LAN requires the TV MAC address and network wake-up support on the TV. For the first test from standby, enter the MAC address manually. Automatic detection requires a successful device query while the TV is reachable.",
+          "text": "Wake-on-LAN wakes the TV's network service. The adapter then sends the dedicated TV-on command. Enable network wake-up on the TV and enter its MAC address for the first test. Wait at least 30 seconds after switching to standby before testing.",
           "xs": 12
         },
         "macLan": {
@@ -100,9 +100,23 @@
           "xs": 12,
           "sm": 6
         },
+        "powerOnTimeout": {
+          "type": "number",
+          "label": "Power-on time limit (seconds)",
+          "help": "Maximum time for waking the network service and sending the dedicated TV-on command. The attempt stops when this limit is reached.",
+          "min": 5,
+          "max": 120,
+          "step": 1,
+          "default": 60,
+          "validator": "Number.isInteger(data.powerOnTimeout) && data.powerOnTimeout >= 5 && data.powerOnTimeout <= 120",
+          "validatorNoSaveOnError": true,
+          "validatorErrorText": "Enter a whole number from 5 to 120.",
+          "xs": 12,
+          "sm": 6
+        },
         "_wakeStatusHelp": {
           "type": "staticText",
-          "text": "info.wakeReady only shows whether a MAC address is known. It does not confirm that the TV supports Wake-on-LAN. info.lastWakeOnLan records the latest successful packet transmission.",
+          "text": "info.wakeReady shows whether a MAC address is known. info.lastWakeOnLan records packet transmission. info.powerOn shows the current attempt and its result; successful transmission does not confirm a visible picture.",
           "xs": 12
         }
       }

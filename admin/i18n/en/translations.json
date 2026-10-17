@@ -23,8 +23,6 @@
   "Maximum time to wait for an answer to one TV request.": "Maximum time to wait for an answer to one TV request.",
   "Append compatibility byte (NUL)": "Append compatibility byte (NUL)",
   "Leave enabled to use the request format of Loewe App 1.4.7.": "Leave enabled to use the request format of Loewe App 1.4.7.",
-  "Enable additional TV commands": "Enable additional TV commands",
-  "Allows advanced requests, including changes to recordings, favorites and TV settings. Available functions depend on the TV model.": "Allows advanced requests, including changes to recordings, favorites and TV settings. Available functions depend on the TV model.",
   "0 disables automatic status queries, including the initial query at startup. Otherwise, enter 5 to 3600 seconds. Manual commands remain available.": "0 disables automatic status queries, including the initial query at startup. Otherwise, enter 5 to 3600 seconds. Manual commands remain available.",
   "Enter 0 or a whole number from 5 to 3600.": "Enter 0 or a whole number from 5 to 3600.",
   "Include current playback in status queries. Disable this if the TV does not support the playback query.": "Include current playback in status queries. Disable this if the TV does not support the playback query.",
@@ -35,6 +33,6 @@
   "Enter a whole number from 5 to 120.": "Enter a whole number from 5 to 120.",
   "info.wakeReady shows whether a MAC address is known. info.lastWakeOnLan records packet transmission. info.powerOn shows the current attempt and its result; successful transmission does not confirm a visible picture.": "info.wakeReady shows whether a MAC address is known. info.lastWakeOnLan records packet transmission. info.powerOn shows the current attempt and its result; successful transmission does not confirm a visible picture.",
   "Channel refresh interval (seconds)": "Channel refresh interval (seconds)",
-  "Refresh the complete selected TV and radio list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.": "Refresh the complete selected TV and radio list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.",
-  "Enter 0 or a whole number from 60 to 86400.": "Enter 0 or a whole number from 60 to 86400."
+  "Enter 0 or a whole number from 60 to 86400.": "Enter 0 or a whole number from 60 to 86400.",
+  "Refresh the complete selected TV channel list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.": "Refresh the complete selected TV channel list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available."
 }

@@ -52,7 +52,7 @@ function cache(version, services) {
             complete: true, reconciled: true, skipped: 0 } };
 }
 
-test('SL420 response groups service positions under named folders and separates TV from radio', () => {
+test('SL420 mixed response groups TV positions and excludes radio without changing raw pagination counts', () => {
     const xml = '<Envelope><Body><GetChannelListResponse><ChannelListView>fastscan-fixture</ChannelListView>'
         + '<ChannelListName>ASTRA fixture</ChannelListName><ItemClass>undefined</ItemClass>'
         + '<ResultItemFragment startIndex="0" returnedResults="4" totalResults="4" hash="4294967295">'
@@ -63,15 +63,23 @@ test('SL420 response groups service positions under named folders and separates 
         + '</ResultItemFragment></GetChannelListResponse></Body></Envelope>';
     const catalog = merge(null, parseChannelPage(parseResponse(xml)));
     assert.equal(SCHEMA_VERSION, 3);
-    assert.equal(catalog.services.length, 2);
+    assert.equal(catalog.services.length, 1);
     assert.deepEqual(new Set(catalog.services.map(entry => entry.id)),
-        new Set(['channels.tv.Das_Erste_HD', 'channels.radio.Bayern_1']));
+        new Set(['channels.tv.Das_Erste_HD']));
     const first = service(catalog, 'fixture:first');
     assert.deepEqual(first.positions.map(position => position.caption), ['1', '100', '1000']);
     assert.equal(first.locator, 'channel://1:ch-first:sl-fixture');
-    assert.equal(service(catalog, 'fixture:radio', 'audio').number, 100);
+    assert.equal(service(catalog, 'fixture:radio', 'audio'), undefined);
+    assert.equal(catalog.lastQuery.returnedResults, 4);
+    assert.equal(catalog.lastQuery.ignoredAudioResults, 1);
+    assert.equal(catalog.lastQuery.skipped, 0);
+    assert.equal(catalog.pages[0].items.length, 3);
+    assert.equal(catalog.pages[0].returnedResults, 4);
+    assert.deepEqual(catalog.pages[0].sourceIndexes, [0, 1, 2]);
     assert.equal(catalog.lastQuery.reconciled, true);
     assert.equal(JSON.stringify(catalog).includes('tv.example'), false);
+    assert.equal(JSON.stringify(catalog).includes('fixture:radio'), false);
+    assert.deepEqual(restoreChannelCatalog(JSON.stringify(catalog)), catalog);
 });
 
 test('sorting a list changes positions and locators while IDs remain stable regardless of response order', () => {
@@ -143,11 +151,11 @@ test('a validated collision suffix survives removal of its neighbour, cache rest
     assert.equal(merge(restored, page([item('b', '19', { name: 'Gleich' })])).services[0].id, suffix);
 });
 
-test('TV and radio identities and folder namespaces are independent and switching lists resets old content', () => {
+test('radio with an identical name, number or UUID cannot collide with TV and changing lists resets old content', () => {
     const catalog = merge(null, page([item('same', '100', { name: 'Gleich' }),
         item('same', '100', { name: 'Gleich', itemClass: 'audio' })]));
-    assert.deepEqual(catalog.services.map(entry => entry.id), ['channels.radio.Gleich', 'channels.tv.Gleich']);
-    assert.notEqual(serviceIdentity(catalog.services[0]), serviceIdentity(catalog.services[1]));
+    assert.deepEqual(catalog.services.map(entry => entry.id), ['channels.tv.Gleich']);
+    assert.equal(catalog.lastQuery.reconciled, true);
     const other = merge(catalog, page([item('new', '100', { name: 'Gleich' })], { view: 'other-view' }));
     assert.equal(other.services.length, 1);
     assert.equal(other.services[0].listView, 'other-view');
@@ -243,7 +251,7 @@ test('contradictory caption and locator numbers disable both claimed old positio
     assert.equal(service(unknown, 'old').available, false);
 });
 
-test('conflicting occupants are rejected independently of response order and radio remains separate', () => {
+test('conflicting TV occupants are rejected independently of response order while radio is ignored', () => {
     const initial = merge(null, page([item('old'), item('kept', '2')]));
     const references = [item('first'), item('second'), item('radio', '1', { itemClass: 'audio' })];
     const catalog = merge(initial, page(references));
@@ -252,7 +260,8 @@ test('conflicting occupants are rejected independently of response order and rad
     assert.equal(catalog.lastQuery.conflictingPositions, 1);
     assert.equal(service(catalog, 'old').available, false);
     assert.equal(service(catalog, 'first'), undefined);
-    assert.equal(service(catalog, 'radio', 'audio').available, true);
+    assert.equal(service(catalog, 'radio', 'audio'), undefined);
+    assert.equal(catalog.lastQuery.ignoredAudioResults, 1);
 });
 
 test('leading-zero slot collisions and inconsistent names of one service are rejected', () => {
@@ -289,21 +298,22 @@ test('collected partial ranges never imply reconciliation and only a full live r
     assert.deepEqual(full.services.map(entry => entry.number), [3, 4]);
 });
 
-test('complete filtered replies remove only the matching medium and a combined empty reply clears both', () => {
+test('complete mixed replies reconcile TV while radio-only replies cannot clear existing TV services', () => {
     const both = merge(null, page([item('tv'), item('radio', '100', { itemClass: 'audio' })]));
-    const television = merge(both, page([item('new', '2')]), 'video');
+    const television = merge(both, page([item('new', '2'), item('radio', '100', { itemClass: 'audio' })]), 'video');
     assert.equal(service(television, 'tv'), undefined);
-    assert.ok(service(television, 'radio', 'audio'));
-    const radio = merge(television, page([item('new-radio', '5', { itemClass: 'audio' })]), 'audio');
-    assert.ok(service(radio, 'new'));
-    assert.equal(service(radio, 'radio', 'audio'), undefined);
-    const emptyTv = merge(radio, page([]), 'video');
-    assert.equal(emptyTv.services.length, 1);
-    assert.equal(emptyTv.services[0].itemClass, 'audio');
-    assert.deepEqual(merge(emptyTv, page([])).services, []);
+    assert.equal(television.services.length, 1);
+    assert.equal(television.lastQuery.reconciled, true);
+    const audioOnly = merge(television, page([item('radio', '5', { itemClass: 'audio' })]), 'video');
+    assert.deepEqual(audioOnly.services, television.services);
+    assert.equal(audioOnly.lastQuery.reconciled, false);
+    assert.equal(audioOnly.lastQuery.ignoredAudioResults, 1);
+    assert.deepEqual(merge(audioOnly, page([]), 'video').services, []);
+    assert.throws(() => merge(television, page([]), 'audio'), { code: 'VALIDATION' });
+    assert.throws(() => merge(television, page([], { itemClass: 'audio' })), { code: 'INVALID_RESPONSE' });
 });
 
-test('unknown types, missing identities and ignored type filters cannot retire existing services', () => {
+test('unknown types, missing identities and audio-only replies cannot retire existing TV services', () => {
     const initial = merge(null, page([item('old')]));
     const catalog = merge(initial, page([item('unknown', '2', { itemClass: 'undefined' }),
         item('', '3', { locator: '' }), item('new', '4')]));
@@ -312,7 +322,9 @@ test('unknown types, missing identities and ignored type filters cannot retire e
     assert.deepEqual(catalog.services.map(entry => entry.number), [1, 4]);
     const wrongFilter = merge(initial, page([item('radio', '1', { itemClass: 'audio' })]), 'video');
     assert.deepEqual(wrongFilter.services, initial.services);
-    assert.equal(wrongFilter.lastQuery.skipped, 1);
+    assert.equal(wrongFilter.lastQuery.skipped, 0);
+    assert.equal(wrongFilter.lastQuery.ignoredAudioResults, 1);
+    assert.equal(wrongFilter.lastQuery.reconciled, false);
 });
 
 test('missing UUIDs require valid locators while known UUIDs may remain visible but unavailable', () => {
@@ -348,6 +360,32 @@ test('repeated and overlapping pages retain only one copy of each stored raw ran
     assert.deepEqual(overlap.pages.map(value => [value.startIndex, value.items.length]), [[0, 1], [1, 2]]);
     assert.equal(service(overlap, 'two').available, false);
     assert.equal(service(overlap, 'new-two').available, true);
+});
+
+test('partial mixed pages and overlapping raw ranges preserve TV history and offsets across cache restore', () => {
+    const initial = merge(null, page([item('kept', '9')]));
+    const mixed = merge(initial, page([
+        item('radio-first', '1', { itemClass: 'audio' }), item('one'),
+        item('radio-middle', '2', { itemClass: 'audio' }), item('two', '2'),
+    ], { totalResults: 6 }), 'video');
+    assert.equal(mixed.lastQuery.returnedResults, 4);
+    assert.equal(mixed.lastQuery.reconciled, false);
+    assert.deepEqual(mixed.pages[0].sourceIndexes, [1, 3]);
+    assert.equal(service(mixed, 'kept').available, true);
+    const restored = restoreChannelCatalog(JSON.stringify(mixed));
+    const overlap = merge(restored, page([item('three', '3'), item('radio-next', '3', { itemClass: 'audio' })], {
+        startIndex: 2, totalResults: 6,
+    }), 'video');
+    assert.deepEqual(overlap.pages.map(value => [value.startIndex, value.returnedResults, value.items.length]), [[0, 2, 1], [2, 2, 1]]);
+    assert.deepEqual(overlap.pages.map(value => value.sourceIndexes), [[1], [0]]);
+    assert.equal(overlap.lastQuery.reconciled, false);
+    assert.ok(service(overlap, 'kept'));
+    assert.ok(service(overlap, 'two'), 'Replacing diagnostic page ranges does not infer removal from a partial result.');
+    assert.equal(JSON.stringify(overlap).includes('radio-'), false);
+    assert.deepEqual(restoreChannelCatalog(JSON.stringify(overlap)), overlap);
+    const last = merge(overlap, page([item('four', '4'), item('five', '5')], { startIndex: 4, totalResults: 6 }));
+    assert.equal(last.lastQuery.reconciled, false, 'Even collected contiguous partial pages must not purge old services.');
+    assert.ok(service(last, 'kept'));
 });
 
 test('changing totals or hash starts a new raw page collection without treating absence as deletion', () => {
@@ -393,7 +431,7 @@ test('version-1 groups retain their positions while migrating from validated has
     assert.deepEqual(migrateServiceRecord(migrated), [migrated]);
     const restored = restoreChannelCatalog(cache(1, [old, legacy('radio', ['100'], { itemClass: 'audio' })]));
     assert.equal(restored.schemaVersion, 3);
-    assert.equal(restored.services.length, 2);
+    assert.equal(restored.services.length, 1);
     assert.deepEqual(restoreChannelCatalog(JSON.stringify(restored)), restored);
 });
 
@@ -403,10 +441,10 @@ test('version-2 numbered folders are validated against their position and groupe
         numeric('radio', '100', { name: 'Bayern 1', itemClass: 'audio' })]);
     const original = JSON.stringify(old);
     const restored = restoreChannelCatalog(old);
-    assert.equal(restored.services.length, 2);
+    assert.equal(restored.services.length, 1);
     assert.equal(service(restored, 'first').id, 'channels.tv.Das_Erste_HD');
     assert.deepEqual(service(restored, 'first').positions.map(position => position.caption), ['1', '100', '1000']);
-    assert.equal(service(restored, 'radio', 'audio').id, 'channels.radio.Bayern_1');
+    assert.equal(service(restored, 'radio', 'audio'), undefined);
     assert.equal(JSON.stringify(old), original);
     assert.throws(() => migrateServiceRecord({ ...numeric('first'), id: 'channels.tv.2' }), { code: 'INVALID_RESPONSE' });
     assert.throws(() => migrateServiceRecord({ ...numeric('first'), id: 'channels.radio.1' }), { code: 'INVALID_RESPONSE' });
@@ -414,6 +452,30 @@ test('version-2 numbered folders are validated against their position and groupe
         { caption: '1', locator: 'channel://1:ch-first:sl-fixture' },
         { caption: '100', locator: 'channel://100:ch-first:sl-fixture' },
     ] }), { code: 'INVALID_RESPONSE' });
+});
+
+test('schema-3 mixed caches discard every radio record and obsolete audio-query claims', () => {
+    const initial = merge(null, page([item('television')]));
+    const radio = { ...numeric('old-radio', '100', { itemClass: 'audio' }), id: 'channels.radio.Sender_old_radio' };
+    const mixedPage = { ...page([item('television'), item('old-radio', '100', { itemClass: 'audio' })]), mediaType: '' };
+    const old = { ...initial, pages: [mixedPage], services: [...initial.services, radio] };
+    const restored = restoreChannelCatalog(old);
+    assert.deepEqual(restored.services, initial.services);
+    assert.equal(restored.pages[0].returnedResults, 2);
+    assert.equal(restored.pages[0].ignoredAudioResults, 1);
+    assert.equal(JSON.stringify(restored).includes('old-radio'), false);
+    assert.deepEqual(restoreChannelCatalog(JSON.stringify(restored)), restored);
+    const audioQuery = restoreChannelCatalog({ ...old,
+        pages: [{ ...page([item('old-radio', '100', { itemClass: 'audio' })]), mediaType: 'audio' }],
+        lastQuery: { ...initial.lastQuery, mediaType: 'audio' } });
+    assert.deepEqual(audioQuery.services, initial.services);
+    assert.deepEqual(audioQuery.pages, []);
+    assert.equal(audioQuery.lastQuery.reconciled, false);
+    assert.deepEqual(restoreChannelCatalog(JSON.stringify(audioQuery)), audioQuery);
+    for (const normalize of [normalizeServiceRecord, migrateServiceRecord, createChannelDefinitions, serviceIdentity]) {
+        assert.throws(() => normalize(radio), { code: 'INVALID_RESPONSE' });
+    }
+    assert.throws(() => serviceId('list', 'audio', 'Radio', 'radio'), { code: 'INVALID_RESPONSE' });
 });
 
 test('migration handles duplicate names without merging different services and conservatively preserves restrictions', () => {
@@ -506,6 +568,11 @@ test('invalid page metadata is rejected before any catalogue can be replaced', (
     assert.throws(() => merge(null, page([item('one')]), 'guessed-type'), { code: 'VALIDATION' });
     assert.throws(() => mergeChannelPage(null, page([item('one')]), { now: NaN }), { code: 'INVALID_RESPONSE' });
     assert.equal(merge(null, page([item('one')], { startIndex: null, totalResults: null })).lastQuery.reconciled, false);
+    const catalog = merge(null, page([item('one'), item('radio', '100', { itemClass: 'audio' })]));
+    for (const fields of [{ sourceIndexes: undefined }, { sourceIndexes: [2] }, { ignoredAudioResults: 2 },
+        { ignoredAudioResults: -1 }, { sourceIndexes: [0, 1] }]) {
+        assert.throws(() => restoreChannelCatalog({ ...catalog, pages: [{ ...catalog.pages[0], ...fields }] }), { code: 'INVALID_RESPONSE' });
+    }
 });
 
 test('folder ID contains the station name, common name is its preferred position, and description keeps its label', () => {

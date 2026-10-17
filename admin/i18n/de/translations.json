@@ -23,8 +23,6 @@
   "Maximum time to wait for an answer to one TV request.": "Maximale Wartezeit auf die Antwort auf eine einzelne Anfrage an den Fernseher.",
   "Append compatibility byte (NUL)": "Kompatibilitätsbyte anhängen (NUL)",
   "Leave enabled to use the request format of Loewe App 1.4.7.": "Aktiviert lassen, um das Anfrageformat der Loewe App 1.4.7 zu verwenden.",
-  "Enable additional TV commands": "Zusätzliche TV-Befehle freischalten",
-  "Allows advanced requests, including changes to recordings, favorites and TV settings. Available functions depend on the TV model.": "Erlaubt erweiterte Anfragen, darunter Änderungen an Aufnahmen, Favoriten und TV-Einstellungen. Die verfügbaren Funktionen hängen vom TV-Modell ab.",
   "0 disables automatic status queries, including the initial query at startup. Otherwise, enter 5 to 3600 seconds. Manual commands remain available.": "0 schaltet automatische Statusabfragen aus, auch die erste Abfrage beim Start. Ansonsten 5 bis 3.600 Sekunden eintragen. Manuelle Befehle bleiben verfügbar.",
   "Enter 0 or a whole number from 5 to 3600.": "Bitte 0 oder eine ganze Zahl von 5 bis 3.600 eintragen.",
   "Include current playback in status queries. Disable this if the TV does not support the playback query.": "Bei Statusabfragen auch die aktuelle Wiedergabe abfragen. Deaktiviere die Option, wenn der Fernseher diese Abfrage nicht unterstützt.",
@@ -35,6 +33,6 @@
   "Enter a whole number from 5 to 120.": "Bitte eine ganze Zahl von 5 bis 120 eintragen.",
   "info.wakeReady shows whether a MAC address is known. info.lastWakeOnLan records packet transmission. info.powerOn shows the current attempt and its result; successful transmission does not confirm a visible picture.": "info.wakeReady zeigt, ob eine MAC-Adresse bekannt ist. info.lastWakeOnLan protokolliert den Paketversand. info.powerOn zeigt den aktuellen Versuch und sein Ergebnis; erfolgreicher Versand bestätigt kein sichtbares Bild.",
   "Channel refresh interval (seconds)": "Senderlistenabgleich (Sekunden)",
-  "Refresh the complete selected TV and radio list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.": "Die ausgewählte TV- und Radiosenderliste automatisch vollständig abgleichen. Standard: 300 Sekunden. 0 deaktiviert den automatischen Senderabgleich. Der manuelle Abgleich bleibt verfügbar.",
-  "Enter 0 or a whole number from 60 to 86400.": "Bitte 0 oder eine ganze Zahl von 60 bis 86.400 eintragen."
+  "Enter 0 or a whole number from 60 to 86400.": "Bitte 0 oder eine ganze Zahl von 60 bis 86.400 eintragen.",
+  "Refresh the complete selected TV channel list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.": "Die ausgewählte TV-Senderliste automatisch vollständig abgleichen. Standard: 300 Sekunden. 0 deaktiviert den automatischen Senderabgleich. Der manuelle Abgleich bleibt verfügbar."
 }

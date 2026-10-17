@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { setImmediate: nextTurn } = require('node:timers/promises');
 const { AdapterRuntime, normalizeConfig } = require('../lib/adapter-runtime');
+const { mergeChannelPage } = require('../lib/channel-catalog');
 
 const VIEW = 'fastscan-refresh-fixture';
 
@@ -85,6 +86,18 @@ class FakeAdapter {
     async extendObjectAsync(id, object) { this.objects.set(id, object); }
     async getStateAsync(id) { return this.states.get(id) || null; }
     async setStateAsync(id, state) { this.states.set(id, state); this.writes.push({ id, ...state }); }
+    async getObjectListAsync(options) {
+        assert.deepEqual(options, { startkey: `${this.namespace}.`, endkey: `${this.namespace}.\u9999`, include_docs: true });
+        return { rows: [...this.objects].map(([id, doc]) => ({ id: `${this.namespace}.${id}`, doc: structuredClone(doc) }))
+            .filter(row => row.id >= options.startkey && row.id <= options.endkey) };
+    }
+    async delObjectAsync(id, options) {
+        assert.ok(['api', 'channels.radio', 'remote.radio_mode_on', 'channels.mediaType'].includes(id));
+        assert.equal(options.recursive, ['api', 'channels.radio'].includes(id));
+        for (const store of [this.objects, this.states]) {
+            for (const child of store.keys()) if (child === id || (options.recursive && child.startsWith(`${id}.`))) store.delete(child);
+        }
+    }
     subscribeStates() {}
     setTimeout(fn, ms) { const id = ++this.nextTimer; this.timers.set(id, { fn, ms }); return id; }
     clearTimeout(id) { this.timers.delete(id); }
@@ -139,22 +152,27 @@ test('channel refresh configuration defaults to five minutes and accepts only ze
     for (const value of [-1, 1, 59, 60.5, 86401, 'invalid']) assert.throws(() => normalizeConfig({ channelRefreshInterval: value }), { code: 'VALIDATION' });
 });
 
-test('startup and interval refresh the complete mixed list without changing manual page parameters', async t => {
+test('startup and interval request video and filter ignored radio without changing manual page parameters', async t => {
     const h = await harness(t, {}, adapter => {
-        for (const [id, val] of [['channels.start', 25], ['channels.count', 12], ['channels.mediaType', 'audio'], ['channels.listStart', 4]]) {
+        for (const [id, val] of [['channels.start', 25], ['channels.count', 12], ['channels.listStart', 4]]) {
             adapter.states.set(id, { val, ack: true });
         }
+        adapter.states.set('channels.entries', { val: JSON.stringify([{ itemClass: 'video', name: 'Last manual page',
+            thumbnailUrl: 'http://tv.example.invalid/manual' }]), ack: true });
     });
     await fire(h, 0);
     assert.equal(h.channelObjects.accepted.length, 1);
-    assert.deepEqual(calls(h, 'getChannels')[0].args.slice(0, 4), [VIEW, 0, 500, '']);
+    assert.deepEqual(calls(h, 'getChannels')[0].args.slice(0, 4), [VIEW, 0, 500, 'video']);
     assert.ok(calls(h, 'getChannels')[0].args[4].deadline > Date.now());
     assert.deepEqual(h.channelObjects.accepted[0].page.items.map(value => value.itemClass), ['video', 'audio']);
-    for (const [id, val] of [['channels.start', 25], ['channels.count', 12], ['channels.mediaType', 'audio'], ['channels.listStart', 4]]) {
+    assert.equal(h.channelObjects.accepted[0].type, 'video');
+    assert.deepEqual(JSON.parse(state(h, 'channels.entries')), [{ itemClass: 'video', name: 'Last manual page',
+        thumbnailUrl: 'http://tv.example.invalid/manual' }]);
+    for (const [id, val] of [['channels.start', 25], ['channels.count', 12], ['channels.listStart', 4]]) {
         assert.equal(state(h, id), val);
     }
     assert.equal(state(h, 'channels.refreshStatus'), 'ready');
-    assert.equal(state(h, 'channels.refreshCount'), 2);
+    assert.equal(state(h, 'channels.refreshCount'), 1);
     assert.ok(state(h, 'channels.refreshLastUpdate') > 0);
     h.client.entries = [entry(2, 'video', 'Renamed')];
     await fire(h, 300000);
@@ -200,10 +218,10 @@ test('repeated refresh requests share one in-flight scan', async t => {
     assert.equal(calls(h, 'getChannels').length, 1);
 });
 
-test('multi-page scans validate two complete reads and let remote commands run between pages', async t => {
+test('mixed multi-page scans retain raw offsets, validate two reads and let remote commands run between pages', async t => {
     const gate = deferred();
     const h = await harness(t, { channelRefreshInterval: 0 }, (_adapter, client) => {
-        client.entries = Array.from({ length: 501 }, (_, index) => entry(index + 1));
+        client.entries = Array.from({ length: 501 }, (_, index) => entry(index + 1, index < 500 && index % 2 === 0 ? 'audio' : 'video'));
         client.hooks.getChannels = async (view, start, count) => {
             if (client.calls.filter(call => call.method === 'getChannels').length === 1) await gate.promise;
             return page(view, start, client.entries, { count });
@@ -216,11 +234,18 @@ test('multi-page scans validate two complete reads and let remote commands run b
     await Promise.all([refresh, key]);
     assert.deepEqual(h.client.calls.map(call => call.method), ['getChannels', 'key', 'getChannels', 'getChannels', 'getChannels']);
     assert.deepEqual(calls(h, 'getChannels').map(call => call.args[1]), [0, 500, 0, 500]);
+    assert.ok(calls(h, 'getChannels').every(call => call.args[3] === 'video'));
     assert.equal(h.client.maximumActive, 1);
     assert.equal(h.channelObjects.accepted.length, 1, 'Individual pages must not be published');
     assert.equal(h.channelObjects.accepted[0].page.items.length, 501);
     assert.equal(h.channelObjects.accepted[0].page.startIndex, 0);
     assert.equal(h.channelObjects.accepted[0].page.totalResults, 501);
+    const catalog = mergeChannelPage(null, h.channelObjects.accepted[0].page, { mediaType: h.channelObjects.accepted[0].type });
+    assert.equal(catalog.lastQuery.reconciled, true);
+    assert.equal(catalog.lastQuery.ignoredAudioResults, 250);
+    assert.equal(catalog.services.length, 251);
+    assert.ok(catalog.services.some(value => value.number === 501));
+    assert.equal(state(h, 'channels.refreshCount'), 251);
 });
 
 test('a changing list is rejected even when the TV always returns hash 4294967295', async t => {
@@ -252,12 +277,15 @@ test('a changed total or a repeated first page aborts pagination without publish
     }
 });
 
-test('unknown totals and unknown media types cannot authorize removal of existing channel objects', async t => {
-    for (const mode of ['total', 'type']) {
+test('unknown totals, unknown media types and radio-only responses cannot authorize TV removals', async t => {
+    for (const mode of ['total', 'type', 'radioOnly', 'declaredAudio']) {
         const h = await harness(t, { channelRefreshInterval: 0 }, (_adapter, client) => {
             client.hooks.getChannels = (view, start) => {
-                const result = page(view, start, mode === 'type' ? [entry(1, 'unknown')] : client.entries);
+                const entries = mode === 'type' ? [entry(1, 'unknown')]
+                    : mode === 'radioOnly' ? [entry(1, 'audio')] : client.entries;
+                const result = page(view, start, entries);
                 if (mode === 'total') delete result.data.Envelope.Body.GetChannelListResponse.ResultItemFragment['@_totalResults'];
+                if (mode === 'declaredAudio') result.data.Envelope.Body.GetChannelListResponse.ItemClass = 'audio';
                 return result;
             };
         });

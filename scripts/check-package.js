@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const { KEYS, TABLET_ACTIONS, buildEnvelope } = require('../lib/loewe-client');
 const { createDefinitions } = require('../lib/states');
-const { normalizeConfig, validateParameters } = require('../lib/adapter-runtime');
+const { normalizeConfig } = require('../lib/adapter-runtime');
 
 const root = path.resolve(__dirname, '..');
 const readJson = name => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'));
@@ -65,9 +65,12 @@ for (const advanced of [false, true]) {
             }
         }
     }
-    assert.equal([...ids].filter(id => /^remote\.[^.]+$/.test(id)).length, 43);
-    assert.equal([...ids].filter(id => /^api\.[^.]+\.send$/.test(id)).length, advanced ? 33 : 0);
-    console.log(`Object definitions valid: ${objects.length} objects (${advanced ? 'advanced enabled' : 'standard'}).`);
+    assert.equal([...ids].filter(id => /^remote\.[^.]+$/.test(id)).length, 42);
+    assert.equal(objects.length, 105);
+    assert.ok(![...ids].some(id => /^(?:api|channels\.radio)(?:\.|$)/.test(id)));
+    assert.ok(!ids.has('channels.mediaType'));
+    assert.ok(!ids.has('remote.radio_mode_on'));
+    console.log(`Object definitions valid: ${objects.length} objects (${advanced ? 'legacy advanced setting ignored' : 'standard'}).`);
 }
 
 // Independent oracle: compare all original APK XML envelopes, including both
@@ -86,12 +89,11 @@ for (const template of catalog.templates) {
     const parameters = action === 'RequestAccess' ? '' : inner[1]
         .replace('<fcid></fcid>', '').replace('<ClientId>fixture-session</ClientId>', '');
     assert.equal(buildEnvelope(action, parameters, 'fixture-session'), expected, `APK template mismatch: ${action}`);
-    validateParameters(action, parameters, 99);
 }
 assert.deepEqual([...actions].sort(), [...TABLET_ACTIONS].sort());
 const sourceKeys = catalog.remote_keymap.map(key => `${key.alphabet}:${key.sent_code}`).sort();
 const clientKeys = Object.entries(KEYS).filter(([name]) => !/^digit_\d$/.test(name)
-    && !['epg_alt', 'power_on', 'radio_mode_on', 'tv_mode_on'].includes(name))
+    && !['epg_alt', 'power_on', 'tv_mode_on'].includes(name))
     .map(([, key]) => `${key.alphabet}:${key.value}`).sort();
 assert.deepEqual(clientKeys, sourceKeys, 'Original remote keys differ from Loewe App extraction');
 for (let digit = 0; digit <= 9; digit++) {
@@ -106,10 +108,10 @@ assert.deepEqual(KEYS.epg_alt, { alphabet: epg.alphabet, value: epg.value });
 // This additional official API mapping is not part of the original APK oracle.
 assert.deepEqual(KEYS.power_on, { alphabet: 'l2700', value: 22 });
 // Remote API 1.0.47, 9.4.1.1 documents the discrete mode keys.
-assert.deepEqual(KEYS.radio_mode_on, { alphabet: 'l2700', value: 73 });
+assert.equal(KEYS.radio_mode_on, undefined);
 assert.deepEqual(KEYS.tv_mode_on, { alphabet: 'l2700', value: 72 });
 assert.ok(!Object.values(KEYS).some(key => [1337, 1338].includes(key.value)), 'Local app UI actions are not TV keys');
-console.log(`APK contract valid: ${catalog.templates.length} exact XML templates, ${actions.size} actions, 29 original and 11 additional APK key mappings; TV_ON and radio/TV mode keys verified against Remote API 1.0.47, sections 9.4.3 and 9.4.1.1.`);
+console.log(`APK contract valid: ${catalog.templates.length} exact XML templates, ${actions.size} actions, 29 original and 11 additional APK key mappings; TV_ON and TV_MODE_ON verified against Remote API 1.0.47, sections 9.4.3 and 9.4.1.1.`);
 
 // Check syntax without importing adapter-core or starting an ioBroker process.
 for (const directory of ['', 'lib', 'scripts', 'test']) {

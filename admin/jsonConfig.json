@@ -42,7 +42,7 @@
         "channelRefreshInterval": {
           "type": "number",
           "label": "Channel refresh interval (seconds)",
-          "help": "Refresh the complete selected TV and radio list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.",
+          "help": "Refresh the complete selected TV channel list automatically. Default: 300 seconds. 0 disables automatic channel refresh. Manual refresh remains available.",
           "min": 0,
           "max": 86400,
           "step": 1,
@@ -166,13 +166,6 @@
           "label": "Append compatibility byte (NUL)",
           "help": "Leave enabled to use the request format of Loewe App 1.4.7.",
           "default": true,
-          "xs": 12
-        },
-        "enableAdvanced": {
-          "type": "checkbox",
-          "label": "Enable additional TV commands",
-          "help": "Allows advanced requests, including changes to recordings, favorites and TV settings. Available functions depend on the TV model.",
-          "default": false,
           "xs": 12
         }
       }

@@ -4,8 +4,8 @@
     "version": "0.1.6",
     "news": {
       "0.1.6": {
-        "en": "Select the documented radio mode (l2700/73), wait for the TV to report radio, then select the requested station. Add delayed bounded playback checks, recognize SL420 itemInfoClass metadata and ignore its placeholder playback UUID for station confirmation. Add separate radio/TV mode buttons (73/72); device verification remains open.",
-        "de": "Dokumentierten Radiomodus (l2700/73) wählen, Rückmeldung des Radiomodus abwarten und danach den gewünschten Sender anwählen. Zeitversetzte begrenzte Wiedergabeprüfung, SL420-Metadaten itemInfoClass und Platzhalter-UUID bei der Senderbestätigung berücksichtigen. Getrennte Radio-/TV-Modustasten (73/72) ergänzen; Gerätetest steht noch aus."
+        "en": "Temporarily remove radio channel support and the api data point tree after unsuccessful radio tests. Clean up existing radio/API objects on startup and ignore the former advanced setting. Keep TV channel IDs and direct selection; request TV lists and exclude audio entries from the active catalogue. Version remains 0.1.6; reinstall the updated package.",
+        "de": "Radiosender nach erfolglosen Gerätetests vorerst zurückstellen und den api-Datenpunktbaum entfernen. Vorhandene Radio-/API-Objekte beim Start bereinigen; die bisherige Expertenoption entfällt. TV-Sender-IDs und direkte Auswahl erhalten, TV-Senderlisten anfragen und Audioeinträge aus dem aktiven Katalog ausschließen. Version bleibt 0.1.6; aktualisiertes Paket erneut installieren."
       },
       "0.1.5": {
         "en": "Resolve radio service UUIDs through GetMediaItem before sending ZapToMedia, following the analysed app workflow. Preserve direct TV channel selection. Check explicit zap results and add bounded selection diagnostics with a single radio playback observation; real-device radio verification remains open.",
@@ -82,8 +82,7 @@
     "macWlan": "",
     "broadcastAddress": "255.255.255.255",
     "powerOnTimeout": 60,
-    "maxVolume": 99,
-    "enableAdvanced": false
+    "maxVolume": 99
   },
   "objects": [],
   "instanceObjects": [

@@ -6,6 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { AdapterRuntime } = require('../lib/adapter-runtime');
+const { parseChannelPage } = require('../lib/loewe-client');
 const { runPowerOn } = require('../lib/power-on');
 
 function deferred() {
@@ -160,12 +161,12 @@ class FakeAdapter {
             macLan: '',
             macWlan: '',
             broadcastAddress: '255.255.255.255',
-            enableAdvanced: false,
             ...config,
         };
         this.objects = new Map();
         this.states = new Map();
         this.writes = [];
+        this.deletions = [];
         this.subscriptions = [];
         this.timers = new Map();
         this.nextTimer = 1;
@@ -193,6 +194,23 @@ class FakeAdapter {
 
     async getStateAsync(id) {
         return this.states.get(this.localId(id)) || null;
+    }
+
+    async getObjectListAsync(options) {
+        assert.deepEqual(options, { startkey: `${this.namespace}.`, endkey: `${this.namespace}.\u9999`, include_docs: true });
+        return { rows: [...this.objects].map(([key, object]) => {
+            const id = /^(?:loewe-tv|other)\.\d+\./u.test(key) ? key : `${this.namespace}.${key}`;
+            return { id, doc: structuredClone({ _id: id, ...object }) };
+        }).filter(row => row.id >= options.startkey && row.id <= options.endkey) };
+    }
+
+    async delObjectAsync(id, options) {
+        const key = this.localId(id);
+        this.deletions.push({ id: key, ...options });
+        const matches = candidate => candidate === key || (options.recursive && candidate.startsWith(`${key}.`));
+        const protectedIds = new Set([...this.objects].filter(([, object]) => object.common?.dontDelete).map(([objectId]) => objectId));
+        for (const objectId of this.objects.keys()) if (matches(objectId) && !protectedIds.has(objectId)) this.objects.delete(objectId);
+        for (const stateId of this.states.keys()) if (matches(stateId) && !protectedIds.has(stateId)) this.states.delete(stateId);
     }
 
     async setStateAsync(id, state) {
@@ -285,6 +303,88 @@ test('startup creates usable button objects without replaying saved commands', a
     }
     assert.equal(adapter.objects.get('info.connection').common.write, false);
     assert.equal(adapter.states.get('info.connection').val, true);
+});
+
+test('upgrade removes only the requested own paths before creating a client or restoring channels', async t => {
+    const adapter = new FakeAdapter({ pollInterval: 0, enableAdvanced: true });
+    const obsolete = [
+        'api', 'api.SetVolume', 'api.SetVolume.send', 'api.SetVolume.parametersXml', 'api.saved.child',
+        // A missing parent must not leave orphaned radio children behind.
+        'channels.radio.Legacy_Radio', 'channels.radio.Legacy_Radio.select', 'channels.radio.saved.child',
+        'remote.radio_mode_on', 'channels.mediaType',
+    ];
+    const preserved = [
+        'channels', 'channels.tv', 'channels.tv.Das_Erste_HD', 'channels.tv.Das_Erste_HD.select',
+        'channels.tv.Das_Erste_HD.personal', 'channels.radio_backup', 'channels.radio_backup.keep',
+        'apiary', 'apiary.keep', 'remote.tv_mode_on', 'remote.radio_mode_on.personal', 'channels.mediaType.personal',
+        'loewe-tv.1.api.SetVolume.send', 'loewe-tv.1.channels.radio.Legacy_Radio.select', 'other.0.api',
+    ];
+    for (const id of [...obsolete, ...preserved]) {
+        adapter.objects.set(id, { type: 'state', common: { name: id }, native: { retained: id } });
+        adapter.states.set(id, { val: `saved ${id}`, ack: true });
+    }
+    const removed = () => {
+        for (const id of obsolete) {
+            assert.equal(adapter.objects.has(id), false, `Removed object ${id}`);
+            assert.equal(adapter.states.has(id), false, `Removed state ${id}`);
+        }
+    };
+    let clients = 0;
+    let restores = 0;
+    const runtime = new AdapterRuntime(adapter, { clientFactory() {
+        removed();
+        clients++;
+        return new FakeClient();
+    } });
+    runtime.channelObjects.start = () => { removed(); restores++; };
+    t.after(() => runtime.stop());
+    await runtime.start();
+    removed();
+    assert.equal(clients, 1);
+    assert.equal(restores, 1);
+    for (const id of preserved) assert.equal(adapter.objects.get(id)?.native.retained, id, `Preserved object ${id}`);
+    assert.deepEqual(adapter.deletions, [
+        { id: 'channels.radio', recursive: true }, { id: 'api', recursive: true },
+        { id: 'remote.radio_mode_on', recursive: false }, { id: 'channels.mediaType', recursive: false },
+    ]);
+    assert.ok([...runtime._objects.keys()].every(id => !/^api(?:\.|$)|^channels\.radio(?:\.|$)/u.test(id)));
+    assert.equal(Object.hasOwn(runtime.config, 'enableAdvanced'), false);
+});
+
+test('offline upgrade removes saved audio entries and radio selection diagnostics while keeping raw evidence', async t => {
+    const television = { name: 'Fixture TV', itemClass: 'video', mediaItemUuid: 'tv-fixture', locator: 'channel://001:tv' };
+    const radio = { name: 'Legacy Radio', itemClass: 'audio', mediaItemUuid: 'radio-fixture', locator: 'channel://210:radio' };
+    const raw = JSON.stringify({ response: { audio: radio } });
+    const h = await harness(t, { host: '', pollInterval: 0, enableAdvanced: true }, adapter => {
+        adapter.objects.set('api.Legacy.send', { type: 'state' });
+        adapter.objects.set('channels.radio.Legacy_Radio.select', { type: 'state' });
+        adapter.states.set('channels.entries', { val: JSON.stringify([television, radio]), ack: true });
+        adapter.states.set('channels.lastSelection', { val: JSON.stringify({
+            requested: { id: 'channels.radio.Legacy_Radio', itemClass: 'audio' },
+            result: 0, status: 'unconfirmed', modeSwitch: { attempted: true },
+        }), ack: true });
+        adapter.states.set('channels.items', { val: raw, ack: true });
+    });
+    assert.equal(h.runtime.client, null, 'Migration must also run before a TV host is configured.');
+    assert.deepEqual(h.client.calls, []);
+    assert.deepEqual(JSON.parse(h.adapter.states.get('channels.entries').val), [television]);
+    assert.deepEqual(JSON.parse(h.adapter.states.get('channels.lastSelection').val), {});
+    assert.equal(h.adapter.states.get('channels.items').val, raw);
+    assert.equal(h.adapter.objects.has('api.Legacy.send'), false);
+    assert.equal(h.adapter.objects.has('channels.radio.Legacy_Radio.select'), false);
+});
+
+test('offline upgrade retains the existing TV selection and normalized TV page unchanged', async t => {
+    const entries = JSON.stringify([{ itemClass: 'video', name: 'Das Erste HD', mediaItemUuid: 'tv-fixture' }]);
+    const selection = JSON.stringify({ requested: { id: 'channels.tv.Das_Erste_HD', itemClass: 'video' },
+        status: 'accepted', result: 0, stationConfirmed: false, verification: 'notChecked', locatorSource: 'GetChannelList' });
+    const h = await harness(t, { host: '', pollInterval: 0 }, adapter => {
+        adapter.states.set('channels.entries', { val: entries, ack: true });
+        adapter.states.set('channels.lastSelection', { val: selection, ack: true });
+    });
+    assert.equal(h.adapter.states.get('channels.entries').val, entries);
+    assert.equal(h.adapter.states.get('channels.lastSelection').val, selection);
+    assert.ok(h.adapter.writes.every(write => !['channels.entries', 'channels.lastSelection'].includes(write.id)));
 });
 
 test('acknowledged feedback, deleted values, other instances and false buttons do not send', async t => {
@@ -382,7 +482,7 @@ test('channel parameters are staged and used only when the query button is press
     assert.equal(h.adapter.states.get('channels.view').ack, true);
     await write(h, 'channels.getChannels', true);
     assert.deepEqual(calls(h.client, 'getChannels').map(call => call.args), [
-        ['fixture-list', 100, 25, ''],
+        ['fixture-list', 100, 25, 'video'],
     ]);
     assert.equal(h.adapter.states.get('channels.getChannels').val, false);
     assert.equal(h.adapter.states.get('channels.getChannels').ack, true);
@@ -396,7 +496,7 @@ for (const savedView of [undefined, '   ']) {
         });
         await write(h, 'channels.getChannels', true);
         assert.deepEqual(calls(h.client, 'getChannelLists').map(call => call.args), [[0, 100]]);
-        assert.deepEqual(calls(h.client, 'getChannels').map(call => call.args), [['fastscan-fixture', 0, 100, '']]);
+        assert.deepEqual(calls(h.client, 'getChannels').map(call => call.args), [['fastscan-fixture', 0, 100, 'video']]);
         assert.equal(h.adapter.states.get('channels.view').val, 'fastscan-fixture');
         const [entry] = JSON.parse(h.adapter.states.get('channels.entries').val);
         assert.equal(entry.name, 'Fixture TV');
@@ -407,6 +507,77 @@ for (const savedView of [undefined, '   ']) {
         assert.equal(h.adapter.states.get('channels.lastError').val, '');
     });
 }
+
+test('manual channel queries request video and filter mixed replies without changing pagination or raw evidence', async t => {
+    const h = await harness(t, { pollInterval: 0 });
+    h.client.hooks.getChannels = view => response('GetChannelList', {
+        ChannelListView: view,
+        ResultItemFragment: {
+            '@_startIndex': '0', '@_totalResults': '2', '@_returnedResults': '2',
+            ResultItemReference: [
+                { '@_mediaItemUuid': 'fixture-service-1', '@_shortInfo': 'Fixture TV',
+                    '@_locator': 'channel://001:ch-fixture-service-1:sl-fixture', '@_caption': '001', '@_itemClass': 'video' },
+                { '@_mediaItemUuid': 'fixture-radio-1', '@_shortInfo': 'Legacy Radio',
+                    '@_locator': 'channel://210:ch-fixture-radio-1:sl-fixture', '@_caption': '210', '@_itemClass': 'audio' },
+            ],
+        },
+    });
+    await write(h, 'channels.getChannels', true);
+    await h.runtime.channelObjects.whenIdle();
+    assert.deepEqual(calls(h.client, 'getChannels').at(-1).args, ['fastscan-fixture', 0, 100, 'video']);
+    const entries = JSON.parse(h.adapter.states.get('channels.entries').val);
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].itemClass, 'video');
+    assert.equal(h.adapter.states.get('channels.totalNumber').val, 2);
+    assert.equal(h.adapter.states.get('channels.returnedNumber').val, 2);
+    assert.equal(h.adapter.states.get('channels.nextStart').val, -1);
+    assert.match(h.adapter.states.get('channels.items').val, /Legacy Radio/);
+    assert.ok(h.adapter.objects.has('channels.tv.Fixture_TV.select'));
+    assert.ok([...h.adapter.objects.keys()].every(id => !id.startsWith('channels.radio.')));
+});
+
+test('TV selection sends exactly one direct zap and records acceptance without claiming playback confirmation', async t => {
+    const h = await harness(t, { pollInterval: 0 });
+    await write(h, 'channels.getChannels', true);
+    await h.runtime.channelObjects.whenIdle();
+    h.client.hooks.zap = () => response('ZapToMedia', { Result: '0' });
+    const offset = h.client.calls.length;
+    await write(h, 'channels.tv.Fixture_TV.select', true);
+    assert.deepEqual(h.client.calls.slice(offset), [
+        { method: 'zap', args: ['channel://001:ch-fixture-service-1:sl-fixture'] },
+    ]);
+    const report = JSON.parse(h.adapter.states.get('channels.lastSelection').val);
+    assert.equal(report.requested.id, 'channels.tv.Fixture_TV');
+    assert.equal(report.requested.itemClass, 'video');
+    assert.equal(report.status, 'accepted');
+    assert.equal(report.phase, 'complete');
+    assert.equal(report.result, 0);
+    assert.equal(report.locatorSource, 'GetChannelList');
+    assert.equal(report.resolvedLocator, report.listLocator);
+    assert.equal(report.stationConfirmed, false);
+    assert.equal(report.verification, 'notChecked');
+    assert.equal(Object.hasOwn(report, 'modeSwitch'), false);
+    assert.deepEqual(h.adapter.states.get('channels.tv.Fixture_TV.select'), { val: false, ack: true });
+});
+
+test('a newer channel snapshot invalidates a queued TV selection before any zap', async t => {
+    const h = await harness(t, { pollInterval: 0 });
+    await write(h, 'channels.getChannels', true);
+    await h.runtime.channelObjects.whenIdle();
+    const page = parseChannelPage(await h.client.getChannels('fastscan-fixture', 0, 100, 'video'));
+    const gate = deferred();
+    t.after(() => gate.resolve());
+    h.runtime._tail = gate.promise;
+    const selection = write(h, 'channels.tv.Fixture_TV.select', true);
+    h.runtime.channelObjects.acceptPage(page, 'video');
+    await h.runtime.channelObjects.whenIdle();
+    gate.resolve();
+    await selection;
+    assert.equal(calls(h.client, 'zap').length, 0);
+    assert.match(h.adapter.states.get('info.lastError').val, /CHANNEL_UPDATING|CHANNEL_UNAVAILABLE/u);
+    assert.equal(JSON.parse(h.adapter.states.get('channels.lastSelection').val).status, 'error');
+    assert.deepEqual(h.adapter.states.get('channels.tv.Fixture_TV.select'), { val: false, ack: true });
+});
 
 test('named channel buttons use registered targets and track the real pending reset write', async t => {
     const h = await harness(t, { pollInterval: 0 });
@@ -461,7 +632,7 @@ test('list discovery uses its own offset and preserves an explicit favorite sele
     assert.deepEqual(calls(h.client, 'getChannelLists').at(-1).args, [2, 25]);
     await write(h, 'channels.mediaType', 'audio');
     await write(h, 'channels.getChannels', true);
-    assert.deepEqual(calls(h.client, 'getChannels').at(-1).args, ['favlist-personal', 100, 25, 'audio']);
+    assert.deepEqual(calls(h.client, 'getChannels').at(-1).args, ['favlist-personal', 100, 25, 'video']);
 });
 
 test('TV list synchronization remains visible without sending a fabricated channel view', async t => {
@@ -555,51 +726,49 @@ test('WOL setting flags preserve unknown values until valid TV settings are read
     assert.equal(h.adapter.states.get('device.wolInteractive').val, null);
 });
 
-test('disabled advanced controls cannot be dispatched through manually written states', async t => {
-    const h = await harness(t, { enableAdvanced: false });
-    const baseline = h.client.calls.length;
-    await write(h, 'api.SetVolume.parametersXml', '<Value>120000</Value>');
-    await write(h, 'api.SetVolume.send', true);
-    assert.equal(h.client.calls.length, baseline);
+test('obsolete radio and API state events stay inert even with a saved enableAdvanced flag and stale definitions', async t => {
+    const h = await harness(t, { pollInterval: 0, enableAdvanced: true });
+    assert.equal(Object.hasOwn(h.runtime.config, 'enableAdvanced'), false);
+    const obsolete = [
+        ['api.SetVolume.parametersXml', '<Value>120000</Value>'],
+        ['api.SetVolume.send', true],
+        ['api.RequestAccess.send', true],
+        ['channels.radio.Fixture_Radio.select', true],
+        ['remote.radio_mode_on', true],
+        ['channels.mediaType', 'audio'],
+    ];
+    assert.ok(obsolete.every(([id]) => !h.adapter.objects.has(id)));
+    const writeOffset = h.adapter.writes.length;
+    for (const [id, value] of obsolete) {
+        // Even a stale registered definition may not re-enable a removed route.
+        h.runtime._objects.set(id, { type: 'state', common: { write: true,
+            role: typeof value === 'boolean' ? 'button' : 'text' } });
+        await write(h, id, value);
+    }
+    assert.deepEqual(h.client.calls, []);
+    assert.deepEqual(h.adapter.writes.slice(writeOffset), [], 'Ignored legacy events must not recreate acknowledgments.');
+    assert.equal(h.adapter.states.get('info.lastCommand').val, '');
+    assert.equal(h.runtime._pendingCount, 0);
 });
 
-test('advanced XML parameters do not execute until the matching action button is pressed', async t => {
-    const h = await harness(t, { enableAdvanced: true });
-    const baseline = h.client.calls.length;
-    const parameters = '<Value>120000</Value>';
-    await write(h, 'api.SetVolume.parametersXml', parameters);
-    assert.equal(h.client.calls.length, baseline);
-    await write(h, 'api.SetVolume.send', true);
-    assert.deepEqual(calls(h.client, 'request').map(call => call.args), [
-        ['SetVolume', parameters],
-    ]);
-    assert.equal(h.adapter.states.get('api.SetVolume.send').val, false);
-    assert.equal(h.adapter.states.get('api.SetVolume.send').ack, true);
-    assert.doesNotThrow(() => JSON.parse(h.adapter.states.get('api.SetVolume.responseJson').val));
-    await h.runtime.handleStateChange('loewe-tv.0.api.SetVolume.send', { val: true, ack: true });
-    assert.equal(calls(h.client, 'request').length, 1);
-});
-
-test('a queued action keeps the parameters that existed at the send event', async t => {
-    const h = await harness(t, { enableAdvanced: true });
+test('a queued channel query keeps the parameters captured at its send event', async t => {
+    const h = await harness(t, { pollInterval: 0 });
+    await write(h, 'channels.view', 'first-list');
+    await write(h, 'channels.start', 100);
+    await write(h, 'channels.count', 25);
     const gate = deferred();
-    const getState = h.adapter.getStateAsync.bind(h.adapter);
-    h.adapter.getStateAsync = async id => {
-        if (h.adapter.localId(id) === 'api.GetTimerList.parametersXml') {
-            await gate.promise;
-        }
-        return getState(id);
-    };
-    const operation = write(h, 'api.GetTimerList.send', true);
-    await new Promise(resolve => setImmediate(resolve));
-    // This later edit must not affect the preceding send event, including when
-    // that event used the initial empty default and a database read is delayed.
-    await write(h, 'api.GetTimerList.parametersXml', '<LaterEdit>new</LaterEdit>');
+    t.after(() => gate.resolve());
+    h.runtime._tail = gate.promise;
+    const query = write(h, 'channels.getChannels', true);
+    await write(h, 'channels.view', 'later-list');
+    await write(h, 'channels.start', 0);
+    await write(h, 'channels.count', 50);
     gate.resolve();
-    await operation;
-    assert.deepEqual(calls(h.client, 'request').map(call => call.args), [
-        ['GetTimerList', ''],
+    await query;
+    assert.deepEqual(calls(h.client, 'getChannels').map(call => call.args), [
+        ['first-list', 100, 25, 'video'],
     ]);
+    assert.equal(h.adapter.states.get('channels.view').val, 'later-list');
 });
 
 test('back-to-back remote commands remain serialized while a reply is pending', async t => {
@@ -731,4 +900,201 @@ test('a reply whose database processing was pending at shutdown cannot update la
     assert.deepEqual(lateTvStates, [], 'No fresh TV status may be published after shutdown');
     assert.equal(h.adapter.states.get('info.connection').val, false);
     assert.equal(h.adapter.timers.size, 0);
+});
+
+test('a cleanup database failure stops startup before subscriptions, transport or channel restoration', async t => {
+    const adapter = new FakeAdapter({ pollInterval: 0 });
+    const remove = adapter.delObjectAsync.bind(adapter);
+    adapter.delObjectAsync = async (id, options) => {
+        if (id === 'api') throw new Error('Simulated objects database permission failure');
+        return remove(id, options);
+    };
+    let clients = 0;
+    let restores = 0;
+    const runtime = new AdapterRuntime(adapter, { clientFactory: () => { clients++; return new FakeClient(); } });
+    runtime.channelObjects.start = () => { restores++; };
+    t.after(() => runtime.stop());
+    await assert.rejects(runtime.start(), error => error.code === 'DATABASE'
+        && /loewe-tv\.0\.api.*permission failure/u.test(error.message));
+    assert.equal(clients, 0);
+    assert.equal(restores, 0);
+    assert.deepEqual(adapter.subscriptions, []);
+    assert.equal(adapter.objects.size, 0);
+    assert.deepEqual(adapter.deletions, [{ id: 'channels.radio', recursive: true }]);
+});
+
+for (const id of ['api.Locked.send', 'channels.radio.Locked.select', 'remote.radio_mode_on', 'channels.mediaType']) {
+    test(`cleanup detects a silently retained protected object at ${id} without overriding protection`, async t => {
+        const adapter = new FakeAdapter({ pollInterval: 0 });
+        adapter.objects.set(id, { type: 'state', common: { dontDelete: true }, native: {} });
+        let clients = 0;
+        let restores = 0;
+        const runtime = new AdapterRuntime(adapter, { clientFactory: () => { clients++; return new FakeClient(); } });
+        runtime.channelObjects.start = () => { restores++; };
+        t.after(() => runtime.stop());
+        await assert.rejects(runtime.start(), error => error.code === 'DATABASE'
+            && error.message.includes(`${adapter.namespace}.${id}`) && /noch vorhanden/u.test(error.message));
+        assert.equal(adapter.objects.get(id).common.dontDelete, true);
+        assert.equal(adapter.objects.size, 1, 'No recovery object or force-delete workaround may be introduced.');
+        assert.equal(adapter.deletions.length, 4, 'A failed verification does not retry or widen deletion.');
+        assert.equal(clients, 0);
+        assert.equal(restores, 0);
+        assert.deepEqual(adapter.subscriptions, []);
+    });
+}
+
+test('cleanup rejects a successful-looking deletion that leaves both obsolete trees unchanged', async t => {
+    const adapter = new FakeAdapter({ pollInterval: 0 });
+    adapter.objects.set('api.SetVolume.send', { type: 'state' });
+    adapter.objects.set('channels.radio.Legacy.select', { type: 'state' });
+    adapter.delObjectAsync = async (id, options) => { adapter.deletions.push({ id, ...options }); };
+    const runtime = new AdapterRuntime(adapter, { clientFactory: () => assert.fail('Incomplete cleanup cannot start a client.') });
+    t.after(() => runtime.stop());
+    await assert.rejects(runtime.start(), error => error.code === 'DATABASE'
+        && /2 veraltete Objekte/u.test(error.message)
+        && error.message.includes('loewe-tv.0.api.SetVolume.send')
+        && error.message.includes('loewe-tv.0.channels.radio.Legacy.select'));
+    assert.equal(adapter.objects.size, 2);
+    assert.equal(adapter.deletions.length, 4);
+    assert.deepEqual(adapter.subscriptions, []);
+});
+
+test('a propagated inventory error aborts startup instead of treating cleanup as verified', async t => {
+    const adapter = new FakeAdapter({ pollInterval: 0 });
+    adapter.getObjectListAsync = async () => { throw new Error('Simulated inventory read failure'); };
+    const runtime = new AdapterRuntime(adapter, { clientFactory: () => assert.fail('An inventory error cannot start a client.') });
+    t.after(() => runtime.stop());
+    await assert.rejects(runtime.start(), error => error.code === 'DATABASE' && /Nachkontrolle.*inventory read failure/u.test(error.message));
+    assert.equal(adapter.objects.size, 0);
+    assert.deepEqual(adapter.subscriptions, []);
+});
+
+test('invalid inventory envelopes, IDs and object records cannot establish successful cleanup', async t => {
+    const invalid = [
+        undefined, [], { rows: null },
+        { rows: [{ id: 'api.Legacy', doc: { type: 'state' } }] },
+        { rows: [{ id: 'loewe-tv.1.api.Legacy', doc: { type: 'state' } }] },
+        { rows: [{ id: 'loewe-tv.0.info', doc: [] }] },
+        { rows: [{ id: 'loewe-tv.0.info', doc: { type: 'channel', _id: 'loewe-tv.0.api' } }] },
+    ];
+    for (const inventory of invalid) {
+        const adapter = new FakeAdapter({ pollInterval: 0 });
+        adapter.getObjectListAsync = async () => inventory;
+        const runtime = new AdapterRuntime(adapter, { clientFactory: () => assert.fail('Invalid inventory cannot start a client.') });
+        t.after(() => runtime.stop());
+        await assert.rejects(runtime.start(), error => error.code === 'DATABASE' && /Nachkontrolle/u.test(error.message));
+        assert.equal(adapter.objects.size, 0);
+        assert.deepEqual(adapter.subscriptions, []);
+    }
+});
+
+test('inventory verification retains the individual two-second DB deadline', async t => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const adapter = new FakeAdapter({ pollInterval: 0 });
+    const entered = deferred();
+    adapter.getObjectListAsync = async () => { entered.resolve(); return new Promise(() => {}); };
+    const runtime = new AdapterRuntime(adapter, { clientFactory: () => assert.fail('Timed-out inventory cannot start a client.') });
+    t.after(() => runtime.stop());
+    const rejected = assert.rejects(runtime.start(), error => error.code === 'DATABASE' && /Nachkontrolle.*nicht rechtzeitig/u.test(error.message));
+    await entered.promise;
+    t.mock.timers.tick(2000);
+    await rejected;
+    assert.equal(adapter.deletions.length, 4);
+    assert.equal(adapter.objects.size, 0);
+});
+
+test('unload during inventory verification prevents startup after a late inventory reply', async t => {
+    const adapter = new FakeAdapter({ pollInterval: 0 });
+    const entered = deferred();
+    const release = deferred();
+    adapter.getObjectListAsync = async () => { entered.resolve(); return release.promise; };
+    const runtime = new AdapterRuntime(adapter, { clientFactory: () => assert.fail('Stopped verification cannot start a client.') });
+    t.after(() => runtime.stop());
+    const starting = runtime.start();
+    await entered.promise;
+    try {
+        await runtime.stop();
+    } finally {
+        release.resolve({ rows: [] });
+        await starting;
+    }
+    assert.equal(adapter.deletions.length, 4);
+    assert.equal(adapter.objects.size, 0);
+    assert.deepEqual(adapter.subscriptions, []);
+});
+
+test('recursive upgrade cleanup has a finite 15-second budget and never advances after its deadline', async t => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const adapter = new FakeAdapter({ pollInterval: 0 });
+    const entered = deferred();
+    adapter.delObjectAsync = async (id, options) => {
+        adapter.deletions.push({ id, ...options });
+        entered.resolve();
+        return new Promise(() => {});
+    };
+    let clients = 0;
+    const runtime = new AdapterRuntime(adapter, { clientFactory: () => { clients++; return new FakeClient(); } });
+    t.after(() => runtime.stop());
+    const starting = runtime.start();
+    let completed = false;
+    const rejected = assert.rejects(starting, error => error.code === 'DATABASE'
+        && /channels\.radio.*nicht rechtzeitig/u.test(error.message)).then(() => { completed = true; });
+    await entered.promise;
+    t.mock.timers.tick(14999);
+    await Promise.resolve();
+    assert.equal(completed, false, 'A normal recursive cleanup may take longer than an individual DB write.');
+    t.mock.timers.tick(1);
+    await rejected;
+    assert.equal(clients, 0);
+    assert.equal(adapter.objects.size, 0);
+    assert.deepEqual(adapter.deletions, [{ id: 'channels.radio', recursive: true }]);
+});
+
+test('unload does not wait for recursive cleanup and a late completion cannot start another deletion or client', async t => {
+    const adapter = new FakeAdapter({ pollInterval: 0 });
+    const entered = deferred();
+    const release = deferred();
+    adapter.delObjectAsync = async (id, options) => {
+        adapter.deletions.push({ id, ...options });
+        entered.resolve();
+        await release.promise;
+    };
+    let clients = 0;
+    let restores = 0;
+    const runtime = new AdapterRuntime(adapter, { clientFactory: () => { clients++; return new FakeClient(); } });
+    runtime.channelObjects.start = () => { restores++; };
+    t.after(() => runtime.stop());
+    const starting = runtime.start();
+    await entered.promise;
+    let timer;
+    try {
+        const stopped = await Promise.race([
+            runtime.stop().then(() => true),
+            new Promise(resolve => { timer = setTimeout(() => resolve(false), 400); }),
+        ]);
+        assert.equal(stopped, true, 'Controller unload must not wait for the larger migration deadline.');
+    } finally {
+        clearTimeout(timer);
+        release.resolve();
+        await starting;
+    }
+    assert.equal(clients, 0);
+    assert.equal(restores, 0);
+    assert.equal(adapter.objects.size, 0);
+    assert.deepEqual(adapter.deletions, [{ id: 'channels.radio', recursive: true }]);
+    assert.deepEqual(adapter.subscriptions, []);
+    assert.equal(adapter.timers.size, 0);
+});
+
+test('unload before the deferred cleanup DB call prevents all migration mutations', async () => {
+    const adapter = new FakeAdapter({ pollInterval: 0 });
+    const runtime = new AdapterRuntime(adapter, { clientFactory: () => {
+        assert.fail('A stopped startup cannot create a client.');
+    } });
+    const starting = runtime.start();
+    await runtime.stop();
+    await starting;
+    assert.deepEqual(adapter.deletions, []);
+    assert.equal(adapter.objects.size, 0);
+    assert.deepEqual(adapter.subscriptions, []);
 });

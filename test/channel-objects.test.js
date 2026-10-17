@@ -5,20 +5,11 @@ const assert = require('node:assert/strict');
 const { setImmediate: nextTurn } = require('node:timers/promises');
 const { createHash } = require('node:crypto');
 const { AdapterRuntime } = require('../lib/adapter-runtime');
-const { parseChannelPage, LoeweClient, parseResponse } = require('../lib/loewe-client');
+const { parseChannelPage } = require('../lib/loewe-client');
 const { MAX_CATALOG_BYTES } = require('../lib/channel-catalog');
 
 const VIEW = 'fastscan-integration-fixture';
 const DYNAMIC = /^channels\.(tv|radio)\.[A-Za-z0-9_]+(?:\.|$)/u;
-// Shape of the user's 0.1.5 radio failure, with service/list identifiers
-// replaced. The detail returned the unchanged list Locator and audioItem
-// itemInfoClass; the immediate playback observation still described TV.
-const RADIO_UUID = 'chl0:00-00120034ffff00560078';
-const RADIO_LOCATOR = 'channel://210:ch00000000-0000-4000-8000-000000000210:sl00000000-0000-4000-8000-000000000001';
-const RADIO_PLACEHOLDER_UUID = 'chl0:00-00000000ffff00000000';
-const PREVIOUS_TV_UUID = 'chl0:00-00990011ffff00220033';
-const PREVIOUS_TV_LOCATOR = 'channel://2:ch00000000-0000-4000-8000-000000000002:sl00000000-0000-4000-8000-000000000001';
-
 function deferred() {
     let resolve;
     let reject;
@@ -38,48 +29,6 @@ function entry(uuid, number = '1', itemClass = 'video') {
     };
 }
 
-function reportedRadioEntry() {
-    return { ...entry(RADIO_UUID, '210', 'audio'), '@_shortInfo': 'Fixture Sunshine Radio', '@_locator': RADIO_LOCATOR };
-}
-
-function reportedRadioDetail() {
-    return response('GetMediaItem', { ResultItem: { MediaItem: {
-        '@_itemInfoClass': 'object.item.audioItem', uuid: RADIO_UUID,
-        Locator: RADIO_LOCATOR, Caption: '210',
-    } } });
-}
-
-function previousTvPlayback() {
-    return response('GetCurrentPlayback', { Mode: 'tv', MediaItemUuid: PREVIOUS_TV_UUID, Locator: PREVIOUS_TV_LOCATOR });
-}
-
-function abortedSelection() {
-    return Object.assign(new Error('Fixture selection wait aborted'), { code: 'CANCELLED' });
-}
-
-function heldSelectionWait() {
-    const gate = deferred();
-    const entered = deferred();
-    const wait = (ms, signal) => new Promise((resolve, reject) => {
-        assert.equal(ms, 500);
-        assert.ok(signal instanceof AbortSignal, 'Selection waits must receive their cancellation signal.');
-        let settled = false;
-        const finish = error => {
-            if (settled) return;
-            settled = true;
-            signal.removeEventListener('abort', abort);
-            if (error) reject(error);
-            else resolve();
-        };
-        const abort = () => finish(abortedSelection());
-        if (signal.aborted) { abort(); return; }
-        signal.addEventListener('abort', abort, { once: true });
-        gate.promise.then(() => finish(), finish);
-        entered.resolve({ ms, signal });
-    });
-    return { wait, entered: entered.promise, release: () => gate.resolve() };
-}
-
 function channels(entries, { view = VIEW, start = 0, total = entries.length, itemClass = 'undefined' } = {}) {
     return response('GetChannelList', {
         ChannelListView: view, ChannelListName: 'Integration fixture', ItemClass: itemClass,
@@ -95,8 +44,6 @@ class FakeClient {
         this.calls = [];
         this.nextChannels = channels([]);
         this.zapHook = null;
-        this.mediaItemHook = null;
-        this.playbackHook = null;
         this.keyHook = null;
         this.closed = false;
     }
@@ -116,20 +63,6 @@ class FakeClient {
         this.calls.push({ method: 'zap', args });
         const result = this.zapHook ? await this.zapHook(...args) : null;
         return result || response('ZapToMedia', { Result: '0' });
-    }
-
-    async getMediaItem(...args) {
-        this.calls.push({ method: 'getMediaItem', args });
-        if (this.mediaItemHook) return this.mediaItemHook(...args);
-        return response('GetMediaItem', { ResultItem: { MediaItem: {
-            uuid: args[0], Locator: 'channel://100:ch-radio-detail:sl-fixture', '@_itemClass': 'audio',
-        } } });
-    }
-
-    async getCurrentPlayback(...args) {
-        this.calls.push({ method: 'getCurrentPlayback', args });
-        if (this.playbackHook) return this.playbackHook(...args);
-        return response('GetCurrentPlayback', { Mode: 'radio' });
     }
 
     close() { this.closed = true; }
@@ -202,8 +135,15 @@ class FakeAdapter {
             .filter(row => row.id >= options.startkey && row.id <= options.endkey) };
     }
     async delObjectAsync(fullId, options) {
-        assert.equal(options.recursive, false, 'Cleanup must never remove an arbitrary subtree.');
         const id = this.id(fullId);
+        if (options.recursive) {
+            assert.ok(['channels.radio', 'api'].includes(id), 'Only explicitly removed adapter trees may be deleted recursively.');
+            for (const store of [this.objects, this.states]) {
+                for (const childId of store.keys()) if (childId === id || childId.startsWith(`${id}.`)) store.delete(childId);
+            }
+            return;
+        }
+        assert.equal(options.recursive, false, 'Sender cleanup must never remove an arbitrary subtree.');
         return this.dynamic('delete', id, () => {
             if (this.objects.get(id)?.common?.dontDelete) return;
             this.objects.delete(id);
@@ -213,11 +153,11 @@ class FakeAdapter {
     subscribeStates() {}
 }
 
-async function harness(t, prepare = () => {}, { idle = true, selectionWait = async () => {} } = {}) {
+async function harness(t, prepare = () => {}, { idle = true } = {}) {
     const adapter = new FakeAdapter();
     const client = new FakeClient();
     prepare(adapter, client);
-    const runtime = new AdapterRuntime(adapter, { clientFactory: () => client, selectionWait });
+    const runtime = new AdapterRuntime(adapter, { clientFactory: () => client });
     t.after(() => runtime.stop());
     await runtime.start();
     if (idle) await runtime.channelObjects.whenIdle();
@@ -234,7 +174,6 @@ async function query(h, entries, options = {}) {
     h.client.nextChannels = channels(entries, options);
     await write(h, 'channels.view', options.view || VIEW);
     await write(h, 'channels.start', options.start || 0);
-    await write(h, 'channels.mediaType', options.mediaType || '');
     await write(h, 'channels.getChannels', true);
     if (options.idle !== false) await h.runtime.channelObjects.whenIdle();
 }
@@ -262,29 +201,34 @@ async function within(promise, message) {
     } finally { clearTimeout(timer); }
 }
 
-test('a mixed list creates one name-based folder per TV/radio service and preserves every position', async t => {
+test('a mixed list creates only named TV folders and preserves TV positions plus raw pagination', async t => {
     const h = await harness(t);
     await query(h, [entry('first', '1'), entry('first', '100'), entry('first', '1000'), entry('second', '2'), entry('radio', '100', 'audio')]);
-    assert.equal(h.runtime.channelObjects.services.size, 3);
+    assert.equal(h.runtime.channelObjects.services.size, 2);
     const first = service(h, 'first');
     const radio = service(h, 'radio', 'audio');
     assert.match(first.id, /^channels\.tv\./u);
-    assert.match(radio.id, /^channels\.radio\./u);
+    assert.equal(radio, undefined);
     assert.ok(h.adapter.objects.has('channels.tv'));
-    assert.ok(h.adapter.objects.has('channels.radio'));
+    assert.equal(h.adapter.objects.has('channels.radio'), false);
     assert.equal(first.id, 'channels.tv.Fixture_first');
-    assert.equal(radio.id, 'channels.radio.Fixture_radio');
     assert.equal(h.adapter.objects.get(first.id).common.name, '1');
     assert.equal(h.adapter.objects.get(first.id).common.desc, 'Fixture first');
     assert.deepEqual(JSON.parse(state(h, `${first.id}.numbers`).val), ['1', '100', '1000']);
     assert.equal(state(h, `${first.id}.number`).val, 1);
     assert.equal(state(h, `${first.id}.locator`).val, 'channel://1:ch-first:sl-fixture');
     assert.deepEqual(JSON.parse(state(h, `${first.id}.locators`).val), [1, 100, 1000].map(number => `channel://${number}:ch-first:sl-fixture`));
-    assert.equal(state(h, `${radio.id}.number`).val, 100);
     assert.equal(state(h, `${first.id}.epg.status`).val, 'notImplemented');
     assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
     assert.equal(h.client.calls.length, 1, 'Object materialization must not make extra TV requests.');
     assert.equal(state(h, 'channels.returnedNumber').val, 5);
+    assert.equal(h.client.calls[0].args[3], 'video');
+    assert.equal(JSON.parse(state(h, 'channels.entries').val).length, 4);
+    assert.equal(h.adapter.dynamicCalls.some(call => call.id.startsWith('channels.radio.')), false);
+    const catalog = JSON.parse(state(h, 'channels.catalog').val);
+    assert.equal(catalog.pages[0].returnedResults, 5);
+    assert.equal(catalog.pages[0].ignoredAudioResults, 1);
+    assert.equal(catalog.lastQuery.reconciled, true);
 });
 
 test('select sends only the exact stored locator for boolean true with ack false and resets the button', async t => {
@@ -316,166 +260,15 @@ test('a failed channel selection resets the momentary button and reports the tra
     assert.match(state(h, 'info.lastError').val, /NETWORK.*Fixture timeout/u);
 });
 
-test('radio already in radio mode resolves its UUID and skips the mode key while TV keeps its direct route', async t => {
-    const h = await harness(t);
-    await query(h, [entry('tv', '100'), entry('radio', '100', 'audio')]);
-    const radio = service(h, 'radio', 'audio');
-    h.client.calls.length = 0;
-    await write(h, `${radio.id}.select`, true);
-    assert.deepEqual(h.client.calls.slice(0, 3).map(call => call.method), ['getMediaItem', 'getCurrentPlayback', 'zap']);
-    assert.ok(h.client.calls.slice(3).every(call => call.method === 'getCurrentPlayback'));
-    assert.ok(h.client.calls.length >= 4 && h.client.calls.length <= 9, 'Post-zap observations must be bounded.');
-    assert.equal(h.client.calls.filter(call => call.method === 'key').length, 0);
-    assert.equal(h.client.calls[0].args[0], 'radio');
-    assert.equal(h.client.calls[2].args[0], 'channel://100:ch-radio-detail:sl-fixture');
-    const report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.equal(report.requested.itemClass, 'audio');
-    assert.equal(report.listLocator, 'channel://100:ch-radio:sl-fixture');
-    assert.equal(report.resolvedLocator, h.client.calls[2].args[0]);
-    assert.equal(report.locatorSource, 'GetMediaItem');
-    assert.equal(report.result, 0);
-    assert.equal(report.status, 'accepted');
-    assert.equal(report.verification, 'radioModeOnly');
-    assert.equal(report.stationConfirmed, false, 'Mode alone is not evidence of the exact radio station.');
-    assert.equal(report.modeSwitch.attempted, false);
-    assert.equal(report.modeSwitch.confirmed, true);
-    assert.equal(report.playbackBefore.mode, 'radio');
-    assert.equal(report.getMediaItemResponse.Envelope.Body.GetMediaItemResponse.ResultItem.MediaItem.uuid, 'radio');
-    assert.equal(report.zapResponse.Envelope.Body.ZapToMediaResponse.Result, '0');
-    const deadlines = h.client.calls.map(call => call.args.at(-1).deadline);
-    assert.ok(deadlines.every(deadline => Number.isFinite(deadline) && deadline <= deadlines[0]),
-        'Every phase must fit inside the original radio selection deadline.');
-    assert.ok(deadlines[0] <= report.startedAt + 15000);
-    assert.deepEqual(state(h, `${radio.id}.select`), { val: false, ack: true });
-    await h.runtime._write('info.lastResponse', '{}');
-    assert.deepEqual(JSON.parse(state(h, 'channels.lastSelection').val), report, 'Other responses do not erase selection evidence.');
-    h.client.calls.length = 0;
-    await write(h, `${service(h, 'tv').id}.select`, true);
-    assert.deepEqual(h.client.calls, [{ method: 'zap', args: ['channel://100:ch-tv:sl-fixture'] }]);
-});
-
-test('real HTTP switches from TV with l2700 key 73 once, waits for radio, then zaps with Player 0', async t => {
-    const http = require('node:http');
-    const h = await harness(t);
-    await query(h, [reportedRadioEntry()]);
-    const radio = service(h, RADIO_UUID, 'audio');
-    const calls = [];
-    const waits = [];
-    h.runtime.selectionWait = async (ms, signal) => {
-        waits.push(ms);
-        assert.equal(signal.aborted, false);
-        await nextTurn();
-    };
-    let modeRequested = false;
-    let modeReads = 0;
-    let radioObserved = false;
-    let zapped = false;
-    const server = http.createServer((request, reply) => {
-        const chunks = [];
-        request.on('data', chunk => chunks.push(chunk));
-        request.on('end', () => {
-            const body = parseResponse(Buffer.concat(chunks).toString()).data.Envelope.Body;
-            const action = Object.keys(body)[0];
-            calls.push({ action, fields: body[action] });
-            let fields;
-            if (action === 'RequestAccess') fields = '<m:ClientId>test-radio-client</m:ClientId>';
-            else if (action === 'GetMediaItem') {
-                fields = `<m:ResultItem><m:MediaItem itemInfoClass="object.item.audioItem"><m:uuid>${RADIO_UUID}</m:uuid><m:Locator>${RADIO_LOCATOR}</m:Locator><m:Caption>210</m:Caption></m:MediaItem></m:ResultItem>`;
-            } else if (action === 'InjectRCKey') {
-                modeRequested = true;
-                fields = '';
-            } else if (action === 'ZapToMedia') {
-                // Return a TV rejection if the implementation attempts to zap
-                // before a radio-mode observation, just as a stateful TV could.
-                zapped = radioObserved;
-                fields = `<m:Result>${zapped ? '0' : '4'}</m:Result>`;
-            } else if (!modeRequested) {
-                fields = `<m:Mode>tv</m:Mode><m:MediaItemUuid>${PREVIOUS_TV_UUID}</m:MediaItemUuid><m:Locator>${PREVIOUS_TV_LOCATOR}</m:Locator>`;
-            } else if (!zapped && ++modeReads < 3) {
-                fields = '<m:Mode>tv</m:Mode>';
-            } else {
-                radioObserved = true;
-                fields = zapped
-                    ? `<m:Mode>radio</m:Mode><m:MediaItemUuid>${RADIO_PLACEHOLDER_UUID}</m:MediaItemUuid><m:Locator>${RADIO_LOCATOR}</m:Locator>`
-                    : '<m:Mode>radio</m:Mode>';
-            }
-            reply.end(`<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" xmlns:m="urn:loewe.de:RemoteTV:Tablet"><s:Body><m:${action}Response>${fields}</m:${action}Response></s:Body></s:Envelope>\0`);
-        });
-    });
-    await new Promise((resolve, reject) => {
-        server.once('error', reject);
-        server.listen(0, '127.0.0.1', resolve);
-    });
-    h.runtime.client = new LoeweClient({ host: '127.0.0.1', port: server.address().port, timeout: 500 });
-    t.after(async () => {
-        h.runtime.client.close();
-        server.closeAllConnections();
-        await new Promise(resolve => server.close(resolve));
-    });
-    await write(h, `${radio.id}.select`, true);
-    assert.deepEqual(calls.map(call => call.action), [
-        'RequestAccess', 'GetMediaItem', 'GetCurrentPlayback', 'InjectRCKey',
-        'GetCurrentPlayback', 'GetCurrentPlayback', 'GetCurrentPlayback',
-        'ZapToMedia', 'GetCurrentPlayback',
-    ]);
-    assert.equal(calls[1].fields.MediaItemReference['@_mediaItemUuid'], RADIO_UUID);
-    const key = calls.find(call => call.action === 'InjectRCKey');
-    assert.deepEqual(key.fields.InputEventSequence.RCKeyEvent.map(event => ({
-        alphabet: event['@_alphabet'], value: event['@_value'], mode: event['@_mode'],
-    })), [
-        { alphabet: 'l2700', value: '73', mode: 'press' },
-        { alphabet: 'l2700', value: '73', mode: 'release' },
-    ]);
-    const zap = calls.find(call => call.action === 'ZapToMedia');
-    assert.equal(zap.fields.Locator, RADIO_LOCATOR, 'Keep the unchanged TV-provided detail locator.');
-    assert.equal(zap.fields.Player, '0');
-    for (const playback of calls.filter(call => call.action === 'GetCurrentPlayback')) {
-        assert.equal(playback.fields.Player, '0');
-    }
-    assert.deepEqual(waits, [500, 500, 500, 500], 'Wait between mode checks and before the first post-zap observation.');
-    const report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.equal(report.status, 'confirmed');
-    assert.equal(report.verification, 'station');
-    assert.equal(report.stationConfirmed, true);
-    assert.equal(report.playback.mediaItemUuid, RADIO_PLACEHOLDER_UUID, 'Preserve the raw placeholder in the report.');
-    assert.equal(report.playbackUuidIgnored, true);
-    assert.equal(report.modeSwitch.attempted, true);
-    assert.equal(report.modeSwitch.confirmed, true);
-    assert.equal(state(h, 'info.lastError').val, '');
-});
-
-test('invalid radio details never fall back to the list locator or a remote key', async t => {
-    for (const item of [
-        { uuid: 'different', Locator: 'channel://1:ch-wrong:sl-fixture' },
-        { uuid: 'radio', StreamingUrl: 'http://example.invalid/radio' },
-        { uuid: 'radio', Locator: 'channel://1:ch-wrong:sl-fixture', '@_itemClass': 'video' },
-    ]) {
-        const h = await harness(t);
-        await query(h, [entry('radio', '100', 'audio')]);
-        h.client.mediaItemHook = () => response('GetMediaItem', { ResultItem: { MediaItem: item } });
-        h.client.calls.length = 0;
-        const button = `${service(h, 'radio', 'audio').id}.select`;
-        await write(h, button, true);
-        assert.deepEqual(h.client.calls.map(call => call.method), ['getMediaItem']);
-        const report = JSON.parse(state(h, 'channels.lastSelection').val);
-        assert.equal(report.status, 'error');
-        assert.equal(report.phase, 'getMediaItem');
-        assert.ok(report.error);
-        assert.ok(report.getMediaItemResponse, 'Keep the rejected detail response for diagnosis.');
-        assert.deepEqual(state(h, button), { val: false, ack: true });
-    }
-});
-
 test('nonzero ZapToMedia result is an error for channel buttons and manual locators without a resend', async t => {
     const h = await harness(t);
     await query(h, [entry('tv'), entry('radio', '100', 'audio')]);
     h.client.zapHook = () => response('ZapToMedia', { Result: '3' });
-    for (const button of [`${service(h, 'tv').id}.select`, `${service(h, 'radio', 'audio').id}.select`]) {
+    for (const button of [`${service(h, 'tv').id}.select`]) {
         h.client.calls.length = 0;
         await write(h, button, true);
         assert.equal(h.client.calls.filter(call => call.method === 'zap').length, 1);
-        assert.equal(h.client.calls.filter(call => call.method === 'getCurrentPlayback').length,
-            button.includes('.radio.') ? 1 : 0, 'Radio preflight is allowed, no observation may follow an explicit zap rejection.');
+        assert.equal(h.client.calls.filter(call => call.method === 'getCurrentPlayback').length, 0);
         assert.equal(h.client.calls.at(-1).method, 'zap');
         const report = JSON.parse(state(h, 'channels.lastSelection').val);
         assert.equal(report.result, 3);
@@ -489,322 +282,15 @@ test('nonzero ZapToMedia result is an error for channel buttons and manual locat
     assert.match(state(h, 'info.lastError').val, /TV_REJECTED/u);
 });
 
-test('radio diagnostics distinguish missing acknowledgement, wrong mode and exact station confirmation', async t => {
-    const h = await harness(t);
-    await query(h, [entry('radio', '100', 'audio')]);
-    const button = `${service(h, 'radio', 'audio').id}.select`;
-    h.client.zapHook = () => response('ZapToMedia');
-    await write(h, button, true);
-    let report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.equal(report.status, 'unconfirmed');
-    assert.equal(report.result, null);
-    assert.equal(report.stationConfirmed, false);
-    h.client.zapHook = null;
-    let playbackReads = 0;
-    h.client.playbackHook = () => response('GetCurrentPlayback', ++playbackReads === 1
-        ? { Mode: 'radio' } : { Mode: 'tv', MediaItemUuid: 'tv' });
-    await write(h, button, true);
-    report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.equal(report.status, 'unconfirmed');
-    assert.equal(report.result, 0, 'Preserve the accepted request separately from the unconfirmed playback.');
-    assert.equal(report.verification, 'differentMode');
-    assert.equal(report.stationConfirmed, false);
-    assert.equal(playbackReads, 7, 'One preflight plus at most six delayed post-zap observations.');
-    h.client.playbackHook = () => response('GetCurrentPlayback', { Mode: 'radio', MediaItemUuid: 'radio' });
-    await write(h, button, true);
-    report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.equal(report.status, 'confirmed');
-    assert.equal(report.verification, 'station');
-    assert.equal(report.stationConfirmed, true);
-});
-
-test('a failed playback observation retains the zap acknowledgement without sending again', async t => {
-    const h = await harness(t);
-    await query(h, [entry('radio', '100', 'audio')]);
-    let playbackReads = 0;
-    h.client.playbackHook = () => {
-        if (++playbackReads === 1) return response('GetCurrentPlayback', { Mode: 'radio' });
-        throw Object.assign(new Error('Fixture playback timeout'), { code: 'NETWORK' });
-    };
-    h.client.calls.length = 0;
-    await write(h, `${service(h, 'radio', 'audio').id}.select`, true);
-    const report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.equal(report.status, 'unconfirmed');
-    assert.equal(report.result, 0);
-    assert.equal(report.stationConfirmed, false);
-    assert.equal(report.verification, 'readFailed');
-    assert.match(report.playbackError, /NETWORK.*timeout/u);
-    assert.equal(h.client.calls.filter(call => call.method === 'zap').length, 1);
-    assert.equal(state(h, 'info.commandPending').val, false);
-});
-
-test('the reported unchanged audio locator cannot be zapped while the TV remains in TV or unknown mode', async t => {
-    for (const [fields, verification] of [
-        [{ Mode: 'tv', MediaItemUuid: PREVIOUS_TV_UUID, Locator: PREVIOUS_TV_LOCATOR }, 'differentMode'],
-        [{}, 'unknown'],
-    ]) {
-        const waits = [];
-        const h = await harness(t, () => {}, { selectionWait: async ms => { waits.push(ms); } });
-        await query(h, [reportedRadioEntry()]);
-        h.client.mediaItemHook = reportedRadioDetail;
-        h.client.playbackHook = () => response('GetCurrentPlayback', fields);
-        h.client.calls.length = 0;
-        const button = `${service(h, RADIO_UUID, 'audio').id}.select`;
-        await within(write(h, button, true), 'Mode polling must terminate even when the injected wait is immediate.');
-        assert.deepEqual(h.client.calls.filter(call => call.method === 'key').map(call => call.args[0]), ['radio_mode_on']);
-        assert.equal(h.client.calls.filter(call => call.method === 'getCurrentPlayback').length, 13,
-            'One preflight and at most twelve attempts, without an unbounded fast-wait loop.');
-        assert.equal(h.client.calls.filter(call => call.method === 'zap').length, 0);
-        assert.equal(waits.length, 12);
-        assert.ok(waits.every(ms => ms === 500));
-        const report = JSON.parse(state(h, 'channels.lastSelection').val);
-        assert.equal(report.listLocator, RADIO_LOCATOR);
-        assert.equal(report.resolvedLocator, RADIO_LOCATOR);
-        assert.equal(report.status, 'error');
-        assert.equal(report.phase, 'waitRadioMode');
-        assert.equal(report.verification, verification);
-        assert.equal(report.result, null);
-        assert.match(report.error, /CHANNEL_SELECTION/u);
-        assert.equal(report.modeSwitch.attempted, true);
-        assert.equal(report.modeSwitch.confirmed, false);
-        assert.equal(report.playbackBefore.mode, fields.Mode || 'UNKNOWN');
-        assert.equal(report.getMediaItemResponse.Envelope.Body.GetMediaItemResponse.ResultItem.MediaItem['@_itemInfoClass'],
-            'object.item.audioItem');
-        assert.deepEqual(state(h, button), { val: false, ack: true });
-    }
-});
-
-test('a failed radio preflight never injects a mode key or zaps', async t => {
-    const h = await harness(t);
-    await query(h, [reportedRadioEntry()]);
-    h.client.mediaItemHook = reportedRadioDetail;
-    h.client.playbackHook = () => { throw Object.assign(new Error('Fixture preflight transport failure'), { code: 'NETWORK' }); };
-    h.client.calls.length = 0;
-    await write(h, `${service(h, RADIO_UUID, 'audio').id}.select`, true);
-    assert.deepEqual(h.client.calls.map(call => call.method), ['getMediaItem', 'getCurrentPlayback']);
-    const report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.equal(report.status, 'error');
-    assert.equal(report.phase, 'getCurrentPlaybackBefore');
-    assert.match(report.error, /NETWORK.*preflight/u);
-    assert.equal(report.result, null);
-    assert.equal(report.modeSwitch.attempted, false);
-});
-
-test('radio placeholder UUID without a locator proves only mode, while a different real UUID is not ignored', async t => {
-    const h = await harness(t);
-    await query(h, [reportedRadioEntry()]);
-    h.client.mediaItemHook = reportedRadioDetail;
-    h.client.playbackHook = () => response('GetCurrentPlayback', { Mode: 'radio', MediaItemUuid: RADIO_PLACEHOLDER_UUID });
-    const button = `${service(h, RADIO_UUID, 'audio').id}.select`;
-    await write(h, button, true);
-    let report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.equal(report.status, 'accepted');
-    assert.equal(report.verification, 'radioModeOnly');
-    assert.equal(report.stationConfirmed, false);
-    assert.equal(report.playbackUuidIgnored, true);
-    assert.equal(report.playback.mediaItemUuid, RADIO_PLACEHOLDER_UUID);
-
-    // The locator cannot override an explicitly different, non-placeholder
-    // station UUID. The exception must remain specific to the known sentinel.
-    const differentUuid = 'chl0:00-00120034ffff00560079';
-    h.client.playbackHook = () => response('GetCurrentPlayback', {
-        Mode: 'radio', MediaItemUuid: differentUuid, Locator: RADIO_LOCATOR,
-    });
-    h.client.calls.length = 0;
-    await write(h, button, true);
-    report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.equal(report.status, 'unconfirmed');
-    assert.equal(report.verification, 'differentStation');
-    assert.equal(report.stationConfirmed, false);
-    assert.equal(report.playbackUuidIgnored, false);
-    assert.equal(h.client.calls.filter(call => call.method === 'zap').length, 1);
-    assert.equal(h.client.calls.filter(call => call.method === 'getCurrentPlayback').length, 7);
-});
-
-test('an initially delayed post-zap observation can become confirmed without resending key or zap', async t => {
-    const waits = [];
-    const h = await harness(t, () => {}, { selectionWait: async ms => { waits.push(ms); } });
-    await query(h, [reportedRadioEntry()]);
-    h.client.mediaItemHook = reportedRadioDetail;
-    let reads = 0;
-    h.client.playbackHook = () => {
-        reads++;
-        if (reads === 1) return response('GetCurrentPlayback', { Mode: 'radio' });
-        if (reads === 2) return previousTvPlayback();
-        return response('GetCurrentPlayback', { Mode: 'radio', MediaItemUuid: RADIO_UUID, Locator: RADIO_LOCATOR });
-    };
-    h.client.calls.length = 0;
-    await write(h, `${service(h, RADIO_UUID, 'audio').id}.select`, true);
-    const report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.deepEqual(waits, [500, 500]);
-    assert.equal(report.status, 'confirmed');
-    assert.equal(report.stationConfirmed, true);
-    assert.deepEqual(report.playbackObservations.map(value => value.mode), ['tv', 'radio']);
-    assert.equal(h.client.calls.filter(call => call.method === 'zap').length, 1);
-    assert.equal(h.client.calls.filter(call => call.method === 'key').length, 0);
-});
-
-test('a catalogue update during the radio-mode wait prevents a stale zap', async t => {
-    const wait = heldSelectionWait();
-    t.after(wait.release);
-    const h = await harness(t, () => {}, { selectionWait: wait.wait });
-    await query(h, [reportedRadioEntry()]);
-    h.client.mediaItemHook = reportedRadioDetail;
-    let reads = 0;
-    h.client.playbackHook = () => ++reads === 1 ? previousTvPlayback() : response('GetCurrentPlayback', { Mode: 'radio' });
-    h.client.calls.length = 0;
-    const select = write(h, `${service(h, RADIO_UUID, 'audio').id}.select`, true);
-    await within(wait.entered, 'Expected mode wait after the single mode key.');
-    const moved = { ...reportedRadioEntry(), '@_caption': '211', '@_locator': RADIO_LOCATOR.replace('channel://210:', 'channel://211:') };
-    h.runtime.channelObjects.acceptPage(parseChannelPage(channels([moved])), '');
-    wait.release();
-    await select;
-    await h.runtime.channelObjects.whenIdle();
-    assert.equal(h.client.calls.filter(call => call.method === 'zap').length, 0);
-    assert.deepEqual(h.client.calls.filter(call => call.method === 'key').map(call => call.args[0]), ['radio_mode_on']);
-    const report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.equal(report.status, 'error');
-    assert.match(report.error, /CHANNEL_UPDATING|CHANNEL_UNAVAILABLE/u);
-});
-
-test('stop aborts the radio-mode wait and releases the queue without a late zap', async t => {
-    const wait = heldSelectionWait();
-    t.after(wait.release);
-    const h = await harness(t, () => {}, { selectionWait: wait.wait });
-    await query(h, [reportedRadioEntry()]);
-    h.client.mediaItemHook = reportedRadioDetail;
-    h.client.playbackHook = previousTvPlayback;
-    h.client.calls.length = 0;
-    const select = write(h, `${service(h, RADIO_UUID, 'audio').id}.select`, true);
-    const { signal } = await within(wait.entered, 'Expected active mode wait.');
-    await within(Promise.all([select, h.runtime.stop()]), 'Stop must abort the wait instead of waiting for its normal timeout.');
-    assert.equal(signal.aborted, true);
-    assert.equal(h.client.calls.filter(call => call.method === 'zap').length, 0);
-    assert.equal(h.runtime._pendingCount, 0);
-    assert.equal(h.client.closed, true);
-});
-
-test('power off aborts an active radio-mode wait before executing the off command', async t => {
-    const wait = heldSelectionWait();
-    t.after(wait.release);
-    const h = await harness(t, () => {}, { selectionWait: wait.wait });
-    await query(h, [reportedRadioEntry()]);
-    h.client.mediaItemHook = reportedRadioDetail;
-    h.client.playbackHook = previousTvPlayback;
-    h.client.calls.length = 0;
-    const select = write(h, `${service(h, RADIO_UUID, 'audio').id}.select`, true);
-    const { signal } = await within(wait.entered, 'Expected active mode wait.');
-    await within(Promise.all([select, write(h, 'control.powerOff', true)]), 'Power off must not remain queued behind a mode wait.');
-    assert.equal(signal.aborted, true);
-    assert.equal(h.client.calls.filter(call => call.method === 'zap').length, 0);
-    assert.deepEqual(h.client.calls.filter(call => call.method === 'key').map(call => call.args[0]),
-        ['radio_mode_on', 'power_all_code']);
-    const report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.equal(report.status, 'error');
-    assert.match(report.error, /CANCELLED/u);
-    assert.equal(h.runtime._pendingCount, 0);
-});
-
-test('a radio request already waiting in the queue is superseded by power off before it can start', async t => {
-    const h = await harness(t);
-    await query(h, [reportedRadioEntry()]);
-    const gate = deferred();
-    t.after(() => gate.resolve());
-    h.client.keyHook = name => name === 'home' ? gate.promise : Promise.resolve();
-    h.client.calls.length = 0;
-    const home = write(h, 'remote.home', true);
-    await until(() => h.client.calls.length === 1, 'Home must occupy the network queue.');
-    const select = write(h, `${service(h, RADIO_UUID, 'audio').id}.select`, true);
-    const off = write(h, 'control.powerOff', true);
-    gate.resolve();
-    await Promise.all([home, select, off]);
-    assert.deepEqual(h.client.calls.map(call => call.method), ['key', 'key']);
-    assert.deepEqual(h.client.calls.map(call => call.args[0]), ['home', 'power_all_code']);
-    assert.equal(h.runtime._pendingCount, 0);
-});
-
-test('the radio-mode phase deadline stops late mode observations without sending a zap', async t => {
-    let now = Date.now();
-    t.mock.method(Date, 'now', () => now);
-    const h = await harness(t, () => {}, { selectionWait: async () => { now += 6500; } });
-    await query(h, [reportedRadioEntry()]);
-    h.client.mediaItemHook = reportedRadioDetail;
-    let reads = 0;
-    h.client.playbackHook = () => ++reads === 1 ? previousTvPlayback() : response('GetCurrentPlayback', { Mode: 'radio' });
-    h.client.calls.length = 0;
-    await write(h, `${service(h, RADIO_UUID, 'audio').id}.select`, true);
-    assert.equal(h.client.calls.filter(call => call.method === 'getCurrentPlayback').length, 1,
-        'A wait that exceeded six seconds must not be followed by a late mode probe.');
-    assert.equal(h.client.calls.filter(call => call.method === 'key').length, 1);
-    assert.equal(h.client.calls.filter(call => call.method === 'zap').length, 0);
-    const report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.equal(report.phase, 'waitRadioMode');
-    assert.equal(report.status, 'error');
-    assert.match(report.error, /CHANNEL_SELECTION/u);
-});
-
-test('the total selection deadline includes detail resolution and prohibits late mode changes and zaps', async t => {
-    let now = Date.now();
-    t.mock.method(Date, 'now', () => now);
-    const h = await harness(t);
-    await query(h, [reportedRadioEntry()]);
-    h.client.mediaItemHook = () => { now += 15001; return reportedRadioDetail(); };
-    h.client.calls.length = 0;
-    await write(h, `${service(h, RADIO_UUID, 'audio').id}.select`, true);
-    assert.deepEqual(h.client.calls.map(call => call.method), ['getMediaItem']);
-    const report = JSON.parse(state(h, 'channels.lastSelection').val);
-    assert.equal(report.status, 'error');
-    assert.equal(report.result, null);
-    assert.match(report.error, /CHANNEL_SELECTION.*Zeitlimit/u);
-});
-
-test('a catalogue update during radio detail resolution invalidates the captured selection before zap', async t => {
-    const h = await harness(t);
-    await query(h, [entry('radio', '100', 'audio')]);
-    const gate = deferred();
-    t.after(() => gate.resolve());
-    h.client.mediaItemHook = async () => {
-        await gate.promise;
-        return response('GetMediaItem', { ResultItem: { MediaItem: { uuid: 'radio', Locator: 'channel://100:ch-detail:sl-fixture' } } });
-    };
-    h.client.calls.length = 0;
-    const select = write(h, `${service(h, 'radio', 'audio').id}.select`, true);
-    await until(() => h.client.calls.length > 0, 'GetMediaItem must be in flight.');
-    h.runtime.channelObjects.acceptPage(parseChannelPage(channels([entry('radio', '5', 'audio')])), '');
-    gate.resolve();
-    await select;
-    await h.runtime.channelObjects.whenIdle();
-    assert.deepEqual(h.client.calls.map(call => call.method), ['getMediaItem']);
-    assert.match(JSON.parse(state(h, 'channels.lastSelection').val).error, /CHANNEL_UPDATING|CHANNEL_UNAVAILABLE/u);
-});
-
-test('stopping during radio detail resolution prevents a later zap and releases the pending queue', async t => {
-    const h = await harness(t);
-    await query(h, [entry('radio', '100', 'audio')]);
-    const gate = deferred();
-    t.after(() => gate.resolve());
-    h.client.mediaItemHook = async () => {
-        await gate.promise;
-        return response('GetMediaItem', { ResultItem: { MediaItem: { uuid: 'radio', Locator: 'channel://100:ch-detail:sl-fixture' } } });
-    };
-    h.client.calls.length = 0;
-    const select = write(h, `${service(h, 'radio', 'audio').id}.select`, true);
-    await until(() => h.client.calls.length > 0, 'GetMediaItem must be in flight.');
-    const stopped = h.runtime.stop();
-    gate.resolve();
-    await Promise.all([select, stopped]);
-    assert.deepEqual(h.client.calls.map(call => call.method), ['getMediaItem']);
-    assert.equal(h.runtime._pendingCount, 0);
-});
-
 test('upgrade from 0.1.2 builds sender objects from channels.items without contacting the TV', async t => {
     const raw = channels([entry('first'), entry('radio', '100', 'audio')]).data;
     const h = await harness(t, adapter => adapter.states.set('channels.items', { val: JSON.stringify(raw), ack: true }));
     assert.equal(h.client.calls.length, 0);
-    assert.equal(h.runtime.channelObjects.services.size, 2);
+    assert.equal(h.runtime.channelObjects.services.size, 1);
     assert.equal(state(h, `${service(h, 'first').id}.select`).val, false);
     assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
     assert.equal(JSON.parse(state(h, 'channels.catalog').val).schemaVersion, 3);
+    assert.equal(h.adapter.objects.has('channels.radio.Fixture_radio'), false);
 });
 
 test('restart restores cache/native service identities and clears saved true buttons without replaying them', async t => {
@@ -831,6 +317,53 @@ test('restart restores cache/native service identities and clears saved true but
     assert.deepEqual(restarted.client.calls, [{ method: 'zap', args: ['channel://1:ch-first:sl-fixture'] }]);
 });
 
+test('old named radio caches and native objects cannot return after TV-only startup or execute a saved selection', async t => {
+    const original = await harness(t);
+    await query(original, [entry('first')]);
+    const radio = { ...legacyService('old-radio', [100], 'audio'), id: 'channels.radio.Fixture_old_radio' };
+    const mixedResponse = channels([entry('first'), entry('old-radio', '100', 'audio')]);
+    const mixedPage = parseChannelPage(mixedResponse);
+    const oldCache = JSON.parse(state(original, 'channels.catalog').val);
+    oldCache.services.push(radio);
+    oldCache.pages = [{ ...mixedPage, mediaType: '' }];
+    oldCache.lastQuery = { ...oldCache.lastQuery, totalResults: 2, returnedResults: 2 };
+    const restarted = await harness(t, adapter => {
+        adapter.objects = structuredClone(original.adapter.objects);
+        adapter.objects.set(radio.id, { type: 'channel', common: { name: '100' }, native: {
+            managedBy: 'loewe-tv-channel-catalog', schemaVersion: 3, channelService: { schemaVersion: 3, service: radio },
+        } });
+        adapter.objects.set(`${radio.id}.select`, { type: 'state', common: { type: 'boolean', write: true }, native: {
+            managedBy: 'loewe-tv-channel-catalog',
+        } });
+        adapter.states.set(`${radio.id}.select`, { val: true, ack: false });
+        adapter.states.set('channels.catalog', { val: JSON.stringify(oldCache), ack: true });
+        adapter.states.set('channels.items', { val: JSON.stringify(mixedResponse.data), ack: true });
+        adapter.states.set('channels.entries', { val: JSON.stringify(mixedPage.items), ack: true });
+    });
+    assert.equal(restarted.runtime.channelObjects.services.size, 1);
+    assert.equal(service(restarted, 'first').id, service(original, 'first').id);
+    assert.equal(service(restarted, 'old-radio', 'audio'), undefined);
+    assert.equal([...restarted.adapter.objects.keys()].some(id => id === 'channels.radio' || id.startsWith('channels.radio.')), false);
+    assert.equal(restarted.adapter.dynamicCalls.some(call => call.id.startsWith('channels.radio.')), false);
+    assert.equal(state(restarted, `${radio.id}.select`), undefined);
+    assert.equal(state(restarted, 'channels.catalog').val.includes('old-radio'), false);
+    assert.deepEqual(JSON.parse(state(restarted, 'channels.entries').val).map(item => item.itemClass), ['video']);
+    await restarted.runtime.handleStateChange(`${restarted.adapter.namespace}.${radio.id}.select`, { val: true, ack: false });
+    assert.equal(restarted.client.calls.length, 0);
+
+    const manager = restarted.runtime.channelObjects;
+    const epoch = manager.selectionEpoch;
+    assert.throws(() => manager.acceptPage(mixedPage, 'audio'), { code: 'VALIDATION' });
+    assert.equal(manager.selectionEpoch, epoch);
+    // Defense in depth: even a stale injected map entry cannot become a target.
+    manager.services.set(radio.id, radio);
+    assert.throws(() => manager.target(`${radio.id}.select`), { code: 'CHANNEL_UNAVAILABLE' });
+    assert.throws(() => manager.checkTarget({ ...radio, epoch }), { code: 'CHANNEL_UNAVAILABLE' });
+    manager.services.delete(radio.id);
+    await write(restarted, `${service(restarted, 'first').id}.select`, true);
+    assert.deepEqual(restarted.client.calls, [{ method: 'zap', args: ['channel://1:ch-first:sl-fixture'] }]);
+});
+
 test('native restoration with a saved or live partial first page preserves unqueried positions', async t => {
     const original = await harness(t);
     await query(original, [entry('first'), entry('second', '2'), entry('archived', '4'), entry('radio', '100', 'audio')]);
@@ -852,13 +385,13 @@ test('native restoration with a saved or live partial first page preserves unque
             assert.equal(restored.available, true, `${uuid} must remain selectable after an incomplete ${source} response.`);
             assert.equal(state(restarted, `${restored.id}.available`).val, true);
         }
-        assert.equal(service(restarted, 'radio', 'audio').available, true);
+        assert.equal(service(restarted, 'radio', 'audio'), undefined);
         assert.equal(service(restarted, 'archived'), undefined);
         assert.equal(restarted.adapter.objects.has('channels.tv.Fixture_archived'), false);
     }
 });
 
-test('only complete responses delete absent managed positions and filtered queries preserve the other type', async t => {
+test('only complete TV responses delete absent managed positions while partial and ignored audio rows preserve history', async t => {
     const h = await harness(t);
     await query(h, [entry('first'), entry('second', '2'), entry('radio', '100', 'audio')]);
     const oldButton = `${service(h, 'second').id}.select`;
@@ -876,7 +409,7 @@ test('only complete responses delete absent managed positions and filtered queri
     assert.equal(service(h, 'second'), undefined);
     assert.equal(service(h, 'new'), undefined);
     assert.equal(service(h, 'last').available, true);
-    assert.equal(service(h, 'radio', 'audio').available, true);
+    assert.equal(service(h, 'radio', 'audio'), undefined);
     assert.equal(h.adapter.objects.has(oldButton), false);
     assert.equal(state(h, oldButton), undefined);
     assert.equal(h.adapter.objects.has('channels.tv.Fixture_first'), true, 'Moving a service must preserve its folder ID.');
@@ -885,9 +418,11 @@ test('only complete responses delete absent managed positions and filtered queri
     await h.runtime.handleStateChange(`${h.adapter.namespace}.${oldButton}`, { val: true, ack: false });
     assert.equal(h.client.calls.length, before);
     assert.equal(state(h, oldButton), undefined);
-    await query(h, [], { mediaType: 'audio' });
-    assert.equal(service(h, 'radio', 'audio'), undefined);
+    await query(h, [entry('audio-only', '7', 'audio')]);
     assert.equal(service(h, 'first').available, true);
+    assert.equal(h.runtime.channelObjects.catalog.lastQuery.reconciled, false);
+    await query(h, []);
+    assert.equal(h.runtime.channelObjects.services.size, 0);
 });
 
 test('switching lists deletes obsolete folders and cancels queued selections of the former list', async t => {
@@ -948,11 +483,14 @@ test('slow sender object creation does not block the remote-control command queu
     hold.resolve();
     await h.runtime.channelObjects.whenIdle();
     assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
-    assert.equal(h.runtime.channelObjects.services.size, 372);
+    assert.equal(h.runtime.channelObjects.services.size, 280);
     const cacheBytes = Buffer.byteLength(state(h, 'channels.catalog').val, 'utf8');
     assert.ok(cacheBytes < MAX_CATALOG_BYTES, '372 realistic entries must fit in the persistent catalogue.');
     assert.equal(state(h, 'channels.catalog').val.includes('tv.example.invalid'), false);
-    t.diagnostic(`372 synthetic services, persisted catalogue ${cacheBytes} bytes, limit ${MAX_CATALOG_BYTES} bytes.`);
+    assert.equal(h.runtime.channelObjects.catalog.lastQuery.returnedResults, 372);
+    assert.equal(h.runtime.channelObjects.catalog.lastQuery.ignoredAudioResults, 92);
+    assert.equal(h.adapter.dynamicCalls.some(call => call.id.startsWith('channels.radio.')), false);
+    t.diagnostic(`372 mixed references / 280 TV services, persisted catalogue ${cacheBytes} bytes, limit ${MAX_CATALOG_BYTES} bytes.`);
 });
 
 test('stop prevents new sender object/database operations after already started calls settle', async t => {
@@ -1071,11 +609,11 @@ test('numeric 0.1.4 caches and native roots migrate to stable service names with
         numericService('radio', 100, 'audio')];
     for (const cache of [true, false]) {
         const h = await harness(t, adapter => installNumeric(adapter, previous, cache));
-        assert.equal(h.runtime.channelObjects.services.size, 2);
+        assert.equal(h.runtime.channelObjects.services.size, 1);
         assert.equal(h.client.calls.length, 0);
         assert.equal(h.adapter.objects.get('channels.tv.Fixture_first').common.name, '1');
         assert.deepEqual(JSON.parse(state(h, 'channels.tv.Fixture_first.numbers').val), ['1', '100', '1000']);
-        assert.equal(h.adapter.objects.get('channels.radio.Fixture_radio').common.name, '100');
+        assert.equal(h.adapter.objects.has('channels.radio.Fixture_radio'), false);
         for (const old of previous) {
             assert.equal(h.adapter.objects.has(old.id), false);
             assert.equal(state(h, `${old.id}.select`), undefined);
@@ -1162,9 +700,9 @@ test('conflicting old numeric names cannot discard a fresh response queued durin
     gate.resolve();
     await h.runtime.channelObjects.whenIdle();
     assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
-    assert.equal(h.runtime.channelObjects.services.size, 2);
+    assert.equal(h.runtime.channelObjects.services.size, 1);
     assert.equal(state(h, 'channels.tv.Fixture_first.number').val, 7);
-    assert.equal(service(h, 'radio', 'audio').available, true);
+    assert.equal(service(h, 'radio', 'audio'), undefined);
     assert.equal(h.adapter.objects.has('channels.tv.1'), false);
     assert.equal(h.adapter.objects.has('channels.tv.100'), false);
     assert.ok(h.adapter.logs.some(log => /ungültige gespeicherte Senderobjekte/u.test(log.message)));
@@ -1181,7 +719,7 @@ test('sorting preserves station IDs, user configuration and the exact new select
     for (const current of h.runtime.channelObjects.services.values()) assert.equal(current.id, oldIds.get(current.mediaItemUuid));
     assert.equal(h.adapter.objects.get('channels.tv.Fixture_first').common.name, '7');
     assert.equal(h.adapter.objects.get('channels.tv.Fixture_second').common.name, '1');
-    assert.equal(h.adapter.objects.get('channels.radio.Fixture_radio').common.name, '200');
+    assert.equal(h.adapter.objects.has('channels.radio.Fixture_radio'), false);
     assert.equal(h.adapter.objects.get('channels.tv.Fixture_first').common.desc, 'Fixture first');
     assert.equal(h.adapter.objects.get('channels.tv.Fixture_first').common.custom['history.0'].enabled, true);
     assert.equal(h.adapter.dynamicCalls.some(call => call.operation === 'delete'), false);
@@ -1215,9 +753,9 @@ test('v1 grouped cache and native folders migrate offline to name IDs and remove
     const legacy = [legacyService('first', [1, 100, 1000]), legacyService('radio', [100], 'audio')];
     for (const cache of [true, false]) {
         const h = await harness(t, adapter => installLegacy(adapter, legacy, cache));
-        assert.equal(h.runtime.channelObjects.services.size, 2);
+        assert.equal(h.runtime.channelObjects.services.size, 1);
         assert.equal(h.client.calls.length, 0);
-        for (const id of ['channels.tv.Fixture_first', 'channels.radio.Fixture_radio']) {
+        for (const id of ['channels.tv.Fixture_first']) {
             assert.ok(h.adapter.objects.has(id), id);
             assert.deepEqual(state(h, `${id}.select`), { val: false, ack: true });
             assert.equal(h.adapter.objects.get(id).native.channelService.schemaVersion, 3);

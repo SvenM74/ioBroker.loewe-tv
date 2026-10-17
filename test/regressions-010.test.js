@@ -26,6 +26,8 @@ function makeHarness(AdapterRuntimeClass, config = {}) {
         states, logs,
         log: Object.fromEntries(['debug', 'info', 'warn', 'error'].map(level => [level, value => logs.push({ level, value })])),
         async extendObjectAsync() {},
+        async delObjectAsync() {},
+        async getObjectListAsync() { return { rows: [] }; },
         async getStateAsync(id) { return states.get(id) || null; },
         async setStateAsync(id, state) {
             if (adapter.failWrites) throw new Error('Simulated states database write failure');

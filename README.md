@@ -8,6 +8,12 @@ Die Grundlage ist die aus der Android-App **Loewe App 1.4.7** extrahierte Netzwe
 
 0.1.1 behebt einen reproduzierbaren Fehler beim Verarbeiten bestimmter fehlerhafter TV-Antworten und trennt das Aufwecken von wartenden TV-Abfragen. Ob genau dieser Fehler eine konkrete gemeldete ioBroker-Störung verursacht hat, ist ohne entsprechende Protokolle nicht belegt.
 
+## Projektziel: Aufnahmen anhand von EPG-Regeln
+
+Der geplante Ausbau soll ioBroker ermöglichen, Programmdaten auszuwerten, passende Sendungen zu erkennen und dafür im Voraus Aufnahmetimer im Loewe-TV anzulegen. Regeln, beispielsweise für bestimmte Titel, Sender und Zeiträume, werden in ioBroker gesteuert. Der Adapter soll die Sender- und EPG-Daten bereitstellen, Aufnahmeaufträge übertragen und anhand der TV-Timerliste bestätigen.
+
+Diese Automatik ist in 0.1.1 noch nicht umgesetzt. Die [Roadmap für EPG und automatische Aufnahmen](docs/ROADMAP.md) beschreibt die vorhandenen Schnittstellen, die geplanten Datenpunkte und die noch erforderlichen Gerätetests.
+
 ## Voraussetzungen
 
 - Node.js ab **22**.
@@ -404,13 +410,13 @@ Die Tabelle nennt die XML-Elemente innerhalb von `parametersXml`. `A/B` bezeichn
 | `GetSettings` | Keine. |
 | `SetSetting` | `Name`, `Value`. |
 | `GetVolumes` | `QueryParameters/Range` mit `@startIndex`, `@maxItems`; `AdditionalParameters/Properties` mit `@isActiveList`, `@hasPurpose`. |
-| `ProgramTimer` | `Device`, `RecordingType`, `Locator`; `Timer` mit `@starttime`, `@duration`, `@repeatDays`. |
+| `ProgramTimer` | `Device`, `RecordingType`, `Locator`; `Timer` mit `@starttime` als Unixsekunden, `@duration` in Sekunden und `@repeatDays`. Die Original-App verwendet `PVR`, `default` und `repeatDays=0`. Siehe [Aufnahme-Roadmap](docs/ROADMAP.md#aufnahmebefehle-aus-dem-tatsächlichen-app-ablauf). |
 | `GetTimerList` | Keine. |
 | `CreateIterator` | `TableName`, `Type`, `Selections`, `Fields`, `Orders`, `NotifyUpdate`. |
 | `CloseIterator` | `Ids`. |
 | `ActivateFeaturePackage` | `Package`. |
 
-Die Extraktion liefert die Namen und den Aufbau dieser Parameter. Daraus folgt keine vollständige Spezifikation aller zulässigen Werte, etwa für `RecordingType`, die Zeiteinheiten eines Timers oder TV-spezifische Einstellungsnamen. Solche Werte werden im Adapter nicht erfunden.
+Die Extraktion liefert die Namen und den Aufbau dieser Parameter. Für `ProgramTimer` sind inzwischen die oben genannten Werte und Zeiteinheiten aus dem tatsächlichen App-Ablauf nachvollzogen. Andere Werte für `RecordingType`, die Wahl bestimmter Aufnahmeziele, weitere `repeatDays`-Werte oder TV-spezifische Einstellungsnamen sind dadurch nicht vollständig spezifiziert. Die Aufnahmefunktion muss am konkreten Gerät geprüft werden.
 
 ## Ein- und Ausschalten
 

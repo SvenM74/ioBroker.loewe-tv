@@ -14,9 +14,9 @@ Die folgenden Ergebnisse stammen aus den Gerätetests des Nutzers. Sie gelten f�
 
 | Modell | Chassis | TV-Software | Gemeldeter Stand am 18.10.2026 |
 |---|---|---|---|
-| **Loewe bild 7.55** | **SL420** | **V5.4.6.0** | Direkter TV-EPG-Abruf bestätigt; frühere Rückmeldungen zu Fernbedienung, Senderlisten und TV-Auswahl siehe unten. |
-| **Loewe bild 5.32** | **SL310F** | **V5.4.6.0** | Direkter TV-EPG-Abruf bestätigt. Für die übrigen Funktionen liegt noch kein gesonderter Testbericht vor. |
-| **Loewe Connect 26 SL** | **MB180** laut Herstellerunterlagen | Nicht mitgeteilt | Mit dieser Steuerung laut Nutzer nicht kompatibel. Keine bestätigte native IP-Fernsteuerung für diesen Adapter gefunden. |
+| **Loewe bild 7.55** | **SL420** | **V5.4.6.0** | Direkter TV-EPG-Abruf; Fernbedienung, Senderlisten und TV-Auswahl. |
+| **Loewe bild 5.32** | **SL310F** | **V5.4.6.0** | Direkter TV-EPG-Abruf; Fernbedienung, Senderlisten und TV-Auswahl. |
+| **Loewe Connect 26 SL** | **MB180** laut Herstellerunterlagen | Nicht mitgeteilt | Mit dieser Steuerung laut kompatibel. Keine bestätigte native IP-Fernsteuerung für diesen Adapter gefunden. |
 
 Der **Connect 26 SL** verwendet eine andere Geräteplattform. Sein Namenszusatz „SL“ bedeutet keine Zugehörigkeit zu den Chassis SL2xx/SL3xx/SL4xx. Netzwerk-Medienwiedergabe ist dokumentiert; eine Unterstützung der hier verwendeten Tablet-Schnittstelle ist für MB180 nicht nachgewiesen. Quellen und mögliche alternative Steuerwege stehen in [Gerätekompatibilität](docs/COMPATIBILITY.md#loewe-connect-26-sl).
 

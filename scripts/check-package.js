@@ -18,10 +18,10 @@ const catalog = readJson('docs/protocol-templates.json');
 const remote115 = readJson('docs/remote115-keys.json');
 
 assert.equal(pkg.name, `iobroker.${io.common.name}`);
-assert.equal(pkg.version, '0.1.9');
+assert.equal(pkg.version, '0.1.10');
 assert.equal(pkg.version, io.common.version);
 assert.ok(BUILD_ID.startsWith(`${pkg.version}-`), 'Build identifier must match package version');
-assert.equal(BUILD_ID, '0.1.9-tv-discovery.1');
+assert.equal(BUILD_ID, '0.1.10-epg-guide.1');
 assert.ok(!pkg.keywords.includes('xmltv'), 'Package keywords must describe the supported TV-only EPG');
 assert.equal(io.common.mode, 'daemon');
 assert.equal(io.common.messagebox, true, 'Admin list selection requires adapter messaging');
@@ -32,6 +32,12 @@ assert.equal(io.common.compact, false, 'This adapter must run outside a shared c
 assert.ok(fs.existsSync(path.join(root, pkg.main)));
 assert.ok(fs.existsSync(path.join(root, 'admin', io.common.icon)));
 assert.equal(admin.i18n, true);
+assert.equal(io.common.globalDependencies.find(dependency => dependency.admin)?.admin, '>=7.7.28',
+    'The embedded programme guide needs native iframeSendTo support');
+assert.equal(admin.items._epg.items._epgGuide.type, 'iframeSendTo');
+for (const asset of ['epg.html', 'epg.css', 'epg.js', 'epg-bridge.js']) {
+    assert.ok(fs.statSync(path.join(root, 'admin', asset)).isFile(), `Missing programme guide asset: ${asset}`);
+}
 
 const configFields = new Set();
 const translationKeys = new Set();
@@ -161,7 +167,7 @@ assert.ok(!Object.values(KEYS).some(key => [1337, 1338].includes(key.value)), 'L
 console.log(`APK contract valid: ${catalog.templates.length} exact XML templates, ${actions.size} actions, 29 original and 11 additional APK key mappings; TV_ON and TV_MODE_ON verified against Remote API 1.0.47, sections 9.4.3 and 9.4.1.1.`);
 
 // Check syntax without importing adapter-core or starting an ioBroker process.
-for (const directory of ['', 'lib', 'scripts', 'test']) {
+for (const directory of ['', 'lib', 'admin', 'scripts', 'test']) {
     for (const entry of fs.readdirSync(path.join(root, directory), { withFileTypes: true })) {
         if (!entry.isFile() || !entry.name.endsWith('.js')) continue;
         const file = path.join(root, directory, entry.name);

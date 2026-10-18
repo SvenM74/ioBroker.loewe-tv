@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Loewe TV · Programmübersicht</title>
+    <link rel="stylesheet" href="epg.css">
+    <script src="epg-bridge.js" defer></script>
+    <script src="epg.js" defer></script>
+</head>
+<body>
+    <main class="guide" id="epgGuide" aria-busy="true">
+        <header class="guide-heading">
+            <div>
+                <p class="eyebrow">LOEWE TV</p>
+                <h1 data-i18n="heading">Programmübersicht</h1>
+            </div>
+            <div class="heading-meta">
+                <div class="list-meta">
+                    <span class="list-name" id="listName"></span>
+                    <span class="saved-configuration" data-i18n="savedConfiguration">Gespeicherte Instanz-Konfiguration</span>
+                </div>
+                <button class="button refresh-button" id="refreshGuide" type="button" disabled>
+                    <span class="refresh-symbol" aria-hidden="true">↻</span>
+                    <span data-i18n="refresh">EPG aktualisieren</span>
+                </button>
+            </div>
+        </header>
+
+        <section class="programme-detail" id="programmeDetail" aria-labelledby="programmeTitle">
+            <div class="station-preview" aria-hidden="true">
+                <span class="station-preview-caption" data-i18n="tvChannel">TV-KANAL</span>
+                <span class="station-preview-number" id="detailNumber">·</span>
+                <span class="station-preview-name" id="detailStation"></span>
+            </div>
+            <div class="programme-copy">
+                <div class="programme-kicker">
+                    <span id="detailChannel" data-i18n="chooseProgramme">Sendung auswählen</span>
+                    <span class="programme-state" id="detailState" hidden></span>
+                </div>
+                <h2 id="programmeTitle" data-i18n="loading">Programmübersicht wird geladen …</h2>
+                <div class="programme-times" id="detailTimes"></div>
+                <p class="programme-subtitle" id="detailSubtitle" hidden></p>
+                <p class="programme-description" id="detailDescription" data-i18n="loadingDescription">Die vorhandenen Programmdaten werden aus dem Adapter geladen.</p>
+                <div class="programme-progress" id="detailProgress" hidden aria-hidden="true"><span id="detailProgressBar"></span></div>
+            </div>
+        </section>
+
+        <section class="guide-controls" aria-label="Programmübersicht einstellen" data-i18n-aria="controls">
+            <div class="date-controls">
+                <button class="icon-button" id="previousDay" type="button" title="Vorheriger Tag" aria-label="Vorheriger Tag" data-i18n-title="previousDay" data-i18n-aria="previousDay">‹</button>
+                <label class="date-picker">
+                    <span class="sr-only" data-i18n="date">Datum</span>
+                    <input id="guideDate" type="date" aria-label="Datum" data-i18n-aria="date">
+                </label>
+                <button class="icon-button" id="nextDay" type="button" title="Nächster Tag" aria-label="Nächster Tag" data-i18n-title="nextDay" data-i18n-aria="nextDay">›</button>
+                <button class="button now-button" id="showNow" type="button" data-i18n="now">Jetzt</button>
+            </div>
+            <div class="time-controls">
+                <button class="icon-button" id="previousHour" type="button" title="Eine Stunde zurück" aria-label="Eine Stunde zurück" data-i18n-title="previousHour" data-i18n-aria="previousHour">‹</button>
+                <span class="visible-period" id="visiblePeriod"></span>
+                <button class="icon-button" id="nextHour" type="button" title="Eine Stunde weiter" aria-label="Eine Stunde weiter" data-i18n-title="nextHour" data-i18n-aria="nextHour">›</button>
+                <label class="duration-picker">
+                    <span class="sr-only" data-i18n="duration">Angezeigter Zeitraum</span>
+                    <select id="guideDuration" aria-label="Angezeigter Zeitraum" data-i18n-aria="duration">
+                        <option value="2" data-i18n="twoHours">2 Stunden</option>
+                        <option value="3" selected data-i18n="threeHours">3 Stunden</option>
+                        <option value="6" data-i18n="sixHours">6 Stunden</option>
+                    </select>
+                </label>
+            </div>
+            <label class="channel-search">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg>
+                <span class="sr-only" data-i18n="search">Sender suchen</span>
+                <input id="channelSearch" type="search" autocomplete="off" placeholder="Sender suchen" data-i18n-placeholder="search">
+            </label>
+        </section>
+
+        <div class="guide-status" id="guideStatus" role="status" aria-live="polite">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="statusText" data-i18n="connecting">Verbindung zum Adapter wird hergestellt …</span>
+            <button class="text-button" id="retryGuide" type="button" data-i18n="retry" hidden>Ansicht erneut laden</button>
+        </div>
+
+        <section class="timeline-section" aria-label="TV-Programm nach Sender und Uhrzeit" data-i18n-aria="timeline">
+            <div class="timeline-scroll" id="timelineScroll" tabindex="0" aria-label="Programmtabelle, horizontal und vertikal scrollbar" data-i18n-aria="scrollable">
+                <div class="timeline-grid" id="timelineGrid" role="grid" aria-label="TV-Programm" aria-describedby="keyboardHelp" data-i18n-aria="grid"></div>
+                <div class="empty-guide" id="emptyGuide" hidden>
+                    <div class="empty-symbol" aria-hidden="true">≡</div>
+                    <h3 id="emptyTitle" data-i18n="noChannels">Noch keine TV-Sender vorhanden</h3>
+                    <p id="emptyDescription" data-i18n="noChannelsDescription">Wähle eine Senderliste in der Instanz-Konfiguration und speichere die Einstellungen.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="guide-footer">
+            <span id="guideSummary"></span>
+            <span data-i18n="dataSource">Programmdaten vom Fernseher</span>
+            <span id="keyboardHelp" data-i18n="keyboardHelp">Sendung anklicken für Details. Mit den Pfeiltasten zwischen Sendungen wechseln.</span>
+        </footer>
+        <p class="source-note" data-i18n="sourceNote">Angezeigt werden die vom Fernseher gelieferten Sendungen. Leere Bereiche enthalten noch keine Programmdaten. Die Auswahl einer Sendung schaltet den Fernseher nicht um.</p>
+    </main>
+</body>
+</html>

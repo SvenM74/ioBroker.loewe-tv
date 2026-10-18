@@ -1,11 +1,11 @@
 # Installation und Bedienung
 
-Diese Anleitung gilt für **Version 0.1.9**, Build **`0.1.9-tv-discovery.1`**. Sie beschreibt Installation, Update, die neue Netzwerksuche in der Instanz-Konfiguration, TV-Steuerung und den reduzierten Datenpunktbaum. Der Adapter liest Programminformationen ausschließlich direkt vom Fernseher. Die bestätigten Geräte stehen in der [README](../README.md#getestete-geräte).
+Diese Anleitung gilt für **Version 0.1.10**, Build **`0.1.10-epg-guide.1`**. Sie beschreibt Installation, Update, die Programmübersicht im EPG-Reiter, die Netzwerksuche in der Instanz-Konfiguration, TV-Steuerung und den reduzierten Datenpunktbaum. Der Adapter liest Programminformationen ausschließlich direkt vom Fernseher. Die bestätigten Geräte stehen in der [README](../README.md#getestete-geräte).
 
 ## Voraussetzungen
 
 - Node.js ab **22**.
-- ioBroker js-controller ab **6.0.11** und Admin ab **7.0.23**.
+- ioBroker js-controller ab **6.0.11** und Admin ab **7.7.28**.
 - Ein Loewe-Fernseher, der die Tablet-Schnittstelle auf TCP-Port **905** anbietet.
 - Eine Netzwerkverbindung vom ioBroker-Rechner zum Fernseher. Zum Einrichten den Fernseher einschalten.
 - Für Einschalten aus dem Standby: **Schnellstart am Fernseher aktivieren**, eine passende TV-MAC-Adresse und Unterstützung für Wake-on-LAN im Fernseher und im Netzwerk. Ohne Schnellstart ist das Einschalten per Datenpunkt laut [Gerätetest](COMPATIBILITY.md#einschalten-aus-dem-standby) nicht möglich.
@@ -14,7 +14,7 @@ Der laufende Adapter arbeitet lokal. Für die Installation kann ioBroker benöti
 
 ## Installationspaket aus dem Quellcode erzeugen
 
-Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Du kannst das Paket mit den folgenden Schritten selbst erzeugen. Wenn du **`iobroker.loewe-tv-0.1.9-tv-discovery.1.tgz`** bereits erhalten hast, verwende diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung.
+Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Du kannst das Paket mit den folgenden Schritten selbst erzeugen. Wenn du **`iobroker.loewe-tv-0.1.10-epg-guide.1.tgz`** bereits erhalten hast, verwende diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung.
 
 Zum Erzeugen des Pakets brauchst du Git und Node.js ab 22. Öffne ein Terminal in einem eigenen Arbeitsverzeichnis und führe aus:
 
@@ -24,31 +24,32 @@ cd ioBroker.loewe-tv
 npm install
 npm test
 npm pack
-mv iobroker.loewe-tv-0.1.9.tgz iobroker.loewe-tv-0.1.9-tv-discovery.1.tgz
+mv iobroker.loewe-tv-0.1.10.tgz iobroker.loewe-tv-0.1.10-epg-guide.1.tgz
 ```
 
-`npm pack` erzeugt zunächst **`iobroker.loewe-tv-0.1.9.tgz`**. Der letzte Befehl ergänzt die Build-Kennung im Dateinamen zu **`iobroker.loewe-tv-0.1.9-tv-discovery.1.tgz`**. Prüfe vor dem Erzeugen in `lib/build-info.js`, dass die Build-Kennung **`0.1.9-tv-discovery.1`** enthalten ist. Kopiere anschließend das neue Archiv auf den ioBroker-Rechner.
+`npm pack` erzeugt zunächst **`iobroker.loewe-tv-0.1.10.tgz`**. Der letzte Befehl ergänzt die Build-Kennung im Dateinamen zu **`iobroker.loewe-tv-0.1.10-epg-guide.1.tgz`**. Prüfe vor dem Erzeugen in `lib/build-info.js`, dass die Build-Kennung **`0.1.10-epg-guide.1`** enthalten ist. Kopiere anschließend das neue Archiv auf den ioBroker-Rechner.
 
 <a id="update-auf-018"></a>
+<a id="update-auf-019"></a>
 
-## Update auf 0.1.9
+## Update auf 0.1.10
 
-**Aktueller Stand: Version 0.1.9, Build `0.1.9-tv-discovery.1`, mit TV-Netzwerksuche in der Instanz-Konfiguration.** Im Reiter **Verbindung** gibt es **Fernseher suchen** und **Gefundene Fernseher**. Die Suche bietet alle im Suchlauf erkannten Loewe-TV-Adressen mit Gerätename beziehungsweise Modell an, soweit vom Gerät angegeben. Eine Auswahl übernimmt die Adresse zunächst nur in das Formular; erst Speichern wendet sie an. Der direkte TV-EPG-Abruf bleibt erhalten. Für diesen neuen Build und die Gerätesuche steht ein eigener Gerätetest noch aus. Der [Prüfbericht zu `0.1.8-tv-epg-only.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die vorherige TV-EPG-Überarbeitung.
+**Aktueller Stand: Version 0.1.10, Build `0.1.10-epg-guide.1`, mit Programmübersicht direkt in den EPG-Einstellungen der Instanz.** Die ausgewählte TV-Senderliste erscheint mit Zeitachse, Programmkacheln und Details der ausgewählten Sendung. Die Vorschau verwendet bereits geladene TV-Daten; ein Klick auf **EPG aktualisieren** startet bei Bedarf einen neuen Abruf im Hintergrund. Datum, Zeitfenster und Sendersuche helfen beim Navigieren. Dafür wird **Admin ab 7.7.28** benötigt. Die [Anleitung zur Programmübersicht](EPG_GUI.md) beschreibt Bedienung und Grenzen. Für diesen Build liegt noch kein eigener Gerätetest vor. Der [Prüfbericht zu `0.1.8-tv-epg-only.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die vorherige TV-EPG-Überarbeitung.
 
-**Für das Update das neue Paket installieren; ein Neustart allein übernimmt die neuen Funktionen nicht.** Die vorhandene Instanz weiterverwenden. Erzeuge das Paket aus dem aktuellen Quellcode wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende das bereitgestellte Archiv **`iobroker.loewe-tv-0.1.9-tv-discovery.1.tgz`**. Kopiere es auf den ioBroker-Rechner, beispielsweise nach `/tmp`, und führe aus:
+**Für das Update das neue Paket installieren; ein Neustart allein übernimmt die neuen Funktionen nicht.** Die vorhandene Instanz weiterverwenden. Erzeuge das Paket aus dem aktuellen Quellcode wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende das bereitgestellte Archiv **`iobroker.loewe-tv-0.1.10-epg-guide.1.tgz`**. Kopiere es auf den ioBroker-Rechner, beispielsweise nach `/tmp`, und führe aus:
 
 ```bash
 iobroker stop loewe-tv.0
 iobroker compact loewe-tv.0 disable
-iobroker url /tmp/iobroker.loewe-tv-0.1.9-tv-discovery.1.tgz loewe-tv
+iobroker url /tmp/iobroker.loewe-tv-0.1.10-epg-guide.1.tgz loewe-tv
 iobroker start loewe-tv.0
 ```
 
-Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Ab Version 0.1.1 läuft der Adapter in einem eigenen Prozess; das gilt auch für 0.1.9. Die Umstellung erfolgt vor dem Paketupdate, damit sie auch bei einer vorhandenen Instanz wirksam wird. Die Syntax ist in der [offiziellen ioBroker-CLI-Dokumentation](https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/config/cli.md) beschrieben. Verbindungs- und Einschalteinstellungen bleiben erhalten. **Eine bereits in 0.1.6 gespeicherte Senderlistenauswahl bleibt erhalten.** Beim Update von einem älteren Stand muss die Liste einmal in der Konfiguration ausgewählt werden; ein früherer Wert in `channels.view` wird nicht automatisch übernommen.
+Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Ab Version 0.1.1 läuft der Adapter in einem eigenen Prozess; das gilt auch für 0.1.10. Die Umstellung erfolgt vor dem Paketupdate, damit sie auch bei einer vorhandenen Instanz wirksam wird. Die Syntax ist in der [offiziellen ioBroker-CLI-Dokumentation](https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/config/cli.md) beschrieben. Verbindungs- und Einschalteinstellungen bleiben erhalten. **Eine bereits in 0.1.6 gespeicherte Senderlistenauswahl bleibt erhalten.** Beim Update von einem älteren Stand muss die Liste einmal in der Konfiguration ausgewählt werden; ein früherer Wert in `channels.view` wird nicht automatisch übernommen.
 
 Beim Start werden **`loewe-tv.0.channels.radio`**, **`loewe-tv.0.api`** und **`loewe-tv.0.media`** einschließlich ihrer Unterobjekte sowie `remote.radio_mode_on` und `channels.mediaType` entfernt. Das gilt auch für verwaiste Kinder, deren oberster Ordner bereits fehlt. Alte Radioeinträge aus dem gespeicherten Katalog erzeugen keine neuen Radioordner. Schreibbefehle an entfernte Datenpunkte lösen keine Adapterfunktion mehr aus. `remote.tv_mode_on` und `remote.text` für Teletext bleiben verfügbar.
 
-Lade nach dem Update die Admin-Seite vollständig neu, beispielsweise mit **Strg+F5**, und öffne die Instanzeinstellungen erneut. Im Reiter **Verbindung** sollte die neue Suche sichtbar sein. Du kannst die bisherige TV-Adresse unverändert weiterverwenden oder [einen Fernseher suchen und auswählen](#fernseher-suchen-und-auswählen). Im Reiter **EPG** werden nur **Programminformationen aktivieren** und das **Abrufintervall** angezeigt. Eine vorhandene Senderlistenauswahl weiterverwenden; andernfalls bei eingeschaltetem TV die gewünschte Senderliste wählen und speichern. Die Anleitung steht unter [TV-Senderliste auswählen](#tv-senderliste-auswählen). Prüfe anschließend **`info.adapterBuild = 0.1.9-tv-discovery.1`**. Fehlt dieser Wert oder steht dort eine ältere Kennung, prüfe Paketinstallation und Startprotokoll. Das Startprotokoll enthält die Build-Kennung bereits vor der Bereinigung. Bleiben entfernte globale Objekte wegen eines Datenbankfehlers oder Löschschutzes stehen, meldet der Adapter einen Bereinigungsfehler und setzt die Senderanlage nicht fort.
+Lade nach dem Update die Admin-Seite vollständig neu, beispielsweise mit **Strg+F5**, und öffne die Instanzeinstellungen erneut. Im Reiter **Verbindung** bleibt die Fernseher-Suche verfügbar. Du kannst die bisherige TV-Adresse unverändert weiterverwenden oder [einen Fernseher suchen und auswählen](#fernseher-suchen-und-auswählen). Im Reiter **EPG** erscheint die neue Programmübersicht unter **Programminformationen aktivieren** und dem **Abrufintervall**. Dafür muss die Instanz laufen; die Vorschau zeigt die gespeicherte Konfiguration. Eine vorhandene Senderlistenauswahl weiterverwenden; andernfalls bei eingeschaltetem TV die gewünschte Senderliste wählen und speichern. Die Anleitung steht unter [TV-Senderliste auswählen](#tv-senderliste-auswählen). Prüfe anschließend **`info.adapterBuild = 0.1.10-epg-guide.1`**. Fehlt dieser Wert oder steht dort eine ältere Kennung, prüfe Paketinstallation und Startprotokoll. Das Startprotokoll enthält die Build-Kennung bereits vor der Bereinigung. Bleiben entfernte globale Objekte wegen eines Datenbankfehlers oder Löschschutzes stehen, meldet der Adapter einen Bereinigungsfehler und setzt die Senderanlage nicht fort.
 
 **Beim Update von einem Stand mit Namens-IDs bleiben die TV-Senderpfade erhalten.** Nur beim Wechsel von älteren Hash- oder Nummernordnern ändern sich die IDs einmalig: Aus `channels.tv.service_<Hash>` aus 0.1.3 oder `channels.tv.1` aus dem ersten 0.1.4-Stand werden Ordner wie `channels.tv.Das_Erste_HD`. Passe vorhandene Skripte, Aliase und Visualisierungen an, wenn sie noch auf diese alten IDs verweisen. Anschließend bleibt der Pfad beim Umsortieren erhalten: Verschiebst du Das Erste HD am TV von Platz 1 auf Platz 7, verwendet `channels.tv.Das_Erste_HD.select` nach dem Abgleich dessen neuen Programmplatz. Eine tatsächliche Änderung des Sendernamens führt dagegen zu einer neuen Namens-ID.
 
@@ -76,12 +77,12 @@ Die sieben entfernten Kinddatenpunkte je Sender werden nur gelöscht, wenn sie a
 
 ## Erstinstallation aus der Paketdatei
 
-1. Erzeuge **`iobroker.loewe-tv-0.1.9-tv-discovery.1.tgz`** wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Die Datei nicht entpacken.
-2. Kopiere sie auf den Rechner, auf dem ioBroker läuft, beispielsweise nach `/tmp/iobroker.loewe-tv-0.1.9-tv-discovery.1.tgz`.
+1. Erzeuge **`iobroker.loewe-tv-0.1.10-epg-guide.1.tgz`** wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Die Datei nicht entpacken.
+2. Kopiere sie auf den Rechner, auf dem ioBroker läuft, beispielsweise nach `/tmp/iobroker.loewe-tv-0.1.10-epg-guide.1.tgz`.
 3. Öffne dort ein Terminal oder eine SSH-Verbindung und führe aus:
 
 ```bash
-iobroker url /tmp/iobroker.loewe-tv-0.1.9-tv-discovery.1.tgz loewe-tv
+iobroker url /tmp/iobroker.loewe-tv-0.1.10-epg-guide.1.tgz loewe-tv
 ```
 
 4. Lege beim ersten Installieren eine Instanz an:
@@ -145,7 +146,7 @@ Bei ausgeschaltetem TV, laufender TV-Synchronisierung oder einem Abruffehler zei
 
 ### EPG
 
-Im Reiter **EPG** gibt es zwei Einstellungen: **Programminformationen aktivieren** ist standardmäßig eingeschaltet, das **Abrufintervall** steht auf **900 Sekunden**. Die Daten werden direkt vom TV gelesen. Bei vorhandenen TV-Senderordnern beginnt der Abruf nach dem Start automatisch. Ein Intervall von `0` deaktiviert auch diesen Erstabruf; **`channels.epgRefresh=true`** startet bei aktiviertem EPG weiterhin einen manuellen Abgleich. Zulässig sind `0` oder ganze Werte von 300 bis 86.400 Sekunden. Die [EPG-Anleitung](EPG.md) erklärt Datenfelder, Cache und Statuswerte.
+Im Reiter **EPG** gibt es zwei Einstellungen: **Programminformationen aktivieren** ist standardmäßig eingeschaltet, das **Abrufintervall** steht auf **900 Sekunden**. Die Daten werden direkt vom TV gelesen. Bei vorhandenen TV-Senderordnern beginnt der Abruf nach dem Start automatisch. Ein Intervall von `0` deaktiviert auch diesen Erstabruf; **`channels.epgRefresh=true`** startet bei aktiviertem EPG weiterhin einen manuellen Abgleich. Zulässig sind `0` oder ganze Werte von 300 bis 86.400 Sekunden. Unter den Einstellungen steht ab 0.1.10 die [Programmübersicht](EPG_GUI.md) mit allen Sendern der ausgewählten TV-Liste, Zeitachse und Sendungsdetails. **EPG aktualisieren** startet denselben manuellen Abruf im Hintergrund. Das Öffnen, Durchblättern und Suchen greift auf den vorhandenen Cache zu. Die [EPG-Anleitung](EPG.md) erklärt Datenfelder, Cache und Statuswerte.
 
 ### Einschalten
 
@@ -391,7 +392,7 @@ Die Zuordnung bleibt bei unveränderter Listenwahl über einen Adapterneustart h
 | Datenpunkt | Bedeutung |
 |---|---|
 | `info.connection` | Ob der Fernseher zuletzt über die Steuerschnittstelle erreichbar war. |
-| `info.adapterBuild` | Eindeutiger Programmstand; für diese Fassung `0.1.9-tv-discovery.1`. |
+| `info.adapterBuild` | Eindeutiger Programmstand; für diese Fassung `0.1.10-epg-guide.1`. |
 | `info.lastSeen` | Zeitpunkt der letzten erfolgreichen Kommunikation als Unix-Zeit in Millisekunden. |
 | `info.lastError` | Letzter gemeldeter Fehler. Wird nach einem erfolgreichen Vorgang wieder geleert. |
 | `info.lastCommand` | Zuletzt verarbeiteter Steuerbefehl. |
@@ -484,14 +485,15 @@ Die zweite App Löwenbändiger Remote 1.15 lieferte keinen nachgewiesenen WOL-Ab
 | Schnellstart ist deaktiviert und der TV im Standby nicht erreichbar | Mit der normalen Fernbedienung einschalten und Schnellstart am TV aktivieren. Im gemeldeten Gerätetest werden ohne Schnellstart die Netzwerkfunktionen abgeschaltet; der Adapter kann diese Einstellung dann nicht ändern. |
 | `info.wakeReady` ist `true`, aber der TV startet nicht | Zuerst Schnellstart und Einschalten über LAN am TV prüfen. `info.wakeReady` belegt nur eine bekannte MAC-Adresse. Anschließend `info.lastWakeOnLan` und `info.powerOn` prüfen. Nach dem Ausschalten mindestens 30 Sekunden warten. `powerKeySent` bestätigt nur die Antwort auf den Einschaltbefehl, kein Bild. |
 | Ein Einschaltversuch aktualisiert `info.lastWakeOnLan` nicht | `info.lastError` lesen und prüfen, ob `control.powerOn` mit `true` und `ack: false` geschrieben wurde. Eine frühere Versandmeldung ist kein Nachweis für den aktuellen Versuch. |
-| ioBroker wird nach dem Aktivieren der bisherigen Version träge | `loewe-tv.0` stoppen und die Updateanleitung auf 0.1.9 einschließlich der instanzbezogenen Compact-Umstellung ausführen. Für die anschließende Prüfung `pollInterval`, `channelRefreshInterval` und `epgRefreshInterval` auf 0 setzen. |
+| ioBroker wird nach dem Aktivieren der bisherigen Version träge | `loewe-tv.0` stoppen und die Updateanleitung auf 0.1.10 einschließlich der instanzbezogenen Compact-Umstellung ausführen. Für die anschließende Prüfung `pollInterval`, `channelRefreshInterval` und `epgRefreshInterval` auf 0 setzen. |
 | **Fernseher suchen** ist deaktiviert | Die Instanz in der Instanzübersicht aktivieren und ihren Start abwarten. Das ist auch bei noch leerer TV-Adresse möglich. Die Suchfunktion benötigt eine laufende Instanz. |
 | Die Suche findet keinen oder nur einen Teil der Fernseher | Die fehlenden TVs einschalten. Netzwerkverbindung vom ioBroker-Rechner, Multicast, Gastnetz/VLAN und bei Docker das Container-Netz prüfen. Suche erneut auslösen oder die IP-Adresse von Hand eintragen; siehe [Netzwerksuche](NETWORK_DISCOVERY.md#wenn-ein-fernseher-fehlt). |
 | Ein Suchtreffer meldet **Steuerport 905 nicht erreichbar** | Die Adresse wurde als Loewe-TV erkannt, die TCP-Verbindung zum Steuerport konnte aber nicht bestätigt werden. TV einschalten, Port und Netzwerk prüfen. Ein Treffer allein bestätigt keine Adapterkompatibilität. |
-| Speichern-Tasten sind blockiert oder die alte EPG-Maske wird angezeigt | Das neue Paket erneut installieren, `info.adapterBuild = 0.1.9-tv-discovery.1` prüfen, Admin vollständig neu laden und die Konfiguration erneut öffnen. Im EPG-Reiter stehen nur Aktivieren und Abrufintervall. |
+| Speichern-Tasten sind blockiert oder die alte EPG-Maske wird angezeigt | Das neue Paket erneut installieren, `info.adapterBuild = 0.1.10-epg-guide.1` prüfen, Admin vollständig neu laden und die Konfiguration erneut öffnen. Im EPG-Reiter stehen Aktivieren, Abrufintervall und bei laufender Instanz die Programmübersicht. Admin ab 7.7.28 ist erforderlich. |
 | Senderabfrage scheitert | In der Adapter-Konfiguration eine verfügbare TV-Senderliste auswählen und speichern. `channels.view` zeigt die gespeicherte Kennung. `channels.refreshStatus`, `channels.refreshError` und `channels.catalogError` prüfen. Bei TV-Synchronisierung später wiederholen. |
 | In der Konfiguration fehlen Senderlisten | TV einschalten, Adresse und Port speichern, Instanz aktivieren und Einstellungen erneut öffnen. **Senderlisten neu laden** betätigen und den angezeigten Hinweis beachten. |
-| Entfernte globale Datenpunkte sind weiterhin vorhanden | `info.adapterBuild` muss `0.1.9-tv-discovery.1` zeigen. Sonst das neue Paket erneut installieren. Bei passender Build-Kennung das Startprotokoll auf Bereinigungsfehler und Löschschutz prüfen; die Objektansicht anschließend neu laden. |
+| Programmübersicht fehlt oder ist leer | Admin ab 7.7.28 verwenden, die Instanz starten und Admin nach dem Paketupdate neu laden. Gespeicherte TV-Adresse und Senderliste prüfen. In der Übersicht **EPG aktualisieren** anklicken; leere Senderbereiche können auf fehlende TV-Daten hinweisen. [Weitere Hilfe](EPG_GUI.md). |
+| Entfernte globale Datenpunkte sind weiterhin vorhanden | `info.adapterBuild` muss `0.1.10-epg-guide.1` zeigen. Sonst das neue Paket erneut installieren. Bei passender Build-Kennung das Startprotokoll auf Bereinigungsfehler und Löschschutz prüfen; die Objektansicht anschließend neu laden. |
 | Sender wurden empfangen, unter `channels.tv` fehlen noch Objekte | `channels.catalogStatus` prüfen und bei `updating` die Hintergrundaufbereitung abwarten. Bei `error` steht die Ursache in `channels.catalogError`; danach die passende Senderliste erneut abfragen. |
 | Ein Sendertaster meldet `CHANNEL_UNAVAILABLE` | Die Liste dieses Senders erneut abfragen. Bei `available=false` gehört er nicht zum aktiven Bestand oder es fehlt ein verwendbarer Locator. Nach Änderungen während der Wartezeit den Sender erneut auswählen. |
 | Der Sendertaster ist wieder `false`, aber der Sender läuft nicht | Das Rücksetzen bestätigt nur die Verarbeitung des Tasters. `channels.lastSelection` auf TV-Ergebnis und Fehler prüfen. Die Annahme des Befehls allein bestätigt noch keine Wiedergabe. |
@@ -518,6 +520,7 @@ Die universellen API-Datenpunkte, die Radiosteuerung und der gesamte `media`-Dat
 
 ## Weiterführende Dokumentation
 
+- [Programmübersicht in den Instanz-Einstellungen](EPG_GUI.md)
 - [EPG: laufende und nächste Sendung](EPG.md)
 - [Fernseher im Netzwerk suchen und auswählen](NETWORK_DISCOVERY.md)
 - [Gerätekompatibilität und bestätigte Tests](COMPATIBILITY.md)

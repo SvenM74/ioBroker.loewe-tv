@@ -3,10 +3,30 @@
 const utils = require('@iobroker/adapter-core');
 const { AdapterRuntime } = require('./lib/adapter-runtime');
 
+function epgGuideUrl(namespace, message) {
+    // iframeSendTo requires a URL string, including during adapter startup.
+    // Keep the Admin's proxy prefix, but never accept a host or relative traversal.
+    let base = '';
+    const candidate = message?.basePath;
+    if (typeof candidate === 'string' && candidate.length <= 2048
+        && /^\/(?!\/)[A-Za-z0-9._~%/-]*$/u.test(candidate) && candidate.endsWith('/')) {
+        try {
+            const decoded = decodeURIComponent(candidate);
+            if (!/[\u0000-\u0020\u007f\\?#%]/u.test(decoded) && !decoded.includes('//')
+                && !decoded.split('/').some(part => part === '.' || part === '..')) base = candidate;
+        } catch { /* A malformed proxy prefix falls back to Admin-relative assets. */ }
+    }
+    const instance = /^loewe-tv\.(0|[1-9]\d{0,8})$/u.exec(namespace || '')?.[1];
+    return `${base}adapter/loewe-tv/epg.html?${instance === undefined ? 'invalidInstance=1' : `instance=${instance}`}`;
+}
+
 // Admin 7's selectSendTo expects an array even when discovery fails. Returning
 // { error } would break the selector instead of showing the connection problem.
 function messageFailure(command, message, error) {
     const reason = typeof error?.message === 'string' ? error.message : 'Die Anfrage ist fehlgeschlagen.';
+    if (['getEpgGuide', 'refreshEpgGuide'].includes(command)) {
+        return { error: reason.slice(0, 1200), code: typeof error?.code === 'string' ? error.code.slice(0, 80) : 'EPG_GUIDE_UNAVAILABLE' };
+    }
     if (command === 'getDiscoveredTvs') return [{ value: '', label: `Gerätesuche nicht verfügbar: ${reason}` }];
     if (command !== 'getChannelLists') return { error: reason };
     const options = [{ value: '', label: `Senderlisten nicht verfügbar: ${reason}` }];
@@ -47,7 +67,19 @@ class LoeweTv extends utils.Adapter {
 
     async onMessage(message) {
         if (!message || !message.callback || typeof message.from !== 'string' || !message.from
-            || !['getChannelLists', 'refreshChannelLists', 'getDiscoveredTvs', 'discoverTvs'].includes(message.command)) return;
+            || !['getChannelLists', 'refreshChannelLists', 'getDiscoveredTvs', 'discoverTvs',
+                'getEpgGuideUrl', 'getEpgGuide', 'refreshEpgGuide'].includes(message.command)) return;
+
+        if (message.command === 'getEpgGuideUrl') {
+            // Render the guide even before the runtime is ready. Its own error
+            // view then explains startup/offline problems without a blank frame.
+            try {
+                this.sendTo(message.from, message.command, epgGuideUrl(this.namespace, message.message), message.callback);
+            } catch (error) {
+                this.log.debug(`EPG-Oberfläche konnte nicht geladen werden: ${error.message}`);
+            }
+            return;
+        }
 
         let timer;
         let completed = false;
@@ -75,6 +107,10 @@ class LoeweTv extends utils.Adapter {
             if (['getChannelLists', 'getDiscoveredTvs'].includes(message.command) && !Array.isArray(response)) {
                 throw new Error(message.command === 'getChannelLists'
                     ? 'Ungültige Antwort beim Laden der Senderlisten.' : 'Ungültige Antwort beim Laden der gefundenen Fernseher.');
+            }
+            if (['getEpgGuide', 'refreshEpgGuide'].includes(message.command)
+                && (!response || typeof response !== 'object' || Array.isArray(response))) {
+                throw new Error('Ungültige Antwort der EPG-Übersicht.');
             }
             reply(response);
         } catch (error) {

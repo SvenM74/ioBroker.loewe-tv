@@ -115,6 +115,79 @@ function request(command = 'getChannelLists', selected = 'fastscan-selected', fr
     };
 }
 
+test('native guide iframe URL preserves the Admin proxy path and actual instance during startup', async () => {
+    for (const basePath of ['/', '/iobroker/admin/', '/proxy-1/admin/', '/prox%C3%BD/admin/']) {
+        const { adapter, replies, timers } = harness();
+        adapter.namespace = 'loewe-tv.12';
+        const message = { ...request('getEpgGuideUrl'), message: { basePath } };
+        await adapter.onMessage(message);
+        assert.equal(replies.length, 1);
+        assert.equal(replies[0].message, `${basePath}adapter/loewe-tv/epg.html?instance=12`);
+        assert.equal(timers.size, 0);
+        assert.equal(adapter.runtime, null, 'URL generation must not depend on completed runtime startup');
+    }
+});
+
+test('guide iframe URL cannot navigate to a supplied host or escape the Admin base', async () => {
+    for (const basePath of ['https://example.org/', '//example.org/', '/a/../', '/%2e%2e/',
+        '/a/%252e%252e/', '/a/%2f/', '/%5cfoo/', '/a/?bad/', '/a/#bad/', '/a/\n/', null]) {
+        const { adapter, replies } = harness();
+        adapter.namespace = 'loewe-tv.2';
+        await adapter.onMessage({ ...request('getEpgGuideUrl'), message: { basePath } });
+        assert.equal(replies[0].message, 'adapter/loewe-tv/epg.html?instance=2', String(basePath));
+    }
+    for (const namespace of [undefined, '', 'loewe-tv.null', 'loewe-tv.01', 'other.0', 'loewe-tv.1/..']) {
+        const { adapter, replies } = harness();
+        adapter.namespace = namespace;
+        await adapter.onMessage({ ...request('getEpgGuideUrl'), message: {} });
+        assert.equal(replies[0].message, 'adapter/loewe-tv/epg.html?invalidInstance=1');
+    }
+});
+
+test('guide message responses preserve pagination errors without modifying configuration', async () => {
+    const { adapter, replies, timers } = harness();
+    const error = Object.assign(new Error('Senderliste geändert'), { code: 'EPG_GUIDE_CHANGED' });
+    adapter.runtime = { async handleMessage(command, payload) {
+        assert.equal(command, 'getEpgGuide');
+        assert.deepEqual(clone(payload), { offset: 32 });
+        throw error;
+    } };
+    await adapter.onMessage({ ...request('getEpgGuide'), message: { offset: 32 } });
+    assert.deepEqual(clone(replies[0].message), { error: 'Senderliste geändert', code: 'EPG_GUIDE_CHANGED' });
+    assert.equal(timers.size, 0);
+});
+
+test('guide message watchdog replies only once and does not wait for a TV refresh batch', async () => {
+    for (const command of ['getEpgGuide', 'refreshEpgGuide']) {
+        const { adapter, replies, timers } = harness();
+        const pending = deferred();
+        adapter.runtime = { handleMessage: () => pending.promise };
+        const running = adapter.onMessage({ ...request(command), message: {} });
+        assert.equal(timers.size, 1);
+        const timer = [...timers.values()][0];
+        assert.equal(timer.ms, 4000);
+        timer.callback();
+        assert.equal(replies.length, 1);
+        assert.equal(replies[0].message.code, 'EPG_GUIDE_UNAVAILABLE');
+        pending.resolve({ accepted: true });
+        await running;
+        assert.equal(replies.length, 1);
+    }
+});
+
+test('guide message contract reports invalid or missing runtime replies inside the guide', async () => {
+    for (const response of [undefined, null, [], '']) {
+        const { adapter, replies } = harness();
+        adapter.runtime = { handleMessage: () => response };
+        await adapter.onMessage({ ...request('getEpgGuide'), message: {} });
+        assert.equal(replies[0].message.code, 'EPG_GUIDE_UNAVAILABLE');
+        assert.equal(typeof replies[0].message.error, 'string');
+    }
+    const { adapter, replies } = harness();
+    await adapter.onMessage({ ...request('getEpgGuide'), message: {} });
+    assert.equal(replies[0].message.code, 'EPG_GUIDE_UNAVAILABLE');
+});
+
 test('Admin lists use the saved native selection and a temporary reload trigger', () => {
     const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
     const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));

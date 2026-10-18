@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.9",
+    "version": "0.1.10",
     "news": {
+      "0.1.10": {
+        "en": "Show the selected TV channel list and its programme preview as a timeline directly in the instance EPG settings. Add programme details, current-time marker, channel search and date/time navigation. Read the existing TV EPG cache without additional TV requests when opening the guide; provide an explicit background refresh. Use the existing Admin session without additional data points or ports. Requires Admin 7.7.28 or newer.",
+        "de": "Die ausgewählte TV-Senderliste mit Programmvorschau als Zeitleiste direkt in den EPG-Einstellungen der Instanz anzeigen. Sendungsdetails, Markierung der aktuellen Uhrzeit, Sendersuche sowie Datums- und Zeitnavigation ergänzen. Beim Öffnen auf den vorhandenen TV-EPG-Cache zugreifen; einen neuen TV-Abruf ausdrücklich im Hintergrund starten. Vorhandene Admin-Sitzung ohne zusätzliche Datenpunkte oder Ports verwenden. Benötigt Admin ab 7.7.28."
+      },
       "0.1.9": {
         "en": "Find Loewe TV addresses in the instance configuration with an explicit, bounded local network search. List multiple TVs with device names and control-port reachability; copy a selected IP into the address field without saving automatically. Keep manual address entry and allow discovery before a TV address is configured. Discovery runs independently of TV commands and creates no additional data points.",
         "de": "Loewe-TV-Adressen über eine ausdrücklich gestartete, zeitlich begrenzte Netzwerksuche in der Instanz-Konfiguration finden. Mehrere Fernseher mit Gerätenamen und Erreichbarkeit des Steuerports anzeigen; die gewählte IP ohne automatisches Speichern in das Adressfeld übernehmen. Manuelle Adresseingabe und Suche vor dem Konfigurieren einer TV-Adresse ermöglichen. Die Suche läuft unabhängig von TV-Befehlen und erzeugt keine zusätzlichen Datenpunkte."
@@ -49,8 +53,8 @@
       "de": "Loewe TV"
     },
     "desc": {
-      "en": "Control a Loewe TV locally and show current and next programmes per TV channel directly from the TV.",
-      "de": "Einen Loewe-Fernseher lokal steuern und aktuelle sowie nächste Sendungen je TV-Sender direkt vom Fernseher anzeigen."
+      "en": "Control a Loewe TV locally and display its programme guide in the instance configuration and current/next programmes per channel.",
+      "de": "Einen Loewe-Fernseher lokal steuern, seine Programmübersicht in der Instanz-Konfiguration und die aktuelle sowie nächste Sendung je Sender anzeigen."
     },
     "authors": [
       "Loewe TV adapter contributors"
@@ -78,7 +82,7 @@
     ],
     "globalDependencies": [
       {
-        "admin": ">=7.0.23"
+        "admin": ">=7.7.28"
       }
     ],
     "stopTimeout": 500

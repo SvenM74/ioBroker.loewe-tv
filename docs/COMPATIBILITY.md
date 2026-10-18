@@ -1,10 +1,10 @@
 # Gerätekompatibilität und bestätigte Tests
 
-Stand: **18. Oktober 2026**. Aktueller Adapter: **0.1.9**, Build **`0.1.9-tv-discovery.1`**.
+Stand: **18. Oktober 2026**. Aktueller Adapter: **0.1.10**, Build **`0.1.10-epg-guide.1`**.
 
-Version 0.1.9 ergänzt die [Netzwerksuche in der Instanz-Konfiguration](NETWORK_DISCOVERY.md). Sie bietet erkannte Loewe-TV-Adressen zur Auswahl an. Der Adapter ruft Programminformationen weiterhin ausschließlich direkt vom Fernseher ab; externe EPG-Einstellungen und die zuvor entfernten Datenpunkte bleiben entfernt. Die [Updateanleitung](INSTALLATION.md#update-auf-019) beschreibt die Installation des neuen Pakets. Die [EPG-Anleitung](EPG.md) beschreibt den aktuellen Funktionsumfang; der [Prüfbericht zu `0.1.8-tv-epg-only.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die vorherige TV-EPG-Überarbeitung.
+Version 0.1.10 ergänzt die [Programmübersicht mit Zeitachse in den EPG-Einstellungen](EPG_GUI.md). Sie zeigt den vorhandenen TV-EPG-Cache der gespeicherten Senderliste. Die seit 0.1.9 vorhandene [Netzwerksuche](NETWORK_DISCOVERY.md) bietet erkannte Loewe-TV-Adressen zur Auswahl an. Für die neue eingebettete Übersicht wird Admin ab 7.7.28 benötigt. Der Adapter ruft Programminformationen weiterhin ausschließlich direkt vom Fernseher ab; externe EPG-Einstellungen und die zuvor entfernten Datenpunkte bleiben entfernt. Die [Updateanleitung](INSTALLATION.md#update-auf-0110) beschreibt die Installation des neuen Pakets. Die [EPG-Anleitung](EPG.md) beschreibt den aktuellen Funktionsumfang; der [Prüfbericht zu `0.1.8-tv-epg-only.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die vorherige TV-EPG-Überarbeitung.
 
-**Für den neuen Build `0.1.9-tv-discovery.1` liegt noch kein eigener Gerätetest vor.** Die folgenden EPG-Bestätigungen stammen vom früher bereitgestellten 0.1.8-Stand und bleiben als historische Geräteergebnisse erhalten.
+**Für den neuen Build `0.1.10-epg-guide.1` liegt noch kein eigener Gerätetest vor.** Die folgenden EPG-Bestätigungen stammen vom früher bereitgestellten 0.1.8-Stand und bleiben als historische Geräteergebnisse erhalten.
 
 ## Rückmeldungen aus Gerätetests
 

@@ -309,6 +309,90 @@ function write({ adapter, runtime }, id, val) {
     return runtime.handleStateChange(`${adapter.namespace}.${id}`, state);
 }
 
+test('guide snapshots do not cause TV requests, database writes or native configuration changes', async t => {
+    const { runtime, adapter, client } = await harness(t, { pollInterval: 0 });
+    const calls = client.calls.length;
+    const writes = adapter.writes.length;
+    const config = structuredClone(adapter.config);
+    for (let attempt = 0; attempt < 3; attempt++) {
+        const guide = await runtime.handleMessage('getEpgGuide', { limit: 32 });
+        assert.equal(guide.schemaVersion, 1);
+        assert.equal(guide.source, 'tv');
+        assert.equal(guide.instance, 'loewe-tv.0');
+        assert.equal(guide.status, 'disabled');
+        assert.ok(Array.isArray(guide.channels));
+    }
+    assert.equal(client.calls.length, calls);
+    assert.equal(adapter.writes.length, writes);
+    assert.deepEqual(adapter.config, config);
+});
+
+test('guide remains readable before a TV address is configured', async t => {
+    const { runtime, client } = await harness(t, { host: '', channelListView: '', pollInterval: 0 });
+    const guide = await runtime.handleMessage('getEpgGuide', {});
+    assert.equal(guide.status, 'notConfigured');
+    assert.equal(guide.total, 0);
+    assert.deepEqual(guide.channels, []);
+    assert.equal(client.calls.length, 0);
+    await assert.rejects(runtime.handleMessage('refreshEpgGuide', {}));
+});
+
+test('guide refresh acknowledges a long TV batch immediately and coalesces repeated clicks', { timeout: 1000 }, async t => {
+    const { runtime, adapter } = await harness(t, { epgEnabled: true, epgRefreshInterval: 0, pollInterval: 0 });
+    const batch = deferred();
+    let refreshes = 0;
+    let query;
+    runtime.epg.guide = message => { query = message; return { total: 2 }; };
+    runtime.epg.refresh = options => {
+        assert.deepEqual(options, { manual: true });
+        refreshes++;
+        runtime.epg._fetchPromise = batch.promise;
+        return batch.promise;
+    };
+    const native = structuredClone(adapter.config);
+    const request = { listView: 'fastscan-fixture', catalogRevision: 'a'.repeat(64) };
+    const first = await runtime.handleMessage('refreshEpgGuide', request);
+    assert.deepEqual(first, { accepted: true, status: 'started', instance: 'loewe-tv.0' });
+    assert.deepEqual(query, request);
+    const second = await runtime.handleMessage('refreshEpgGuide', request);
+    assert.equal(second.status, 'alreadyRunning');
+    assert.equal(refreshes, 1);
+    assert.deepEqual(adapter.config, native);
+    batch.resolve();
+    runtime.epg._fetchPromise = null;
+});
+
+test('guide refresh retains a running cycle between batches', async t => {
+    const { runtime } = await harness(t, { epgEnabled: true, epgRefreshInterval: 0, pollInterval: 0 });
+    runtime.epg.guide = () => ({ total: 2 });
+    runtime.epg._cycle = { total: 2, completed: 1, entries: [{}] };
+    runtime.epg.refresh = () => assert.fail('A guide click must not restart an existing cycle');
+    const response = await runtime.handleMessage('refreshEpgGuide', {});
+    assert.equal(response.status, 'alreadyRunning');
+    assert.equal(runtime.epg._cycle.completed, 1);
+});
+
+test('guide refresh rejects stale selections and cannot enable EPG or replace TV settings', async t => {
+    const { runtime, adapter, client } = await harness(t, { pollInterval: 0 });
+    const calls = client.calls.length;
+    for (const message of [null, [], 'refresh', { host: 'other-tv.invalid' }, { epgEnabled: true }]) {
+        await assert.rejects(runtime.handleMessage('refreshEpgGuide', message), { code: 'EPG_GUIDE_INVALID' });
+    }
+    await assert.rejects(runtime.handleMessage('refreshEpgGuide', { listView: 'old-list' }), { code: 'EPG_GUIDE_CHANGED' });
+    await assert.rejects(runtime.handleMessage('refreshEpgGuide', {}), { code: 'EPG_GUIDE_UNAVAILABLE' });
+    assert.equal(adapter.config.epgEnabled, false);
+    assert.equal(client.calls.length, calls);
+});
+
+test('guide replies become unavailable on unload and cannot start another TV read', async t => {
+    const { runtime } = await harness(t, { pollInterval: 0 });
+    await runtime.stop();
+    const guide = await runtime.handleMessage('getEpgGuide', {});
+    assert.equal(guide.status, 'unavailable');
+    assert.deepEqual(guide.channels, []);
+    await assert.rejects(runtime.handleMessage('refreshEpgGuide', {}), { code: 'CLOSED' });
+});
+
 function calls(client, method) {
     return client.calls.filter(call => call.method === method);
 }

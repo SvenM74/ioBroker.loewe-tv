@@ -6,7 +6,7 @@ Die Suche wird vom **ioBroker-Rechner** ausgeführt. Die Netzwerkverbindung des 
 
 ## Suchen und auswählen
 
-1. Installiere das neue Paket nach der [Updateanleitung](INSTALLATION.md#update-auf-019). Lade Admin danach vollständig neu und prüfe `info.adapterBuild`: Dort muss **`0.1.9-tv-discovery.1`** stehen.
+1. Installiere das neue Paket nach der [Updateanleitung](INSTALLATION.md#update-auf-0110). Lade Admin danach vollständig neu und prüfe `info.adapterBuild`: Für das aktuelle Paket muss dort **`0.1.10-epg-guide.1`** stehen.
 2. Aktiviere die gewünschte Instanz, beispielsweise **`loewe-tv.0`**, in der Instanzübersicht und warte ihren Start ab.
 3. Öffne **Instanzen → loewe-tv.0 → Einstellungen → Verbindung** und betätige **Fernseher suchen**.
 4. Warte einige Sekunden. Öffne danach **Gefundene Fernseher** und wähle den gewünschten Eintrag. Jeder Treffer enthält die IP-Adresse und die verfügbaren Geräteangaben.

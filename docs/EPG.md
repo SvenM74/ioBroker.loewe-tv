@@ -1,17 +1,27 @@
-# Laufende und nächste Sendung je TV-Sender
+# TV-EPG: Programmübersicht und Datenpunkte
 
-Version **0.1.9**, Build **`0.1.9-tv-discovery.1`**, liest die aktuelle und die nächste Sendung ausschließlich direkt vom Loewe-TV. Sender werden dafür nicht umgeschaltet; der Adapter liest die Programmtabelle im Hintergrund. Im EPG-Reiter gibt es nur **Aktivieren** und **Abrufintervall**. Die neue [Netzwerksuche](NETWORK_DISCOVERY.md) hilft bei der Auswahl der TV-Adresse in der Konfiguration; die EPG-Daten stehen weiterhin unter den Sendern der gewählten TV-Liste.
+Version **0.1.10**, Build **`0.1.10-epg-guide.1`**, ergänzt eine **Programmübersicht direkt in der Instanz-Konfiguration unter EPG**. Sie zeigt die TV-Sender der gespeicherten Senderliste mit einer gemeinsamen Zeitleiste und den vom Fernseher gelieferten Sendungen. Ein Klick auf eine Sendung öffnet deren Details. Die bisherigen Datenpunkte für die aktuelle und die nächste Sendung bleiben unter jedem TV-Sender erhalten.
 
-Der Nutzer hat am **18. Oktober 2026** den erfolgreichen direkten EPG-Abruf vom Fernseher bestätigt: auf dem **Loewe bild 7.55 / SL420 / V5.4.6.0** und auf dem **Loewe bild 5.32 / SL310F / V5.4.6.0**. Diese Rückmeldungen betreffen den zuvor bereitgestellten 0.1.8-Stand. **Für den neuen Build `0.1.9-tv-discovery.1` liegt noch kein eigener Gerätetest vor.** Die [Kompatibilitätsübersicht](COMPATIBILITY.md) hält den bestätigten Umfang fest. Der [Prüfbericht zu `0.1.8-tv-epg-only.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die vorherige TV-EPG-Bereinigung.
+Programmdaten stammen weiterhin ausschließlich direkt vom Loewe-TV. Der Hintergrundabruf und die Auswahl in der Übersicht schalten keinen Sender um. Die neue Ansicht verwendet den vorhandenen EPG-Cache; sie führt keine zusätzliche EPG-Quelle und keine neuen Datenpunkte ein. Die [Netzwerksuche](NETWORK_DISCOVERY.md) hilft bei der Auswahl der TV-Adresse.
+
+Der Nutzer hat am **18. Oktober 2026** den erfolgreichen direkten EPG-Abruf vom Fernseher bestätigt: auf dem **Loewe bild 7.55 / SL420 / V5.4.6.0** und auf dem **Loewe bild 5.32 / SL310F / V5.4.6.0**. Diese Rückmeldungen betreffen den zuvor bereitgestellten 0.1.8-Stand. **Für die neue Programmübersicht und den Build `0.1.10-epg-guide.1` liegt noch kein eigener Gerätetest vor.** Die [Kompatibilitätsübersicht](COMPATIBILITY.md) hält den bestätigten Umfang fest. Der [Prüfbericht zu `0.1.8-tv-epg-only.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die vorherige TV-EPG-Bereinigung.
 
 Die bisherigen Rückmeldungen bestätigen den funktionierenden TV-Abruf auf diesen Geräten. Eine EPG-Rohantwort wurde dabei nicht übermittelt; die Verfügbarkeit jedes einzelnen Feldes und die Abdeckung sämtlicher Sender und Zeiträume sind damit nicht einzeln nachgewiesen. Aufnahmeaufträge und TV-Timer bleiben geplant.
 
+## Programmübersicht in der Instanz
+
+Öffne in ioBroker Admin **Instanzen → loewe-tv.0 → Konfiguration → EPG**. Unter **Programminformationen aktivieren** und **EPG-Aktualisierung (Sekunden)** steht die eingebettete **Programmübersicht**. Voraussetzung sind **Admin ab 7.7.28**, eine laufende Adapterinstanz und eine gespeicherte TV-Senderliste. Die Ansicht verwendet deine bestehende Admin-Sitzung und benötigt keinen zusätzlichen Port.
+
+Links stehen Senderposition und Sendername, rechts die Sendungen auf einer gemeinsamen Zeitachse. Oben erscheinen Titel, Zeiten und die verfügbare Beschreibung der ausgewählten Sendung. Über **Sender suchen**, Datum, Stundenpfeile, **Jetzt** und den Zeitraum von **2, 3 oder 6 Stunden** lässt sich die Vorschau eingrenzen. **EPG aktualisieren** startet den vorhandenen TV-Abgleich im Hintergrund. Eine Sendung anzuklicken zeigt nur ihre Informationen.
+
+Die Übersicht kann mehr als `now` und `next` darstellen, sofern der TV weitere Sendungen geliefert hat und sie im Cache vorhanden sind. Der TV-Abruf reicht ungefähr bis 24 Stunden voraus; eine vollständige Vorschau für 48 Stunden oder eine Programmhistorie wird nicht zugesagt. Sender ohne passende Daten bleiben als Zeilen sichtbar. Die [Bedienungsanleitung zur Programmübersicht](EPG_GUI.md) erklärt den Bildaufbau, die Zeitnavigation und die Statusmeldungen.
+
 ## Am Fernseher beginnen
 
-1. Das neue Archiv **`iobroker.loewe-tv-0.1.9-tv-discovery.1.tgz`** nach der [Updateanleitung](INSTALLATION.md#update-auf-019) installieren und die bestehende Instanz starten. Ein Neustart allein übernimmt das Update nicht. `info.adapterBuild` muss **`0.1.9-tv-discovery.1`** anzeigen. Admin vollständig neu laden und die Adapter-Konfiguration neu öffnen.
+1. Das neue Archiv **`iobroker.loewe-tv-0.1.10-epg-guide.1.tgz`** nach der [Updateanleitung](INSTALLATION.md#update-auf-0110) installieren und die bestehende Instanz starten. Ein Neustart allein übernimmt das Update nicht. `info.adapterBuild` muss **`0.1.10-epg-guide.1`** anzeigen. Für die eingebettete Übersicht wird **Admin ab 7.7.28** benötigt. Admin vollständig neu laden und die Adapter-Konfiguration neu öffnen.
 2. Fernseher einschalten und prüfen, dass die gewünschte Senderliste in der Adapter-Konfiguration ausgewählt ist. Die zugehörigen Sender müssen unter `channels.tv` vorhanden sein.
 3. Im Reiter **EPG** die Voreinstellungen verwenden: **Programminformationen aktivieren** eingeschaltet, Abrufintervall **900 Sekunden**.
-4. Nach dem Start und der Senderanlage beginnt der erste EPG-Abgleich automatisch. Über **`channels.epgRefresh=true`** kann er jederzeit manuell ausgelöst werden. Wie bei anderen Tastern mit `ack:false` schreiben.
+4. Nach dem Start und der Senderanlage beginnt der erste EPG-Abgleich automatisch. **EPG aktualisieren** in der Übersicht startet ihn auch manuell. Alternativ **`channels.epgRefresh=true`** wie bei anderen Tastern mit `ack:false` schreiben.
 5. Beispielsweise **`channels.tv.Das_Erste_HD.epg.now.title`** und **`epg.next.title`** prüfen. Verwende den tatsächlichen Senderpfad deiner Instanz.
 
 Der Abgleich geht die bekannten, verfügbaren TV-Dienste der ausgewählten Liste durch. Mehrere Programmplätze desselben Dienstes teilen sich ihren Senderordner und dieselbe EPG-Abfrage.
@@ -21,11 +31,13 @@ Der Abgleich geht die bekannten, verfügbaren TV-Dienste der ausgewählten Liste
 | Einstellung | Standard | Wirkung |
 |---|---|---|
 | Programminformationen aktivieren (`epgEnabled`) | Ja | Programmdaten lesen und die Anzeige anhand der Uhrzeit aktualisieren. Bei ausgeschaltetem EPG werden aktuelle/nächste Sendung geleert. |
-| Abrufintervall (`epgRefreshInterval`) | 900 Sekunden | Zeit zwischen abgeschlossenen Abgleichläufen. Ganze Werte von 300 bis 86.400 Sekunden. `0` schaltet automatische Netzabfragen aus; der manuelle Taster bleibt verfügbar. |
+| EPG-Aktualisierung (Sekunden) (`epgRefreshInterval`) | 900 Sekunden | Zeit zwischen abgeschlossenen Abgleichläufen. Ganze Werte von 300 bis 86.400 Sekunden. `0` schaltet automatische Netzabfragen aus; die Schaltfläche in der Übersicht und der manuelle Taster bleiben verfügbar. |
 
-Ein Intervall von `0` verhindert auch den automatischen Erstabruf. Bereits gespeicherte Programme werden trotzdem zeitlich weitergeschaltet, solange EPG aktiviert ist. Bei `epgEnabled=false` startet auch der manuelle Taster keinen Import.
+Ein Intervall von `0` verhindert auch den automatischen Erstabruf. Bereits gespeicherte Programme werden trotzdem zeitlich weitergeschaltet, solange EPG aktiviert ist. Bei `epgEnabled=false` starten weder die Schaltfläche noch der manuelle Taster einen Import.
 
 Eine laufende Abfrage wird bei mehrfacher Betätigung des Tasters gemeinsam verwendet. Große Senderbestände werden in Abschnitten von bis zu 64 Sendern weiterbearbeitet. Eine manuell gestartete vollständige Runde wird auch bei Intervall `0` zu Ende geführt.
+
+Die Einstellungen wirken nach dem Speichern. Das Blättern, Suchen oder Auswählen in der Programmübersicht verändert die Instanz-Konfiguration nicht. Die Übersicht verwendet stets die gespeicherte TV-Adresse und Senderliste; Änderungen im noch ungespeicherten Formular sind dort noch nicht aktiv.
 
 ## Datenpunkte am Sender
 
@@ -149,6 +161,8 @@ Jede lokale SOAP-Anfrage steht einzeln in der vorhandenen TV-Warteschlange. Zwis
 
 Lange Beschreibungen oder weit entfernte zukünftige Sendungen können zur Einhaltung der Cachegrenzen gekürzt werden. Der Adapter erhält dafür die Informationen zur aktuellen und nächsten Sendung einschließlich möglicher Mehrdeutigkeiten. Bei nicht sicher kürzbaren Daten meldet er einen Fehler.
 
+Die Programmübersicht liest ausschließlich den bereits geladenen Bestand im Arbeitsspeicher. Öffnen, Suchen, Blättern und das regelmäßige Nachladen der Anzeige lösen keine zusätzlichen SOAP-Abfragen aus und lesen nicht erneut alle EPG-Datenpunkte aus der Datenbank. Die Daten werden in begrenzten Seiten übertragen; die Oberfläche setzt diese zu den Senderzeilen zusammen. Nur **EPG aktualisieren** fordert ausdrücklich einen neuen TV-Abgleich an. Die vorhandenen Quellen-, Cache- und Datenpunktformate bleiben unverändert.
+
 ## Für spätere Automationen
 
 Für eine zusammenhängende Auswertung eignet sich `epg.data`. Ein einfaches Beispiel für den ioBroker-JavaScript-Adapter:
@@ -162,4 +176,4 @@ on({ id: 'loewe-tv.0.channels.tv.Das_Erste_HD.epg.data', change: 'ne' }, event =
 });
 ```
 
-Dies zeigt nur Daten an. Auch Version 0.1.9 legt noch keine Aufnahmeaufträge oder TV-Timer an. Dafür werden vollständige Sendungszeiten, die Zuordnung zum TV und ein am Gerät bestätigter Timerablauf benötigt. Der weitere Ausbau steht in der [Roadmap](ROADMAP.md).
+Dies zeigt nur Daten an. Auch Version 0.1.10 und die neue Programmübersicht legen noch keine Aufnahmeaufträge oder TV-Timer an. Dafür werden vollständige Sendungszeiten, die Zuordnung zum TV und ein am Gerät bestätigter Timerablauf benötigt. Der weitere Ausbau steht in der [Roadmap](ROADMAP.md).

@@ -217,6 +217,32 @@
           "validatorErrorText": "Enter 0 or a whole number from 300 to 86400.",
           "xs": 12,
           "sm": 6
+        },
+        "_epgGuideHelp": {
+          "type": "staticText",
+          "text": "The programme guide shows the saved TV and selected channel list. Save changes above before using them in the guide. Start this adapter instance to display the guide.",
+          "xs": 12
+        },
+        "_epgGuide": {
+          "type": "iframeSendTo",
+          "command": "getEpgGuideUrl",
+          "jsonData": "${JSON.stringify({basePath: new URL('.', window.location.href).pathname})}",
+          "doNotSave": true,
+          "allowFullscreen": true,
+          "sandbox": "allow-scripts allow-same-origin",
+          "lazyLoad": "lazy",
+          "reloadOnShow": false,
+          "xs": 12,
+          "style": {
+            "width": "100%",
+            "height": "min(900px, 78vh)",
+            "minHeight": 560,
+            "overflow": "hidden"
+          },
+          "innerStyle": {
+            "borderWidth": 0,
+            "borderStyle": "none"
+          }
         }
       }
     },

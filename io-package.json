@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.10",
+    "version": "0.1.11",
     "news": {
+      "0.1.11": {
+        "en": "Separate EPG settings and the programme guide into their own tabs. Select a running programme to send its channel command; ask for confirmation before queuing a future recording. Persist recording requests across restarts, wait for the TV to become reachable and reconcile submitted requests with its timer list. Do not repeat ambiguous submissions. Open the guide separately through the existing Admin address and session. Add the read-only recordings.jobs journal.",
+        "de": "EPG-Einstellungen und Programmübersicht in eigene Reiter aufteilen. Bei laufenden Sendungen den Senderbefehl senden; zukünftige Sendungen erst nach Bestätigung zur Aufnahme vormerken. Aufnahmeaufträge über Neustarts hinweg speichern, auf den erreichbaren TV warten und übertragene Aufträge mit seiner Timerliste abgleichen. Unklare Übertragungen nicht wiederholen. Programmübersicht separat über die vorhandene Admin-Adresse und -Sitzung öffnen. Das lesende Auftragsjournal recordings.jobs ergänzen."
+      },
       "0.1.10": {
         "en": "Show the selected TV channel list and its programme preview as a timeline directly in the instance EPG settings. Add programme details, current-time marker, channel search and date/time navigation. Read the existing TV EPG cache without additional TV requests when opening the guide; provide an explicit background refresh. Use the existing Admin session without additional data points or ports. Requires Admin 7.7.28 or newer.",
         "de": "Die ausgewählte TV-Senderliste mit Programmvorschau als Zeitleiste direkt in den EPG-Einstellungen der Instanz anzeigen. Sendungsdetails, Markierung der aktuellen Uhrzeit, Sendersuche sowie Datums- und Zeitnavigation ergänzen. Beim Öffnen auf den vorhandenen TV-EPG-Cache zugreifen; einen neuen TV-Abruf ausdrücklich im Hintergrund starten. Vorhandene Admin-Sitzung ohne zusätzliche Datenpunkte oder Ports verwenden. Benötigt Admin ab 7.7.28."
@@ -53,8 +57,8 @@
       "de": "Loewe TV"
     },
     "desc": {
-      "en": "Control a Loewe TV locally and display its programme guide in the instance configuration and current/next programmes per channel.",
-      "de": "Einen Loewe-Fernseher lokal steuern, seine Programmübersicht in der Instanz-Konfiguration und die aktuelle sowie nächste Sendung je Sender anzeigen."
+      "en": "Control a Loewe TV locally, view its programme guide, select running programmes and queue confirmed recording requests until the TV is reachable.",
+      "de": "Einen Loewe-Fernseher lokal steuern, seine Programmübersicht anzeigen, laufende Sendungen auswählen und bestätigte Aufnahmeaufträge bis zur Erreichbarkeit des TV speichern."
     },
     "authors": [
       "Loewe TV adapter contributors"

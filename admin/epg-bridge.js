@@ -10,6 +10,7 @@
 (function initializeEpgBridge() {
     const CONNECT_TIMEOUT_MS = 8000;
     const REQUEST_TIMEOUT_MS = 8000;
+    const ACTION_TIMEOUT_MS = 12000;
     const GUIDE_TIMEOUT_MS = 30000;
     const PAGE_SIZE = 32;
     const MAX_CHANNELS = 2000;
@@ -186,7 +187,7 @@
         return current.promise;
     }
 
-    async function send(command, message) {
+    async function send(command, message, timeout = REQUEST_TIMEOUT_MS) {
         const ctx = context();
         if (pending.size >= MAX_PENDING) throw failure('busy');
         const socket = await connect(ctx);
@@ -195,7 +196,7 @@
         return new Promise((resolve, reject) => {
             const entry = { finish: null };
             let finished = false;
-            const timer = window.setTimeout(() => release(failure('timeout')), REQUEST_TIMEOUT_MS);
+            const timer = window.setTimeout(() => release(failure('timeout')), timeout);
             entry.finish = (error, data) => {
                 if (finished) return;
                 finished = true;
@@ -309,6 +310,12 @@
         language: german ? 'de' : 'en',
         requestGuide: collectGuide,
         refresh: () => send('refreshEpgGuide', lastGuideReference ? { ...lastGuideReference } : {}),
+        // Mutations are sent exactly once. A lost reply must not automatically
+        // replay a channel change or create a second recording request.
+        selectProgramme: selection => send('selectEpgProgramme', selection, ACTION_TIMEOUT_MS),
+        recordProgramme: selection => send('recordEpgProgramme', selection, ACTION_TIMEOUT_MS),
+        requestRecordings: () => send('getRecordings', {}),
+        cancelRecording: jobId => send('cancelRecording', { jobId }, ACTION_TIMEOUT_MS),
     });
     window.dispatchEvent(new CustomEvent('loewe-epg-bridge-ready'));
 }());

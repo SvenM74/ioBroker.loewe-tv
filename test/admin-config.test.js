@@ -258,6 +258,204 @@ test('EPG configuration reads directly from the TV with only enable and refresh 
     }
 });
 
+test('EPG settings and programme guide have separate tabs without moving or duplicating saved parameters', () => {
+    const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
+    const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
+    const settings = config.items._epg;
+    const guide = config.items._programmeGuide;
+    assert.equal(config.type, 'tabs');
+    assert.equal(settings.type, 'panel');
+    assert.equal(guide.type, 'panel');
+    assert.equal(settings.label, 'EPG settings');
+    assert.equal(guide.label, 'Programme guide');
+    assert.notEqual(settings.label, guide.label);
+    assert.equal(settings.items._epgGuide, undefined, 'The detailed guide belongs only to its own tab');
+    assert.ok(Object.keys(guide.items).every(key => key.startsWith('_')), 'The guide must not add saved native fields');
+    const savedEpgFields = [];
+    const visit = items => {
+        for (const [key, item] of Object.entries(items)) {
+            if (/^epg/u.test(key)) savedEpgFields.push(key);
+            if (item.items && !Array.isArray(item.items)) visit(item.items);
+        }
+    };
+    visit(config.items);
+    assert.deepEqual(savedEpgFields.sort(), ['epgEnabled', 'epgRefreshInterval']);
+    for (const [field, value] of Object.entries({ epgEnabled: true, epgRefreshInterval: 900 })) {
+        assert.equal(settings.items[field].default, value);
+        assert.equal(io.native[field], value);
+        assert.notEqual(settings.items[field].doNotSave, true);
+    }
+    const iframe = guide.items._epgGuide;
+    assert.equal(iframe.type, 'iframeSendTo');
+    assert.equal(iframe.command, 'getEpgGuideUrl');
+    assert.equal(iframe.doNotSave, true);
+    assert.equal(iframe.useNative, undefined, 'Opening the guide must not submit unsaved TV configuration');
+    assert.deepEqual(iframe.sandbox.split(/\s+/u).sort(), [
+        'allow-popups', 'allow-popups-to-escape-sandbox', 'allow-same-origin', 'allow-scripts',
+    ]);
+    for (const epgEnabled of [true, false]) {
+        const native = { ...clone(io.native), host: 'tv.example', channelListView: 'saved-list', epgEnabled, epgRefreshInterval: 0 };
+        const before = clone(native);
+        assert.deepEqual(adminValidationErrors(config, native), [], 'The new tab must not block Save or Save and close');
+        assert.deepEqual(native, before, 'Visiting or validating the guide must preserve configured EPG values');
+    }
+    for (const language of ['de', 'en']) {
+        const translations = JSON.parse(fs.readFileSync(path.join(root, `admin/i18n/${language}/translations.json`), 'utf8'));
+        assert.ok(translations[guide.label], `${language}: missing guide tab label`);
+        assert.notEqual(translations[guide.label], translations[settings.label]);
+        assert.ok(translations[guide.items._epgGuideHelp.text], `${language}: missing guide help`);
+    }
+});
+
+test('new EPG actions and queue reads forward their exact payload and original reply route once', async () => {
+    const selection = Object.freeze({
+        channelId: 'channels.tv.das_erste_hd', eventId: 'event-123', start: 120000, end: 180000,
+        listView: 'saved-list', catalogRevision: 'a'.repeat(64),
+    });
+    for (const [command, payload, response] of [
+        ['selectEpgProgramme', selection, { action: 'confirmRecording', selection }],
+        ['recordEpgProgramme', Object.freeze({ ...selection, confirmed: true }), { action: 'recordingQueued', job: { id: 'job-123', status: 'queued' } }],
+        ['getRecordings', Object.freeze({}), { schemaVersion: 1, ready: true, updatedAt: 100000, lastError: '', jobs: [] }],
+        ['cancelRecording', Object.freeze({ jobId: 'job-123' }), { job: { id: 'job-123', status: 'cancelled' } }],
+    ]) {
+        const { adapter, replies, timers } = harness();
+        const received = [];
+        adapter.namespace = 'loewe-tv.12';
+        adapter.runtime = { async handleMessage(receivedCommand, receivedPayload) {
+            received.push({ command: receivedCommand, payload: receivedPayload });
+            return response;
+        } };
+        const message = { ...request(command, '', 'system.adapter.admin.2'), message: payload, callback: { id: 31, ack: false } };
+        const before = clone(payload);
+        const running = adapter.onMessage(message);
+        const watchdog = [...timers.values()][0];
+        await running;
+        assert.deepEqual(received, [{ command, payload }]);
+        assert.equal(received[0].payload, payload, 'Main must not substitute a different programme, device or consent value');
+        assert.deepEqual(clone(payload), before);
+        assert.equal(replies.length, 1);
+        assert.equal(replies[0].from, message.from);
+        assert.equal(replies[0].command, command);
+        assert.equal(replies[0].callback, message.callback);
+        assert.equal(replies[0].message, response);
+        assert.equal(timers.size, 0);
+        watchdog.callback();
+        assert.equal(replies.length, 1, 'An already completed response must ignore its stale watchdog');
+        assert.equal(received.length, 1);
+    }
+});
+
+test('Main preserves missing or refused recording confirmation for runtime validation', async () => {
+    for (const payload of [{ channelId: 'channels.tv.das_erste_hd' }, { channelId: 'channels.tv.das_erste_hd', confirmed: false }]) {
+        const { adapter, replies, timers } = harness();
+        let calls = 0;
+        adapter.runtime = { async handleMessage(command, received) {
+            calls++;
+            assert.equal(command, 'recordEpgProgramme');
+            assert.deepEqual(received, payload);
+            assert.notEqual(received.confirmed, true, 'Only the user confirmation may provide consent');
+            throw Object.assign(new Error('Die Aufnahme muss ausdrücklich bestätigt werden.'), { code: 'EPG_ACTION_VALIDATION' });
+        } };
+        await adapter.onMessage({ ...request('recordEpgProgramme'), message: Object.freeze(payload) });
+        assert.deepEqual(clone(replies[0].message), {
+            error: 'Die Aufnahme muss ausdrücklich bestätigt werden.', code: 'EPG_ACTION_VALIDATION',
+        });
+        assert.equal(replies.length, 1);
+        assert.equal(calls, 1);
+        assert.equal(timers.size, 0);
+    }
+});
+
+test('new EPG commands report startup and invalid runtime responses as structured errors', async () => {
+    for (const command of ['selectEpgProgramme', 'recordEpgProgramme', 'getRecordings', 'cancelRecording']) {
+        for (const response of ['startup', undefined, null, [], 'permissionError']) {
+            const { adapter, replies, timers } = harness();
+            if (response !== 'startup') adapter.runtime = { async handleMessage() { return response; } };
+            await adapter.onMessage({ ...request(command), message: {} });
+            assert.equal(replies.length, 1, `${command}: exactly one error reply`);
+            assert.equal(Array.isArray(replies[0].message), false, 'The guide never expects selector error options');
+            assert.equal(replies[0].message.code, 'EPG_GUIDE_UNAVAILABLE');
+            assert.match(replies[0].message.error, response === 'startup' ? /noch nicht bereit/u : /Ungültige Antwort/u);
+            assert.equal(replies[0].message.native, undefined, 'Action errors must not alter saved settings');
+            assert.equal(timers.size, 0);
+        }
+    }
+});
+
+test('new EPG commands retain bounded actionable runtime error messages and codes', async () => {
+    for (const [command, code] of [
+        ['selectEpgProgramme', 'EPG_GUIDE_CHANGED'],
+        ['recordEpgProgramme', 'EPG_ACTION_EXPIRED'],
+        ['getRecordings', 'RECORDING_STATE_UNAVAILABLE'],
+        ['cancelRecording', 'RECORDING_NOT_CANCELLABLE'],
+    ]) {
+        const { adapter, replies, timers } = harness();
+        adapter.runtime = { async handleMessage() {
+            throw Object.assign(new Error('Die ausgewählte Sendung hat sich geändert.'), { code });
+        } };
+        await adapter.onMessage({ ...request(command), message: {} });
+        assert.deepEqual(clone(replies[0].message), { error: 'Die ausgewählte Sendung hat sich geändert.', code });
+        assert.equal(replies.length, 1);
+        assert.equal(timers.size, 0);
+    }
+    const { adapter, replies } = harness();
+    adapter.runtime = { async handleMessage() {
+        throw Object.assign(new Error('x'.repeat(2000)), { code: 'y'.repeat(200) });
+    } };
+    await adapter.onMessage({ ...request('recordEpgProgramme'), message: {} });
+    assert.equal(replies[0].message.error.length, 1200);
+    assert.equal(replies[0].message.code.length, 80);
+});
+
+test('new command watchdogs answer once without retrying late or failed programme mutations', async () => {
+    for (const [command, deadline] of [
+        ['selectEpgProgramme', 10000], ['recordEpgProgramme', 6000], ['getRecordings', 4000], ['cancelRecording', 6000],
+    ]) {
+        for (const settlesWithError of [false, true]) {
+            const { adapter, replies, timers } = harness();
+            const pending = deferred();
+            let calls = 0;
+            adapter.runtime = { handleMessage() { calls++; return pending.promise; } };
+            const message = { ...request(command), message: { confirmed: true } };
+            const running = adapter.onMessage(message);
+            assert.equal(timers.size, 1);
+            const watchdog = [...timers.values()][0];
+            assert.equal(watchdog.ms, deadline);
+            watchdog.callback();
+            assert.equal(replies.length, 1);
+            assert.equal(replies[0].message.code, 'EPG_GUIDE_UNAVAILABLE');
+            assert.match(replies[0].message.error, /Zeitlimit/u);
+            assert.equal(replies[0].from, message.from);
+            assert.equal(replies[0].callback, message.callback);
+            if (settlesWithError) pending.reject(Object.assign(new Error('Späte Ablehnung'), { code: 'EPG_ACTION_EXPIRED' }));
+            else pending.resolve({ action: 'recordingQueued', job: { id: 'late-job' } });
+            await running;
+            watchdog.callback();
+            assert.equal(replies.length, 1, `${command}: the original timeout must remain the only reply`);
+            assert.equal(calls, 1, `${command}: a missing reply must never automatically repeat the operation`);
+            assert.equal(timers.size, 0);
+        }
+    }
+});
+
+test('failed delivery of a recording acknowledgment does not repeat the recording operation', async () => {
+    const { adapter, logs, timers } = harness();
+    let operations = 0;
+    let deliveries = 0;
+    adapter.runtime = { async handleMessage(command) {
+        operations++;
+        assert.equal(command, 'recordEpgProgramme');
+        return { action: 'recordingQueued', job: { id: 'job-123', status: 'queued' } };
+    } };
+    adapter.sendTo = () => { deliveries++; throw new Error('Admin connection closed'); };
+    await adapter.onMessage({ ...request('recordEpgProgramme'), message: { confirmed: true } });
+    assert.equal(operations, 1);
+    assert.equal(deliveries, 1);
+    assert.equal(logs.length, 1);
+    assert.match(logs[0].message, /Admin connection closed/u);
+    assert.equal(timers.size, 0);
+});
+
 test('EPG form validates manual-only operation and bounded automatic intervals', () => {
     const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
     const items = config.items._epg.items;

@@ -18,6 +18,33 @@
     const MESSAGES = {
         de: {
             heading: 'Programmübersicht', refresh: 'EPG aktualisieren', tvChannel: 'TV-KANAL',
+            openStandalone: 'Separat öffnen', watchNow: 'Jetzt ansehen', planRecording: 'Aufnahme planen',
+            actionChecking: 'Sendung wird geprüft …', actionRecording: 'Aufnahme wird vorgemerkt …',
+            actionViewHint: 'Schaltet den Fernseher auf diesen Sender.',
+            actionRecordHint: 'Aufnahme erst nach deiner Bestätigung vormerken.',
+            actionOfflineHint: 'Der Fernseher ist offline. Die Aufnahme kann trotzdem vorgemerkt werden.',
+            actionUnknownEnd: 'Für eine sichere Auswahl fehlt die Endzeit dieser Sendung.',
+            actionEnded: 'Diese Sendung ist bereits beendet.', actionUnavailable: 'Diese Sendung ist derzeit nicht auswählbar.',
+            actionFailed: 'Die Auswahl konnte nicht ausgeführt werden.',
+            actionSwitched: 'Umschaltbefehl für {channel} wurde gesendet.',
+            actionQueued: '„{title}“ ist zur Aufnahme vorgemerkt. Der Übertragungsstatus steht unter Aufnahmeaufträge.',
+            selectionChanged: 'Die Senderliste oder die Sendung wurde inzwischen geändert. Bitte wähle die Sendung erneut aus.',
+            recordingNoLongerFuture: 'Diese Sendung liegt nicht mehr in der Zukunft. Bitte wähle sie erneut aus.',
+            actionResponseInvalid: 'Die Instanz hat eine ungültige Antwort zur Auswahl geliefert.',
+            recordingConfirmTitle: 'Sendung aufnehmen?', recordingConfirmDescription: 'Diese Sendung wird zur Aufnahme vorgemerkt:',
+            recordingConfirmNote: 'Ist der Fernseher offline, wartet der Adapter auf die Verbindung. Kann der Auftrag vor Sendungsbeginn nicht übertragen werden, ist die Aufnahme nicht gesichert.',
+            confirmRecording: 'Aufnahme vormerken', cancel: 'Abbrechen', recordingJobs: 'Aufnahmeaufträge',
+            recordingsLoading: 'Aufnahmeaufträge werden geladen …', recordingsEmpty: 'Noch keine Aufnahmeaufträge vorhanden.',
+            recordingsFailed: 'Die Aufnahmeaufträge konnten nicht geladen werden.',
+            recordingsNotReady: 'Die gespeicherten Aufnahmeaufträge sind noch nicht geladen.',
+            recordingsOne: '1 Aufnahmeauftrag', recordingsShown: '{count} Aufnahmeaufträge', recordingsLimited: '{count} von {total} Aufnahmeaufträgen werden angezeigt. Offene Aufträge stehen zuerst.',
+            recordingsNote: 'Offline vorgemerkte Aufträge werden übertragen, sobald der Fernseher erreichbar ist. „Im TV geplant“ bedeutet, dass der Timer im Fernseher bestätigt wurde.',
+            recordingQueued: 'Wartet auf Übertragung', recordingWaiting: 'Wartet auf Fernseher', recordingSending: 'Wird übertragen',
+            recordingUncertain: 'Übertragung unklar', recordingScheduled: 'Im TV geplant', recordingRejected: 'Abgelehnt',
+            recordingMissed: 'Startzeit verpasst', recordingCancelled: 'Vormerkung entfernt', recordingBlockedDevice: 'Anderer Fernseher konfiguriert',
+            recordingUnknown: 'Status unbekannt', recordingCancel: 'Vormerkung entfernen', recordingCancelling: 'Wird entfernt …',
+            recordingCancelledMessage: 'Die ungesendete Vormerkung wurde entfernt.', recordingCancelFailed: 'Die Vormerkung konnte nicht entfernt werden.',
+            recordingUncertainNote: 'Bitte den Timer im Fernseher prüfen. Der Adapter sendet diesen Auftrag nicht automatisch erneut.',
             savedConfiguration: 'Gespeicherte Instanz-Konfiguration',
             chooseProgramme: 'Sendung auswählen', loading: 'Programmübersicht wird geladen …',
             loadingDescription: 'Die vorhandenen Programmdaten werden aus dem Adapter geladen.',
@@ -31,7 +58,7 @@
             noChannelsDescription: 'Wähle eine Senderliste in der Instanz-Konfiguration und speichere die Einstellungen.',
             dataSource: 'Programmdaten vom Fernseher',
             keyboardHelp: 'Sendung anklicken für Details. Mit den Pfeiltasten zwischen Sendungen wechseln.',
-            sourceNote: 'Die Übersicht zeigt die gespeicherte Senderliste dieser Instanz. Ungespeicherte Einstellungen sind noch nicht aktiv. Leere Bereiche enthalten keine gelieferten Programmdaten. Die Auswahl einer Sendung schaltet den Fernseher nicht um.',
+            sourceNote: 'Die Übersicht zeigt die gespeicherte Senderliste. Leere Bereiche enthalten keine gelieferten Programmdaten. Die Auswahl zeigt Details; „Jetzt ansehen“ schaltet auf eine laufende Sendung. Zukünftige Sendungen lassen sich nach Bestätigung zur Aufnahme vormerken.',
             current: 'Jetzt im Programm', upcoming: 'Vorschau', ended: 'Vergangene Sendung',
             unknownEnd: 'Ende unbekannt', noDescription: 'Zu dieser Sendung liegt keine Beschreibung vor.',
             descriptionTruncated: 'Die Beschreibung wurde für die Übersicht gekürzt.',
@@ -62,6 +89,33 @@
         },
         en: {
             heading: 'Programme guide', refresh: 'Refresh EPG', tvChannel: 'TV CHANNEL',
+            openStandalone: 'Open separately', watchNow: 'Watch now', planRecording: 'Plan recording',
+            actionChecking: 'Checking programme …', actionRecording: 'Queuing recording …',
+            actionViewHint: 'Changes the TV to this channel.',
+            actionRecordHint: 'Queue a recording after your confirmation.',
+            actionOfflineHint: 'The TV is offline. You can still queue this recording.',
+            actionUnknownEnd: 'The end time needed to select this programme safely is missing.',
+            actionEnded: 'This programme has already ended.', actionUnavailable: 'This programme is not currently available for selection.',
+            actionFailed: 'The selection could not be completed.',
+            actionSwitched: 'The channel switch command for {channel} has been sent.',
+            actionQueued: '“{title}” is queued for recording. See Recording requests for its transfer status.',
+            selectionChanged: 'The channel list or programme has changed. Please select the programme again.',
+            recordingNoLongerFuture: 'This programme is no longer in the future. Please select it again.',
+            actionResponseInvalid: 'The instance returned an invalid response for this selection.',
+            recordingConfirmTitle: 'Record this programme?', recordingConfirmDescription: 'This programme will be queued for recording:',
+            recordingConfirmNote: 'If the TV is offline, the adapter waits for a connection. If the request cannot be transferred before the programme starts, the recording is not assured.',
+            confirmRecording: 'Queue recording', cancel: 'Cancel', recordingJobs: 'Recording requests',
+            recordingsLoading: 'Loading recording requests …', recordingsEmpty: 'No recording requests yet.',
+            recordingsFailed: 'The recording requests could not be loaded.',
+            recordingsNotReady: 'Saved recording requests have not loaded yet.',
+            recordingsOne: '1 recording request', recordingsShown: '{count} recording requests', recordingsLimited: 'Showing {count} of {total} recording requests. Pending requests come first.',
+            recordingsNote: 'Requests queued while offline are transferred when the TV becomes reachable. “Scheduled on TV” means that the timer has been confirmed on the TV.',
+            recordingQueued: 'Waiting for transfer', recordingWaiting: 'Waiting for TV', recordingSending: 'Transferring',
+            recordingUncertain: 'Transfer uncertain', recordingScheduled: 'Scheduled on TV', recordingRejected: 'Rejected',
+            recordingMissed: 'Start time missed', recordingCancelled: 'Request removed', recordingBlockedDevice: 'A different TV is configured',
+            recordingUnknown: 'Unknown status', recordingCancel: 'Remove request', recordingCancelling: 'Removing …',
+            recordingCancelledMessage: 'The unsent recording request has been removed.', recordingCancelFailed: 'The request could not be removed.',
+            recordingUncertainNote: 'Please check the timer on the TV. The adapter will not automatically resend this request.',
             savedConfiguration: 'Saved instance configuration',
             chooseProgramme: 'Select a programme', loading: 'Loading the programme guide …',
             loadingDescription: 'Reading the programme information stored in the adapter.',
@@ -75,7 +129,7 @@
             noChannelsDescription: 'Choose a channel list in the instance configuration and save the settings.',
             dataSource: 'Programme information from the TV',
             keyboardHelp: 'Select a programme for details. Use the arrow keys to move between programmes.',
-            sourceNote: 'This guide shows the saved channel list for this instance. Unsaved settings are not active yet. Empty areas have no programme information from the TV. Selecting a programme does not change the TV channel.',
+            sourceNote: 'This guide shows the saved channel list. Empty areas have no programme information from the TV. Select a programme for details; “Watch now” changes to a current programme. Future programmes can be queued for recording after confirmation.',
             current: 'On now', upcoming: 'Coming up', ended: 'Past programme',
             unknownEnd: 'End time unknown', noDescription: 'No description is available for this programme.',
             descriptionTruncated: 'The description has been shortened for this guide.',
@@ -116,6 +170,89 @@
     }
     function eventKey(channelId, event) { return JSON.stringify([channelId, event.eventId, event.start, event.end, event.title]); }
     function isCurrent(event, now) { return event.end !== null && event.start <= now && now < event.end; }
+    function programmeAction(event, now, available = true) {
+        if (!available || !event || !timestamp(event.start) || !timestamp(now)) return 'unavailable';
+        if (!timestamp(event.end) || event.end <= event.start) return 'unknownEnd';
+        if (event.end <= now) return 'ended';
+        return event.start <= now ? 'view' : 'record';
+    }
+    function programmeSelection(guide, channel, event) {
+        if (!guide || !channel || !event || !string(guide.listView) || !string(guide.catalogRevision, 128)
+            || !string(channel.id) || !timestamp(event.start) || !timestamp(event.end) || event.end <= event.start) return null;
+        return { channelId: channel.id, eventId: string(event.eventId, 256), start: event.start, end: event.end,
+            listView: guide.listView, catalogRevision: guide.catalogRevision };
+    }
+    function selectionExists(guide, reference) {
+        if (!guide || !reference || guide.listView !== reference.listView || guide.catalogRevision !== reference.catalogRevision) return false;
+        const channel = guide.channels.find(item => item.id === reference.channelId && item.available !== false);
+        return Boolean(channel?.events.some(event => event.eventId === reference.eventId
+            && event.start === reference.start && event.end === reference.end));
+    }
+    function normalizeAction(input, reference) {
+        if (!input || typeof input !== 'object' || Array.isArray(input)
+            || !['switched', 'confirmRecording', 'recordingQueued', 'unavailable'].includes(input.action)) {
+            throw new Error('EPG_PROGRAMME_RESPONSE_INVALID');
+        }
+        const result = { action: input.action, message: string(input.message || input.reason, 800), job: input.job };
+        if (input.action === 'confirmRecording') {
+            const programme = input.programme;
+            const channel = input.channel;
+            if (!reference || !channel || !string(channel.name) || !programme || !string(programme.title)
+                || !timestamp(programme.start) || !timestamp(programme.end) || programme.end <= programme.start
+                || programme.start !== reference.start || programme.end !== reference.end
+                || !input.selection || ['channelId', 'eventId', 'start', 'end', 'listView', 'catalogRevision']
+                    .some(key => input.selection[key] !== reference[key])) {
+                throw new Error('EPG_PROGRAMME_RESPONSE_INVALID');
+            }
+            result.channel = { name: string(channel.name), number: Number.isSafeInteger(channel.number) && channel.number >= 0 ? channel.number : null };
+            result.programme = { title: string(programme.title), start: programme.start, end: programme.end };
+            result.selection = { ...reference };
+        } else if (input.action === 'recordingQueued') {
+            const job = normalizeRecordings({ schemaVersion: 1, ready: true, jobs: [input.job] }).jobs[0];
+            if (!reference || !job || job.status === 'unknown' || job.programme.start !== reference.start
+                || job.programme.end !== reference.end) throw new Error('EPG_PROGRAMME_RESPONSE_INVALID');
+            result.job = job;
+        }
+        return result;
+    }
+    function normalizeRecordings(input) {
+        if (!input || typeof input !== 'object' || input.schemaVersion !== 1 || !Array.isArray(input.jobs) || input.jobs.length > 512) {
+            throw new Error('EPG_RECORDINGS_RESPONSE_INVALID');
+        }
+        const knownStatuses = new Set(['queued', 'sending', 'uncertain', 'scheduled', 'rejected', 'missed', 'cancelled', 'blockedDevice']);
+        const ids = new Set();
+        const jobs = [];
+        for (const raw of input.jobs) {
+            const id = string(raw?.id, 256);
+            if (!id || ids.has(id) || !string(raw?.channel?.name) || !string(raw?.programme?.title)
+                || !timestamp(raw.programme.start) || !timestamp(raw.programme.end) || raw.programme.end <= raw.programme.start) continue;
+            ids.add(id);
+            const status = knownStatuses.has(raw.status) ? raw.status : 'unknown';
+            jobs.push({ id, status, channel: { name: string(raw.channel.name), number: Number.isSafeInteger(raw.channel.number) && raw.channel.number >= 0 ? raw.channel.number : null },
+                programme: { title: string(raw.programme.title), start: raw.programme.start, end: raw.programme.end },
+                createdAt: timestamp(raw.createdAt) ? raw.createdAt : 0,
+                updatedAt: timestamp(raw.updatedAt) ? raw.updatedAt : 0,
+                lastError: string(raw.lastError || raw.message, 800),
+                canCancel: raw.canCancel === true && ['queued', 'blockedDevice'].includes(status) });
+        }
+        const rank = job => ['queued', 'sending', 'uncertain', 'blockedDevice'].includes(job.status) ? 0 : 1;
+        jobs.sort((a, b) => rank(a) - rank(b) || b.createdAt - a.createdAt || b.updatedAt - a.updatedAt || a.programme.start - b.programme.start || a.id.localeCompare(b.id));
+        return { ready: input.ready === true, updatedAt: timestamp(input.updatedAt) ? input.updatedAt : null,
+            lastError: string(input.lastError, 800), jobs };
+    }
+    function standaloneUrl(value) {
+        try {
+            const url = new URL(value);
+            const instances = url.searchParams.getAll('instance');
+            if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password
+                || !url.pathname.endsWith('/adapter/loewe-tv/epg.html') || instances.length !== 1
+                || !/^(?:0|[1-9]\d{0,8})$/u.test(instances[0])) return '';
+            url.search = '';
+            url.searchParams.set('instance', instances[0]);
+            url.hash = '';
+            return url.href;
+        } catch { return ''; }
+    }
     function timeWindow(from, hours, now) {
         const duration = [2, 3, 6].includes(Number(hours)) ? Number(hours) : 3;
         const clock = timestamp(now) ? now : Date.now();
@@ -164,7 +301,7 @@
         const progress = input.progress && typeof input.progress === 'object' ? input.progress : {};
         const count = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;
         return { instance: string(input.instance, 100), now: input.now, listName: string(input.listName),
-            listView: string(input.listView, 512), status: string(input.status, 40),
+            listView: string(input.listView, 512), catalogRevision: string(input.catalogRevision, 128), status: string(input.status, 40),
             lastUpdate: timestamp(input.lastUpdate) ? input.lastUpdate : null, lastError: string(input.lastError, 1500),
             connected: input.connected === true, refreshing: input.refreshing === true || input.status === 'updating',
             progress: { completed: count(progress.completed), total: count(progress.total) }, channels, invalidEvents };
@@ -222,11 +359,14 @@
         container.dataset.mounted = 'true';
         const window = document.defaultView;
         const elements = {};
-        for (const name of ['listName', 'refreshGuide', 'detailNumber', 'detailStation', 'detailChannel', 'detailState',
+        for (const name of ['listName', 'refreshGuide', 'openStandalone', 'detailNumber', 'detailStation', 'detailChannel', 'detailState',
             'programmeTitle', 'detailTimes', 'detailSubtitle', 'detailDescription', 'detailProgress', 'detailProgressBar',
             'previousDay', 'nextDay', 'guideDate', 'showNow', 'previousHour', 'nextHour', 'guideDuration', 'visiblePeriod',
             'channelSearch', 'guideStatus', 'statusText', 'retryGuide', 'timelineScroll', 'timelineGrid', 'emptyGuide',
-            'emptyTitle', 'emptyDescription', 'guideSummary']) elements[name] = document.getElementById(name);
+            'emptyTitle', 'emptyDescription', 'guideSummary', 'programmeActions', 'programmeAction', 'programmeActionHint',
+            'actionStatus', 'recordingsPanel', 'recordingCount', 'recordingsStatus', 'recordingsList',
+            'recordingDialog', 'recordingConfirmChannel', 'recordingConfirmProgramme', 'recordingConfirmTime',
+            'cancelRecordingConfirm', 'confirmRecording']) elements[name] = document.getElementById(name);
         let lang = language(window.navigator.language);
         let locale = lang === 'de' ? 'de-DE' : 'en-GB';
         let guide = null;
@@ -246,6 +386,15 @@
         let polling = null;
         let resizeTimer = null;
         let bridgeTimer = null;
+        let actionPending = '';
+        let confirmation = null;
+        let confirmationFocus = null;
+        let recordings = null;
+        let recordingsPending = false;
+        let recordingsReloadQueued = false;
+        let recordingsPolling = null;
+        let recordingsError = '';
+        const cancellingJobs = new Set();
         const t = (key, values) => translate(lang, key, values);
         const clock = () => guide ? guide.now + Date.now() - receivedAt : Date.now();
         const time = value => new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false }).format(value);
@@ -278,6 +427,13 @@
             text(elements.statusText, message);
             elements.guideStatus.dataset.tone = tone;
             elements.retryGuide.hidden = !retry;
+        }
+        function setActionStatus(message, tone = 'ready') {
+            if (stopped) return;
+            text(elements.actionStatus, message);
+            elements.actionStatus.hidden = !message;
+            elements.actionStatus.dataset.tone = tone;
+            fitTimeline();
         }
         function syncStatus() {
             elements.refreshGuide.disabled = !bridge || !guide || refreshPending || Boolean(guide?.refreshing)
@@ -320,6 +476,21 @@
             const available = window.innerHeight - scroll.getBoundingClientRect().top - bottom;
             if (Number.isFinite(available)) scroll.style.height = `${Math.max(233, Math.min(760, Math.floor(available)))}px`;
         }
+        function renderAction(entry) {
+            elements.programmeActions.hidden = !entry;
+            if (!entry) { elements.programmeAction.disabled = true; return; }
+            const action = programmeAction(entry.event, clock(), entry.channel.available);
+            const reference = programmeSelection(guide, entry.channel, entry.event);
+            const supported = typeof bridge?.selectProgramme === 'function' && typeof bridge?.recordProgramme === 'function';
+            elements.programmeAction.disabled = stopped || Boolean(actionPending) || Boolean(confirmation)
+                || !supported || !reference || !['view', 'record'].includes(action);
+            text(elements.programmeAction, actionPending ? t(actionPending === 'record' ? 'actionRecording' : 'actionChecking')
+                : t(action === 'view' ? 'watchNow' : 'planRecording'));
+            const hint = !supported || !reference ? 'actionUnavailable'
+                : { view: 'actionViewHint', record: guide.connected ? 'actionRecordHint' : 'actionOfflineHint',
+                    ended: 'actionEnded', unknownEnd: 'actionUnknownEnd', unavailable: 'actionUnavailable' }[action];
+            text(elements.programmeActionHint, t(hint));
+        }
         function renderDetail() {
             const entry = selection ? programmes.get(selection) : null;
             const channel = entry?.channel || guide?.channels.find(item => item.id === channelSelection);
@@ -329,6 +500,7 @@
             elements.detailState.hidden = !entry;
             elements.detailSubtitle.hidden = !entry?.event.subtitle;
             elements.detailProgress.hidden = true;
+            renderAction(entry);
             if (!entry) {
                 text(elements.programmeTitle, channel ? rowMessage(channel) : guide ? t('chooseProgramme') : t('loading'));
                 text(elements.detailTimes, '');
@@ -365,9 +537,14 @@
             else if (top + LANE_HEIGHT > scroll.scrollTop + scroll.clientHeight) scroll.scrollTop = top + LANE_HEIGHT - scroll.clientHeight;
         }
         function select(key, focus = false) {
+            if (stopped) return;
             const previous = selection;
             const entry = programmes.get(key);
             selection = entry ? key : null;
+            if (previous !== selection) {
+                if (confirmation && !actionPending) closeConfirmation();
+                if (!actionPending) setActionStatus('');
+            }
             channelSelection = entry ? entry.channel.id : channelSelection;
             if (previous && buttons.has(previous)) {
                 buttons.get(previous).classList.remove('is-selected');
@@ -532,9 +709,205 @@
             window.clearTimeout(polling);
             if (!stopped) polling = window.setTimeout(() => { if (document.hidden) schedulePoll(); else void loadGuide(); }, guide?.refreshing ? 5000 : 30000);
         }
+        function scheduleRecordingsPoll() {
+            window.clearTimeout(recordingsPolling);
+            const waitingJob = recordings?.jobs.some(job => ['queued', 'sending', 'uncertain'].includes(job.status));
+            if (!stopped && typeof bridge?.requestRecordings === 'function') recordingsPolling = window.setTimeout(() => {
+                if (document.hidden) scheduleRecordingsPoll(); else void loadRecordings();
+            }, waitingJob ? 5000 : 30000);
+        }
         function errorMessage(error, fallback) {
             const detail = string(error?.message, 320).replace(/[\r\n\t]+/gu, ' ').trim();
             return `${t(fallback)}${detail && detail !== t(fallback) ? ` ${detail}` : ''}`;
+        }
+        function selectionError(error) {
+            return ['EPG_GUIDE_CHANGED', 'EPG_PROGRAMME_CHANGED', 'EPG_PROGRAMME_NOT_FOUND',
+                'EPG_PROGRAMME_UNAVAILABLE', 'EPG_ACTION_EXPIRED'].includes(error?.code);
+        }
+        function closeConfirmation(restoreFocus = true) {
+            confirmation = null;
+            if (elements.recordingDialog.open && typeof elements.recordingDialog.close === 'function') elements.recordingDialog.close();
+            else elements.recordingDialog.removeAttribute('open');
+            if (!stopped) {
+                elements.confirmRecording.disabled = false;
+                elements.cancelRecordingConfirm.disabled = false;
+                if (restoreFocus && confirmationFocus && document.contains(confirmationFocus)) confirmationFocus.focus({ preventScroll: true });
+                renderAction(selection ? programmes.get(selection) : null);
+            }
+            confirmationFocus = null;
+        }
+        function openConfirmation(result, reference, key) {
+            if (stopped || selection !== key || !selectionExists(guide, reference)) {
+                setActionStatus(t('selectionChanged'), 'warning'); return;
+            }
+            confirmation = { reference: result.selection, key, channel: result.channel, programme: result.programme };
+            confirmationFocus = document.activeElement;
+            text(elements.recordingConfirmChannel, `${result.channel.number === null ? '' : `${result.channel.number}. `}${result.channel.name}`);
+            text(elements.recordingConfirmProgramme, result.programme.title);
+            text(elements.recordingConfirmTime, eventTime(result.programme, true));
+            elements.confirmRecording.disabled = false;
+            elements.cancelRecordingConfirm.disabled = false;
+            if (typeof elements.recordingDialog.showModal === 'function') elements.recordingDialog.showModal();
+            else elements.recordingDialog.setAttribute('open', '');
+            // The first focus is deliberately on cancel. Recording requires an explicit choice.
+            elements.cancelRecordingConfirm.focus({ preventScroll: true });
+            renderAction(selection ? programmes.get(selection) : null);
+        }
+        async function actOnProgramme() {
+            if (stopped || actionPending || confirmation || !bridge) return;
+            const key = selection;
+            const entry = programmes.get(key);
+            if (!entry || !['view', 'record'].includes(programmeAction(entry.event, clock(), entry.channel.available))) return;
+            const reference = programmeSelection(guide, entry.channel, entry.event);
+            if (!reference || typeof bridge.selectProgramme !== 'function') return;
+            actionPending = 'select';
+            setActionStatus('');
+            renderAction(entry);
+            try {
+                // The adapter checks its own clock and cache before choosing an action.
+                const result = normalizeAction(await bridge.selectProgramme(reference), reference);
+                if (stopped) return;
+                if (result.action === 'confirmRecording') openConfirmation(result, reference, key);
+                else if (result.action === 'switched') setActionStatus(t('actionSwitched', { channel: entry.channel.name }));
+                else if (result.action === 'unavailable') setActionStatus(result.message || t('actionUnavailable'), 'warning');
+                else throw new Error('EPG_PROGRAMME_RESPONSE_INVALID');
+            } catch (error) {
+                if (stopped) return;
+                setActionStatus(error?.message === 'EPG_PROGRAMME_RESPONSE_INVALID' ? t('actionResponseInvalid')
+                    : errorMessage(error, selectionError(error) ? 'selectionChanged' : 'actionFailed'), 'error');
+                if (selectionError(error)) await loadGuide();
+            } finally {
+                actionPending = '';
+                if (!stopped) renderAction(selection ? programmes.get(selection) : null);
+            }
+        }
+        async function confirmRecording() {
+            if (stopped || actionPending || !confirmation || typeof bridge?.recordProgramme !== 'function') return;
+            const chosen = confirmation;
+            if (!selectionExists(guide, chosen.reference)) {
+                closeConfirmation(); setActionStatus(t('selectionChanged'), 'warning'); return;
+            }
+            if (programmeAction(chosen.programme, clock()) !== 'record') {
+                closeConfirmation(); setActionStatus(t('recordingNoLongerFuture'), 'warning'); void loadGuide(); return;
+            }
+            actionPending = 'record';
+            elements.confirmRecording.disabled = true;
+            elements.cancelRecordingConfirm.disabled = true;
+            text(elements.confirmRecording, t('actionRecording'));
+            renderAction(selection ? programmes.get(selection) : null);
+            try {
+                const request = { ...chosen.reference, confirmed: true };
+                const result = normalizeAction(await bridge.recordProgramme(request), chosen.reference);
+                if (stopped) return;
+                closeConfirmation();
+                if (result.action === 'recordingQueued') {
+                    setActionStatus(t('actionQueued', { title: chosen.programme.title }));
+                    elements.recordingsPanel.open = true;
+                    await loadRecordings();
+                    schedulePoll();
+                } else if (result.action === 'unavailable') setActionStatus(result.message || t('actionUnavailable'), 'warning');
+                else throw new Error('EPG_PROGRAMME_RESPONSE_INVALID');
+            } catch (error) {
+                if (stopped) return;
+                closeConfirmation();
+                setActionStatus(error?.message === 'EPG_PROGRAMME_RESPONSE_INVALID' ? t('actionResponseInvalid')
+                    : errorMessage(error, selectionError(error) ? 'selectionChanged' : 'actionFailed'), 'error');
+                // A failed write is never repeated automatically. The queue read can reveal
+                // a request accepted before the connection dropped.
+                await loadRecordings();
+                if (selectionError(error)) await loadGuide();
+            } finally {
+                actionPending = '';
+                if (!stopped) {
+                    text(elements.confirmRecording, t('confirmRecording'));
+                    renderAction(selection ? programmes.get(selection) : null);
+                }
+            }
+        }
+        function renderRecordings() {
+            const jobs = recordings?.jobs || [];
+            text(elements.recordingCount, String(jobs.length));
+            const fragment = document.createDocumentFragment();
+            const shown = jobs.slice(0, 30);
+            const statusKeys = { queued: guide?.connected === false ? 'recordingWaiting' : 'recordingQueued', sending: 'recordingSending',
+                uncertain: 'recordingUncertain', scheduled: 'recordingScheduled', rejected: 'recordingRejected',
+                missed: 'recordingMissed', cancelled: 'recordingCancelled', blockedDevice: 'recordingBlockedDevice', unknown: 'recordingUnknown' };
+            for (const job of shown) {
+                const item = node('li', 'recording-job');
+                item.dataset.job = job.id;
+                const copy = node('div', 'recording-job-copy');
+                copy.appendChild(node('div', 'recording-job-title', job.programme.title));
+                copy.appendChild(node('div', 'recording-job-meta', `${job.channel.number === null ? '' : `${job.channel.number}. `}${job.channel.name} · ${eventTime(job.programme, true)}`));
+                if (job.status === 'uncertain') copy.appendChild(node('p', 'recording-job-detail', t('recordingUncertainNote')));
+                if (job.lastError) copy.appendChild(node('p', 'recording-job-detail', job.lastError));
+                item.appendChild(copy);
+                const side = node('div', 'recording-job-side');
+                const state = node('span', 'recording-job-state', t(statusKeys[job.status]));
+                state.dataset.status = job.status;
+                side.appendChild(state);
+                if (recordings.ready && job.canCancel && typeof bridge?.cancelRecording === 'function') {
+                    const button = node('button', 'text-button recording-cancel', t(cancellingJobs.has(job.id) ? 'recordingCancelling' : 'recordingCancel'));
+                    button.type = 'button';
+                    button.disabled = cancellingJobs.has(job.id);
+                    button.addEventListener('click', () => { void cancelRecording(job.id); });
+                    side.appendChild(button);
+                }
+                item.appendChild(side);
+                fragment.appendChild(item);
+            }
+            elements.recordingsList.replaceChildren(fragment);
+            if (recordingsError) {
+                text(elements.recordingsStatus, recordingsError);
+                elements.recordingsStatus.dataset.tone = 'error';
+            } else if (recordings) {
+                text(elements.recordingsStatus, !recordings.ready ? t('recordingsNotReady')
+                    : recordings.lastError || (jobs.length > shown.length ? t('recordingsLimited', { count: shown.length, total: jobs.length })
+                        : jobs.length ? t(jobs.length === 1 ? 'recordingsOne' : 'recordingsShown', { count: jobs.length }) : t('recordingsEmpty')));
+                elements.recordingsStatus.dataset.tone = recordings.lastError ? 'error' : 'ready';
+            }
+            fitTimeline();
+        }
+        async function loadRecordings() {
+            if (stopped || typeof bridge?.requestRecordings !== 'function') return;
+            if (recordingsPending) { recordingsReloadQueued = true; return; }
+            window.clearTimeout(recordingsPolling);
+            recordingsPending = true;
+            try {
+                const result = normalizeRecordings(await bridge.requestRecordings());
+                if (stopped) return;
+                recordings = result;
+                recordingsError = '';
+                renderRecordings();
+            } catch (error) {
+                if (!stopped) {
+                    recordingsError = errorMessage(error, 'recordingsFailed');
+                    renderRecordings();
+                }
+            } finally {
+                recordingsPending = false;
+                if (!stopped && recordingsReloadQueued) { recordingsReloadQueued = false; void loadRecordings(); }
+                else scheduleRecordingsPoll();
+            }
+        }
+        async function cancelRecording(jobId) {
+            if (stopped || cancellingJobs.has(jobId) || typeof bridge?.cancelRecording !== 'function') return;
+            const job = recordings?.jobs.find(item => item.id === jobId);
+            if (!recordings?.ready || !job?.canCancel) return;
+            cancellingJobs.add(jobId);
+            renderRecordings();
+            try {
+                const result = await bridge.cancelRecording(jobId);
+                if (stopped) return;
+                if (!result || !(result.job?.status === 'cancelled' || result.status === 'cancelled' || result.cancelled === true)) {
+                    throw new Error('EPG_RECORDING_CANCEL_RESPONSE_INVALID');
+                }
+                setActionStatus(t('recordingCancelledMessage'));
+            } catch (error) {
+                if (!stopped) setActionStatus(errorMessage(error, 'recordingCancelFailed'), 'error');
+            } finally {
+                cancellingJobs.delete(jobId);
+                if (!stopped) await loadRecordings();
+            }
         }
         async function loadGuide() {
             if (stopped || !bridge) return;
@@ -550,11 +923,15 @@
                 if (stopped || requested.from !== range.from || requested.to !== range.to) return;
                 guide = result;
                 receivedAt = Date.now();
+                const invalidatedConfirmation = confirmation && actionPending !== 'record' && !selectionExists(guide, confirmation.reference);
+                if (invalidatedConfirmation) closeConfirmation(false);
                 range = timeWindow(range.from, range.hours, clock());
                 text(elements.listName, [guide.instance, guide.listName].filter(Boolean).join(' · '));
                 elements.listName.title = elements.listName.textContent;
                 renderControls();
                 renderGrid();
+                renderRecordings();
+                if (invalidatedConfirmation) setActionStatus(t('selectionChanged'), 'warning');
             } catch (error) {
                 if (!stopped && requested.from === range.from && requested.to === range.to) {
                     setStatus(error?.message === 'EPG_GUIDE_RESPONSE_INVALID' ? t('responseInvalid')
@@ -609,23 +986,27 @@
             if (bridge === candidate) return;
             bridge = candidate;
             window.clearTimeout(bridgeTimer);
+            window.clearTimeout(recordingsPolling);
             translatePage();
             elements.refreshGuide.disabled = true;
             void loadGuide();
+            void loadRecordings();
         }
         function destroy() {
             if (stopped) return;
             stopped = true;
+            if (confirmation) closeConfirmation(false);
             window.clearTimeout(polling);
             window.clearTimeout(resizeTimer);
             window.clearTimeout(bridgeTimer);
+            window.clearTimeout(recordingsPolling);
             window.clearInterval(clockTimer);
             resizeObserver?.disconnect();
             window.removeEventListener('loewe-epg-bridge-ready', bindBridge);
             window.removeEventListener('resize', resize);
             document.removeEventListener('visibilitychange', visible);
         }
-        function visible() { if (!document.hidden) { updateClock(); void loadGuide(); } }
+        function visible() { if (!document.hidden) { updateClock(); void loadGuide(); void loadRecordings(); } }
         function resize() {
             window.clearTimeout(resizeTimer);
             resizeTimer = window.setTimeout(() => { if (!stopped) renderGrid(); }, 100);
@@ -645,7 +1026,16 @@
         });
         elements.channelSearch.addEventListener('input', () => { elements.timelineScroll.scrollTop = 0; renderGrid(); });
         elements.refreshGuide.addEventListener('click', () => { void refresh(); });
-        elements.retryGuide.addEventListener('click', () => { bindBridge(); void loadGuide(); });
+        elements.retryGuide.addEventListener('click', () => { bindBridge(); void loadGuide(); void loadRecordings(); });
+        elements.programmeAction.addEventListener('click', () => { void actOnProgramme(); });
+        elements.confirmRecording.addEventListener('click', () => { void confirmRecording(); });
+        elements.cancelRecordingConfirm.addEventListener('click', () => { if (!stopped && !actionPending) closeConfirmation(); });
+        elements.recordingDialog.addEventListener('cancel', event => {
+            event.preventDefault();
+            if (!stopped && !actionPending) closeConfirmation();
+        });
+        elements.recordingDialog.addEventListener('close', () => { if (confirmation && !actionPending) closeConfirmation(); });
+        elements.recordingsPanel.addEventListener('toggle', () => { if (!stopped) fitTimeline(); });
         elements.timelineGrid.addEventListener('keydown', event => {
             const button = event.target.closest('.programme');
             if (!button || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)
@@ -661,6 +1051,8 @@
         window.addEventListener('resize', resize);
         document.addEventListener('visibilitychange', visible);
         translatePage();
+        const ownUrl = standaloneUrl(window.location?.href);
+        if (ownUrl) { elements.openStandalone.href = ownUrl; elements.openStandalone.hidden = false; }
         renderControls();
         bridgeTimer = window.setTimeout(() => { if (!bridge && !stopped) setStatus(t('bridgeMissing'), 'warning', true); }, 10000);
         bindBridge();
@@ -668,5 +1060,6 @@
     }
 
     return { HOUR, DAY, MESSAGES, translate, language, timeWindow, normalizeGuide, filterChannels,
-        visibleEvents, timelineLayout, eventKey, isCurrent, keyboardTarget, mount };
+        visibleEvents, timelineLayout, eventKey, isCurrent, keyboardTarget, programmeAction, programmeSelection,
+        selectionExists, normalizeAction, normalizeRecordings, standaloneUrl, mount };
 }));

@@ -169,7 +169,7 @@ test('pollInterval zero starts without TV queries and still permits wake and exp
     try {
         await h.runtime.start();
         assert.deepEqual(h.client.calls, []);
-        assert.equal(h.adapter.timer, undefined);
+        assert.ok(h.adapter.timer == null, 'No polling or recording timer remains when there is no pending work');
         assert.equal(h.adapter.states.get('info.wakeReady').val, true);
         await h.runtime.handleStateChange('loewe-tv.0.control.powerOn', { val: true, ack: false });
         assert.deepEqual(h.client.calls, ['wake', 'key:power_on']);
@@ -178,7 +178,7 @@ test('pollInterval zero starts without TV queries and still permits wake and exp
         await h.runtime.handleStateChange('loewe-tv.0.control.refresh', { val: true, ack: false });
         assert.ok(h.client.calls.includes('getDeviceData'));
         assert.ok(h.client.calls.includes('getVolume'));
-        assert.equal(h.adapter.timer, undefined);
+        assert.ok(h.adapter.timer == null, 'Explicit refresh must not start background polling');
     } finally {
         await h.runtime.stop();
     }

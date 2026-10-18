@@ -56,5 +56,7 @@
   "EPG refresh interval (seconds)": "EPG-Aktualisierung (Sekunden)",
   "Default: 900 seconds. Enter 0 or 300 to 86400 seconds. 0 disables automatic EPG network requests, including at startup. With EPG enabled, channels.epgRefresh still refreshes manually.": "Standard: 900 Sekunden. Trage 0 oder 300 bis 86.400 Sekunden ein. 0 deaktiviert automatische EPG-Netzwerkabfragen, auch beim Start. Bei aktiviertem EPG bleibt die manuelle Aktualisierung über channels.epgRefresh möglich.",
   "Enter 0 or a whole number from 300 to 86400.": "Bitte 0 oder eine ganze Zahl von 300 bis 86.400 eintragen.",
-  "The programme guide shows the saved TV and selected channel list. Save changes above before using them in the guide. Start this adapter instance to display the guide.": "Die Programmübersicht zeigt den gespeicherten Fernseher und die ausgewählte Senderliste. Speichere Änderungen an den Einstellungen, um sie in der Übersicht zu verwenden. Die Adapterinstanz muss dafür laufen."
+  "EPG settings": "EPG-Einstellungen",
+  "Programme guide": "Programmübersicht",
+  "The programme guide uses the saved TV and selected channel list. Save changes in the other tabs first. Select a programme to watch it now or confirm a future recording. Open the guide separately using its own link.": "Die Programmübersicht nutzt den gespeicherten TV und die gewählte Senderliste. Änderungen in den anderen Reitern zuerst speichern. Wähle eine Sendung aus, um sie jetzt anzusehen oder eine zukünftige Aufnahme zu bestätigen. Über den eigenen Link lässt sich die Übersicht separat öffnen."
 }

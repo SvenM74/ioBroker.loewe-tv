@@ -2,6 +2,7 @@
 
 const utils = require('@iobroker/adapter-core');
 const { AdapterRuntime } = require('./lib/adapter-runtime');
+const EPG_COMMANDS = ['getEpgGuide', 'refreshEpgGuide', 'selectEpgProgramme', 'recordEpgProgramme', 'getRecordings', 'cancelRecording'];
 
 function epgGuideUrl(namespace, message) {
     // iframeSendTo requires a URL string, including during adapter startup.
@@ -24,7 +25,7 @@ function epgGuideUrl(namespace, message) {
 // { error } would break the selector instead of showing the connection problem.
 function messageFailure(command, message, error) {
     const reason = typeof error?.message === 'string' ? error.message : 'Die Anfrage ist fehlgeschlagen.';
-    if (['getEpgGuide', 'refreshEpgGuide'].includes(command)) {
+    if (EPG_COMMANDS.includes(command)) {
         return { error: reason.slice(0, 1200), code: typeof error?.code === 'string' ? error.code.slice(0, 80) : 'EPG_GUIDE_UNAVAILABLE' };
     }
     if (command === 'getDiscoveredTvs') return [{ value: '', label: `Gerätesuche nicht verfügbar: ${reason}` }];
@@ -68,7 +69,7 @@ class LoeweTv extends utils.Adapter {
     async onMessage(message) {
         if (!message || !message.callback || typeof message.from !== 'string' || !message.from
             || !['getChannelLists', 'refreshChannelLists', 'getDiscoveredTvs', 'discoverTvs',
-                'getEpgGuideUrl', 'getEpgGuide', 'refreshEpgGuide'].includes(message.command)) return;
+                'getEpgGuideUrl', ...EPG_COMMANDS].includes(message.command)) return;
 
         if (message.command === 'getEpgGuideUrl') {
             // Render the guide even before the runtime is ready. Its own error
@@ -96,7 +97,9 @@ class LoeweTv extends utils.Adapter {
 
         // Network searches have their own shorter runtime deadlines. Keep the UI response
         // bounded even if startup or a future runtime implementation fails.
-        const timeout = message.command === 'getChannelLists' ? 35000 : message.command === 'discoverTvs' ? 10000 : 4000;
+        const timeout = message.command === 'getChannelLists' ? 35000
+            : ['discoverTvs', 'selectEpgProgramme'].includes(message.command) ? 10000
+                : ['recordEpgProgramme', 'cancelRecording'].includes(message.command) ? 6000 : 4000;
         timer = setTimeout(() => reply(messageFailure(message.command, message.message,
             new Error('Zeitlimit erreicht. Fernseher und laufende Adapterinstanz prüfen.'))), timeout);
         timer.unref?.();
@@ -108,7 +111,7 @@ class LoeweTv extends utils.Adapter {
                 throw new Error(message.command === 'getChannelLists'
                     ? 'Ungültige Antwort beim Laden der Senderlisten.' : 'Ungültige Antwort beim Laden der gefundenen Fernseher.');
             }
-            if (['getEpgGuide', 'refreshEpgGuide'].includes(message.command)
+            if (EPG_COMMANDS.includes(message.command)
                 && (!response || typeof response !== 'object' || Array.isArray(response))) {
                 throw new Error('Ungültige Antwort der EPG-Übersicht.');
             }

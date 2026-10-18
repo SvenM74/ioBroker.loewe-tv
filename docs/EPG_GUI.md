@@ -1,93 +1,103 @@
-# Programmübersicht in der Instanz-Konfiguration
+# Programmübersicht und Aufnahmeaufträge
 
-Ab **Version 0.1.10**, Build **`0.1.10-epg-guide.1`**, enthält die Instanz-Konfiguration eine eingebettete **Programmübersicht**. Sie zeigt die TV-Sender der gespeicherten Senderliste mit einer gemeinsamen Zeitachse. Du kannst das Programm durchsuchen, in der Zeit blättern und die Informationen zu einzelnen Sendungen lesen.
-
-Die Daten kommen weiterhin ausschließlich vom Fernseher. Die Übersicht verwendet denselben vorhandenen EPG-Bestand wie die Datenpunkte unter `channels.tv.<Sender>.epg`. Zusätzlich zu aktueller und nächster Sendung zeigt sie weitere Vorschauen an, soweit diese bereits vom TV geliefert wurden und im Cache vorhanden sind. Die [EPG-Anleitung](EPG.md) beschreibt den Abruf und die unveränderten Datenpunkte für Automationen.
+**Version 0.1.11, Build `0.1.11-epg-recording.1`**, bietet zwei getrennte Reiter: **EPG-Einstellungen** für Aktivierung und Abrufintervall sowie **Programmübersicht** für die Senderliste mit Zeitachse, Sendungsdetails und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
 
 ## Öffnen und vorbereiten
 
-1. Installiere den Build **`0.1.10-epg-guide.1`** nach der [Updateanleitung](INSTALLATION.md#update-auf-0110). Der Datenpunkt `info.adapterBuild` muss diese Kennung anzeigen.
-2. Verwende **ioBroker Admin ab 7.7.28**. Die eingebettete Ansicht benötigt die dort verfügbare Komponente `iframeSendTo`. Lade nach dem Update die Admin-Seite vollständig neu und öffne die Instanz-Konfiguration erneut.
-3. Starte die betreffende Adapterinstanz, beispielsweise **`loewe-tv.0`**. Öffne **Instanzen → loewe-tv.0 → Konfiguration** und prüfe die gespeicherte TV-Adresse sowie die ausgewählte TV-Senderliste.
-4. Öffne den Reiter **EPG**. Aktiviere **Programminformationen aktivieren** und speichere, falls du diese Einstellung oder die Senderliste geändert hast.
-5. Unter den EPG-Einstellungen erscheint die **Programmübersicht**. Bei erreichbarem Fernseher kannst du mit **EPG aktualisieren** einen Abgleich starten. Der Fortschritt wird angezeigt; du kannst währenddessen weiter in der Übersicht lesen.
+1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0111). `info.adapterBuild` muss **`0.1.11-epg-recording.1`** anzeigen.
+2. Verwende **ioBroker Admin ab 7.7.28**. Lade Admin nach dem Update vollständig neu und öffne die Instanz-Konfiguration erneut.
+3. Starte die betreffende Instanz, beispielsweise **`loewe-tv.0`**. Prüfe unter **Verbindung** und **Senderlisten** die TV-Adresse und die gewünschte TV-Senderliste.
+4. Aktiviere unter **EPG-Einstellungen** die **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**. Speichere Änderungen, bevor du die Übersicht verwendest.
+5. Öffne **Programmübersicht**. **EPG aktualisieren** startet bei erreichbarem TV einen Abgleich; der Fortschritt erscheint in der Ansicht.
 
-Das normale Abrufintervall beträgt **900 Sekunden**. **EPG-Aktualisierung (Sekunden) = 0** schaltet automatische TV-Abfragen einschließlich des Erstabrufs aus. Solange EPG aktiviert ist, bleibt die manuelle Schaltfläche nutzbar. Bereits vorhandene Programme können auch ohne neuen Abruf angezeigt werden.
+Ein EPG-Intervall von `0` deaktiviert automatische EPG-Abfragen einschließlich des Erstabrufs. Bei aktiviertem EPG bleiben manuelle Aktualisierungen möglich. Das Intervall beeinflusst weder die Anzeige gespeicherter Programme noch die Bearbeitung bereits vorgemerkter Aufnahmeaufträge.
 
-Die Übersicht läuft innerhalb der bestehenden ioBroker-Administration mit deren Adresse, Protokoll, Port und angemeldeter Sitzung. Es wird kein zusätzlicher Webserver oder Port für den Adapter eingerichtet. Öffne sie über die Instanz-Konfiguration. Eine separat vom Dateisystem geöffnete HTML-Datei hat keine Verbindung zur Adapterinstanz. Die Berechtigungen der Admin-Sitzung gelten auch für diese Ansicht.
+## Bildaufbau und Navigation
 
-## Bildaufbau
+Oben stehen Sender, Titel, Start, bekanntes Ende, Untertitel und Beschreibung der ausgewählten Sendung. Für eine eindeutig laufende Sendung erscheint der Fortschritt. Die Senderkachel zeigt Name und Position; Livevideo ist nicht integriert.
 
-**Oben stehen die Details zur ausgewählten Sendung.** Die Senderkachel zeigt Position und Sendername. Daneben stehen Sendungstitel, Start und gegebenenfalls Ende und Dauer, Untertitel sowie die gelieferte Beschreibung. Bei einer zeitlich eindeutig laufenden Sendung zeigt ein Balken den Fortschritt. Fehlende Texte bleiben als fehlende Informationen erkennbar.
-
-Die Senderkachel ersetzt in diesem Aufbau den Livebild-Bereich des TV-Beispiels. Sie zeigt Text und Senderposition; ein Videostream ist in dieser Version nicht integriert. Auch das Referenzfoto wird nicht als vermeintliches Livebild eingebettet.
-
-**Unter den Details stehen die Bedienelemente** für Datum, Uhrzeit, angezeigten Zeitraum und Sendersuche. Die Statuszeile nennt den letzten Abgleich beziehungsweise den Fortschritt oder einen Hinweis zur Datenverfügbarkeit.
-
-**Im unteren Bereich liegt die Programmtabelle.** Links stehen die Sender nach ihrer gespeicherten Position sortiert. Rechts sind die Sendungen zeitlich angeordnet. Bei bekannter Endzeit entspricht die Breite einer Karte der Sendedauer im gewählten Zeitraum. Die aktuelle Uhrzeit ist markiert. Senderliste und Zeitachse bleiben beim Scrollen zur Orientierung sichtbar.
-
-Die Zeilen entsprechen den eingelesenen TV-Sendern der **in dieser Instanz gespeicherten Senderliste**. Radiosender und Sender aus anderen Listen werden nicht ergänzt. Mehrere Programmplätze desselben TV-Dienstes werden wie im bestehenden Senderbaum zusammengefasst; seine kleinste vorhandene Position bestimmt die Einordnung. Sender ohne passende EPG-Daten bleiben als Zeilen sichtbar.
-
-## Bedienung
+Darunter stehen Datum, Zeitfenster, Suche und Abrufstatus. Die Programmtabelle ordnet die Sender links nach ihrer gespeicherten Position und die Sendungen rechts nach der Uhrzeit an. Mehrere Plätze desselben TV-Dienstes teilen sich wie im Senderbaum eine Zeile; die kleinste gültige Position bestimmt ihre Einordnung. Sender ohne passende EPG-Daten bleiben sichtbar. Die Ansicht enthält ausschließlich die TV-Sender der konfigurierten Liste.
 
 | Element | Wirkung |
 |---|---|
-| **Sendung anklicken** | Zeigt die verfügbaren Informationen oben an. Der Fernseher wird dadurch nicht umgeschaltet. |
-| **Sendername oder Senderposition anklicken** | Wählt die Zeile für die Detailanzeige. Auch diese Auswahl ist rein innerhalb der Übersicht. |
-| **Sender suchen** | Filtert nach Sendername oder Position. Mehrere Suchwörter werden gemeinsam berücksichtigt. Ein leeres Suchfeld zeigt wieder die ganze Liste. |
-| **Datum** | Wählt den Tag innerhalb des verfügbaren Navigationsbereichs. Die bisherige Uhrzeit wird soweit möglich beibehalten. |
-| Pfeile **Vorheriger Tag / Nächster Tag** | Verschieben den angezeigten Ausschnitt um einen Tag. |
-| Pfeile **Eine Stunde zurück / Eine Stunde weiter** | Verschieben den Ausschnitt um eine Stunde. Der sichtbare Zeitbereich wird zwischen den Pfeilen angezeigt. |
-| **Jetzt** | Kehrt zum Ausschnitt um die aktuelle Uhrzeit zurück. |
-| Auswahl **2 Stunden / 3 Stunden / 6 Stunden** | Legt die Breite des sichtbaren Zeitfensters fest. Voreinstellung sind drei Stunden. |
-| **EPG aktualisieren** | Fordert einen neuen TV-Abgleich für die Sender der gespeicherten Liste an. Ein bereits laufender Abgleich wird weiterverwendet. |
-| **Ansicht erneut laden** | Erscheint bei einem Ladefehler und liest die Ansicht erneut aus dem vorhandenen Bestand. Diese Schaltfläche fordert keinen neuen TV-EPG-Abruf an. |
-| Scrollen | Zeigt weitere Sender beziehungsweise den übrigen horizontalen Teil des gewählten Zeitfensters. |
+| Sendung anklicken | Wählt die Sendung und zeigt ihre Details sowie die passende Aktion. |
+| Sendername oder Position anklicken | Wählt die Senderzeile für die Detailanzeige. |
+| **Sender suchen** | Filtert nach Name oder Position; ein leeres Suchfeld zeigt wieder alle Sender. |
+| Datum und Tagespfeile | Wählen den Tag innerhalb des verfügbaren Navigationsbereichs. |
+| Stundenpfeile | Verschieben den sichtbaren Ausschnitt um eine Stunde. |
+| **Jetzt** | Kehrt zur aktuellen Uhrzeit zurück. |
+| **2 Stunden / 3 Stunden / 6 Stunden** | Wählt die Breite der Zeitachse; Standard sind drei Stunden. |
+| **EPG aktualisieren** | Fordert den vorhandenen TV-Abgleich an. Ein bereits laufender Abgleich wird weiterverwendet. |
+| **Separat öffnen** | Öffnet dieselbe Instanzübersicht als eigene Seite unter der bestehenden Admin-Adresse. |
+| **Aufnahmeaufträge** | Zeigt vorgemerkte Aufträge, ihren Übertragungszustand und gegebenenfalls einen Fehler. |
 
-Mit der Tabulatortaste erreichst du die Bedienelemente und Programmkarten. Innerhalb der Programmtabelle wechseln die Pfeiltasten zwischen Sendungen beziehungsweise Senderzeilen. Die Detailanzeige folgt der Auswahl. **Pos1** und **Ende** führen zur ersten beziehungsweise letzten angezeigten Sendung der Zeile.
+Tab erreicht die Bedienelemente; Pfeiltasten wechseln innerhalb der Programmtabelle zwischen Sendungen und Zeilen. **Pos1** und **Ende** führen zur ersten beziehungsweise letzten angezeigten Sendung der Zeile. Die Uhrzeiten erscheinen in der lokalen Zeitzone des Browsers. Für Aktionsprüfungen verwendet der Adapter die Uhrzeit des ioBroker-Rechners; diese muss stimmen.
 
-Die dargestellten Uhrzeiten verwenden die lokale Zeitzone des Browsers. Die zugrunde liegenden Zeiten bleiben Unix-Zeitstempel in Millisekunden. Die Systemzeit des ioBroker-Rechners sollte stimmen, damit laufende Sendungen richtig eingeordnet werden.
+Suche, Blättern und reine Detailauswahl ändern keine Einstellungen. Die Übersicht verwendet die **gespeicherte** TV-Adresse und Liste. Ungespeicherte Formularänderungen werden erst nach dem Speichern wirksam.
 
-Suche, Datumsnavigation und die Auswahl einer Sendung ändern keine Adaptereinstellungen. Eine geänderte TV-Adresse, Senderliste oder EPG-Aktivierung wird dagegen erst nach dem **Speichern** wirksam. Bis dahin zeigt die Übersicht die bisher gespeicherte Konfiguration. Nach einem Listenwechsel werden die Zeilen nach dem Senderabgleich aktualisiert. Bei mehreren Adapterinstanzen zeigt jede ihre eigene gespeicherte TV-Zuordnung und Liste.
+## Laufende Sendung ansehen
 
-## Wie weit reicht die Vorschau?
+Wähle eine aktuelle Sendung und drücke **Jetzt ansehen**. Der Adapter prüft Senderzuordnung und Programmzeiten erneut. Der Umschaltbefehl wird nur gesendet, wenn diese Sendung **jetzt eindeutig läuft**. Überschneidungen, unbekannte Endzeiten, veraltete Daten oder eine inzwischen geänderte Senderzuordnung verhindern die Aktion.
 
-Der bestehende TV-Abruf liest die Programmtabelle ungefähr bis **24 Stunden voraus**. Die tatsächlich verfügbare Vorschau hängt davon ab, welche Sendungen der Fernseher für den jeweiligen Kanal liefert, wann der letzte Abruf erfolgreich war und welche Daten innerhalb der Cachegrenzen erhalten bleiben.
+Die Prüfung erfolgt nochmals unmittelbar vor dem TV-Befehl, auch wenn die Anfrage zuvor auf eine freie Verbindung oder die TV-Anmeldung warten musste. Endet die Sendung währenddessen, wird kein verspäteter Umschaltbefehl mehr gesendet. Eine Meldung über den gesendeten Befehl bestätigt dessen Übergabe; sie ist kein Nachweis des tatsächlich angezeigten Bildes. Der TV muss erreichbar sein. Die Aktion startet keinen Einschaltablauf.
 
-Die Oberfläche erlaubt Zeitnavigation ungefähr von **24 Stunden zurück bis 48 Stunden voraus**; das gewählte Fenster wird an diesen Grenzen begrenzt. Diese Navigation ist keine Zusage, dass für den gesamten Bereich Programme vorliegen. Ein Datum auszuwählen erweitert den TV-Abruf nicht. Bereiche außerhalb des gelieferten Plans bleiben leer. Mit **Jetzt** gelangst du zurück zur aktuellen Vorschau.
+## Zukünftige Sendung aufnehmen
 
-Der Cache ist keine Programmhistorie. Bereits beendete Sendungen werden bereinigt. Auch die Vorschau für morgen kann Lücken haben. Eine neue TV-Abfrage kann zusätzliche vom TV bereitgestellte Informationen übernehmen, aber fehlende Daten werden weder erfunden noch durch eine alternative EPG-Quelle ersetzt.
+1. Wähle eine zukünftige Sendung mit eindeutigem Sender sowie bekannten Start- und Endzeiten.
+2. Drücke **Aufnahme planen**. Der Dialog **Sendung aufnehmen?** zeigt Sender, Titel und Zeitraum.
+3. Bestätige mit **Aufnahme vormerken**. **Abbrechen** verwirft den Dialog ohne Auftrag.
+4. Öffne **Aufnahmeaufträge**, um den Zustand zu verfolgen.
 
-**Unbekannte Endzeiten bleiben unbekannt.** Eine solche Sendung wird entsprechend markiert und zeigt **Ende unbekannt**. Ihre Kartendarstellung ist keine bestätigte Dauer. Aus dem Beginn der nächsten Sendung wird kein Ende abgeleitet, und ohne sichere Endzeit wird keine laufende Sendung mit Fortschrittsbalken behauptet. Überlappende Programme können auf zusätzlichen Spuren derselben Senderzeile erscheinen, damit die gelieferten Angaben sichtbar bleiben.
+Der Adapter prüft die Auswahl beim Bestätigen erneut. Hat die Sendung inzwischen begonnen oder sind die Angaben nicht mehr eindeutig, entsteht kein neuer Auftrag. Vergangene Sendungen und Einträge ohne vollständige Zeiten können nicht vorgemerkt werden.
 
-Beschreibungen werden nur angezeigt, soweit sie geliefert und im Cache vorhanden sind. Sehr lange Texte können bereits beim Speichern begrenzt werden. Wenn eine zusätzliche Kürzung für die Übertragung der Übersicht notwendig ist, weist die Detailanzeige darauf hin.
+Die Vormerkung wird vor dem Versand dauerhaft in **`loewe-tv.0.recordings.jobs`** gespeichert und übersteht einen Adapterneustart. Der Datenpunkt enthält ein JSON-Journal und ist **nur lesbar**. Die Oberfläche ist der vorgesehene Weg zum Anlegen und Entfernen einer noch ungesendeten Vormerkung.
 
-## Statusmeldungen und fehlende Daten
+Ist der TV offline, bleibt der Auftrag in der Warteschlange. Solange Aufträge zu bearbeiten sind, prüft der laufende Adapter die Erreichbarkeit regelmäßig, unabhängig von den drei normalen Abrufintervallen. Sobald die Steuerschnittstelle erreichbar ist und die Sendung noch nicht begonnen hat, kann er den Timer übertragen. **Dafür wird kein Wake-on-LAN und kein Einschaltbefehl ausgelöst.** Ohne Schnellstart ist der TV laut bisheriger Nutzerrückmeldung im Standby nicht über das Netzwerk erreichbar; dann muss er rechtzeitig auf anderem Weg eingeschaltet werden.
 
-| Anzeige oder Situation | Bedeutung und nächster Schritt |
+Jeder Auftrag wird höchstens einmal möglicherweise wirksam an den TV gesendet. Nur wenn sicher noch kein Aufnahmebefehl gesendet wurde, darf ein späterer Versuch folgen. Bei einer mehrdeutigen Antwort oder einem Verbindungsabbruch nach möglichem Versand erfolgt keine automatische Wiederholung. Stattdessen gleicht der Adapter die TV-Timerliste ab.
+
+### Zustände der Aufnahmeaufträge
+
+| Zustand | Bedeutung |
 |---|---|
-| **EPG wird vom Fernseher geladen …** | Der bestehende Hintergrundabgleich läuft. Der Fortschritt nennt bearbeitete und insgesamt vorgesehene Sender. Große Listen werden in Abschnitten abgearbeitet. |
-| **Noch keine Programmdaten vorhanden** | Für diesen Sender liegt noch kein verwendbarer Plan vor. Prüfe bei eingeschaltetem TV die gespeicherte Liste und starte **EPG aktualisieren**. |
-| **Keine Sendungen in diesem Zeitraum** | Der gewählte Ausschnitt enthält keine passenden Daten. Mit **Jetzt** zur aktuellen Vorschau zurückkehren; gegebenenfalls den TV-Abgleich aktualisieren. |
-| **Kein passender Sender** | Die Suche findet keine Zeile. Suchbegriff ändern oder löschen. |
-| **Der Fernseher ist nicht verbunden …** | Vorhandene, noch verwendbare Programmdaten können angezeigt werden. Für neue Informationen muss der TV wieder erreichbar sein. |
-| Letzter Abruf fehlgeschlagen / gespeicherte Daten | Ein vorübergehender TV-Fehler löscht brauchbare Daten nicht sofort. Der Senderstatus kann `cached` sein. Die Anzeige ist dann der zuletzt gelieferte Plan, keine Bestätigung eines frischen Abrufs. |
-| **Programmdaten veraltet** | Der letzte gültige Abruf ist älter als 24 Stunden. Der Plan wird ausgeblendet. Erneut abrufen, sobald der TV erreichbar ist. |
-| **EPG deaktiviert** | EPG in der Konfiguration aktivieren und speichern. Bei deaktiviertem EPG werden keine Programme angezeigt und kein manueller TV-Abgleich gestartet. |
-| Noch keine gespeicherte Senderliste | In den Instanzeinstellungen die gewünschte TV-Liste auswählen und speichern. Warten, bis ihre Sender eingelesen sind. |
-| **Sender nicht verfügbar** | Der Sender ist nicht mehr als verfügbar markiert. Die Übersicht verwendet hierfür keine alten Programme. |
-| **Programmdaten konnten nicht geladen werden** | Fehler am betroffenen Sender. Die Fehlerangaben und `epg.data.tvDiagnostic` helfen bei der Diagnose; siehe [TV-Abruf diagnostizieren](EPG.md#tv-abruf-diagnostizieren). |
-| **Instanz nicht erreichbar** oder Ansicht lädt nicht | Prüfen, ob die Instanz läuft, Admin mindestens 7.7.28 verwendet wird und das neue Adapterpaket installiert ist. Admin neu laden und die Konfiguration erneut öffnen. |
-| Admin-Sitzung abgelaufen oder nicht berechtigt | Erneut in ioBroker Admin anmelden beziehungsweise die vorhandenen Benutzerrechte prüfen und die Konfiguration neu öffnen. |
+| `queued` – Wartet auf Übertragung | Dauerhaft gespeichert, noch nicht an den TV gesendet. Bei fehlender Verbindung wartet der Adapter. |
+| `sending` – Wird übertragen | Der Versand wird bearbeitet. Nach einem Neustart in diesem Zustand folgt zunächst `uncertain`. |
+| `uncertain` – Übertragung unklar | Ein Versand könnte erfolgt sein, aber ein eindeutiger Timerlistennachweis fehlt. Kein automatischer erneuter Versand. Timer am TV prüfen. |
+| `scheduled` – Im TV geplant | Genau ein passender Timer wurde in einer vollständig auswertbaren TV-Timerliste nachgewiesen. Senderkennung sowie Start und Ende müssen passen. |
+| `missed` – Startzeit verpasst | Der noch ungesendete Auftrag konnte vor Sendungsbeginn nicht übertragen werden. Er wird nicht nachträglich gesendet. |
+| `blockedDevice` – Anderer Fernseher konfiguriert | Die konfigurierte TV-Adresse oder der Steuerport gehören nicht zum ursprünglich vorgemerkten Ziel. Es erfolgt kein Versand an das andere Ziel. |
+| `rejected` – Abgelehnt | Der Auftrag wurde ausdrücklich als zurückgewiesen gemeldet; die Fehlerangabe enthält den Grund. |
+| `cancelled` – Vormerkung entfernt | Eine noch ungesendete Vormerkung wurde entfernt. |
 
-Laut der bisherigen Nutzerrückmeldung schaltet der getestete TV im Standby ohne Schnellstart seine Netzwerkfunktionen ab. Dann sind frische Programmdaten erst wieder bei erreichbarem TV möglich. Die [Kompatibilitätsübersicht](COMPATIBILITY.md) beschreibt diese Rückmeldung zum Schnellstart; daraus folgt keine allgemeine Zusage für andere Modelle.
+**`scheduled` bestätigt einen TV-Timer, keine erfolgreich ausgeführte Aufnahme.** Eine Antwort auf `ProgramTimer`, auch `Result=0`, reicht als Nachweis nicht aus. Für die neue Aufnahmefunktion liegt noch **keine echte Timerantwort der Nutzergeräte** vor. Unbekannte Timerlistenformate oder unvollständige Zuordnungen bleiben `uncertain`; die [Protokollnotizen](recording-protocol.md) dokumentieren die belegten Felder und Grenzen.
 
-## Aktualisierung und Umfang
+**Vormerkung entfernen** ist nur vor dem Versand verfügbar. Bereits übertragene oder unklare TV-Timer werden damit nicht gelöscht. Prüfe und ändere solche Timer direkt am Fernseher. Änderungen der EPG-Zeiten passen einen gespeicherten Auftrag in dieser Version nicht automatisch an. Aufnahmeregeln, Vor-/Nachlauf und die Wahl eines anderen Aufnahmeziels sind noch nicht integriert.
 
-Die Übersicht liest ihren Stand aus dem bereits geladenen **Arbeitsspeicher-Cache** des Adapters. Das Öffnen der Ansicht, die Sendersuche, das Blättern und das regelmäßige Nachladen der Anzeige lösen keine eigenen TV-Abfragen aus. Dafür werden auch nicht bei jeder Anzeigeaktualisierung alle EPG-Datenpunkte aus der Datenbank gelesen. Größere Senderlisten werden in begrenzten Seiten übertragen und in der Oberfläche zusammengeführt.
+## Als separate Seite öffnen
 
-Nur **EPG aktualisieren** fordert ausdrücklich einen neuen Abgleich an. Dieser nutzt dieselbe vorhandene TV-Warteschlange, dieselben Abrufgrenzen und dieselbe Quellenprüfung wie der bisherige EPG-Abruf. Die Schaltfläche wartet nicht auf den kompletten Senderbestand, bevor die Oberfläche weiter benutzbar ist. Ein laufender Abgleich wird durch erneutes Anfordern nicht von vorn gestartet. Der konfigurierte automatische Abruf bleibt unverändert.
+Die Schaltfläche **Separat öffnen** übernimmt Adresse, HTTP/HTTPS, Port, einen vorhandenen Proxy-Pfad und die Instanznummer aus der aktuellen Ansicht. Diese URL lässt sich als Lesezeichen speichern. Für eine normale Admin-Installation auf Port 8081 lautet sie beispielsweise:
 
-Die neue Ansicht benötigt keine zusätzlichen Datenpunkte. Vorhandene Skripte können weiterhin `epg.data` beziehungsweise `epg.now.*` und `epg.next.*` verwenden. **Aufnahmeaufträge und TV-Timer lassen sich in dieser Version noch nicht über die Programmübersicht anlegen.** Die weitere Planung steht in der [Roadmap](ROADMAP.md).
+```text
+http://IOBROKER-HOST:8081/adapter/loewe-tv/epg.html?instance=0
+```
 
-Der direkte TV-EPG-Abruf wurde vom Nutzer mit dem früheren 0.1.8-Stand auf **Loewe bild 7.55 / SL420 / V5.4.6.0** und **Loewe bild 5.32 / SL310F / V5.4.6.0** bestätigt. Für die neue Oberfläche in **`0.1.10-epg-guide.1`** steht ein eigener Test in einer realen ioBroker-Installation mit TV noch aus. Die bekannten Abruf- und Cachegrenzen stehen unter [Umfang und Belastung](EPG.md#umfang-und-belastung).
+`IOBROKER-HOST` ist die Adresse deines ioBroker-Rechners. Für `loewe-tv.1` lautet der Parameter `instance=1`. Bei HTTPS, abweichendem Port oder einem Reverse Proxy verwende den vom Button geöffneten Link. Die Seite läuft über den **vorhandenen ioBroker Admin** und verwendet dessen konfigurierte Anmeldung und Benutzerrechte. Es gibt keinen eigenen Webserver und keine zusätzliche Portfreigabe für den Adapter. Von außerhalb des Heimnetzes muss derselbe Admin-Zugang bereits erreichbar sein. Eine lokal vom Dateisystem geöffnete HTML-Datei verbindet sich nicht mit dem Adapter.
+
+## Datenumfang und Hilfe
+
+Der TV-Abruf reicht ungefähr 24 Stunden voraus; nur tatsächlich gelieferte und gespeicherte Daten erscheinen. Die Zeitnavigation von ungefähr 24 Stunden zurück bis 48 Stunden voraus erweitert den Abruf nicht. Der Cache ist keine Programmhistorie. Endzeiten werden nicht aus der nächsten Sendung geschätzt; mehrdeutige oder fehlende Angaben bleiben sichtbar unvollständig.
+
+| Situation | Nächster Schritt |
+|---|---|
+| Keine Programme oder leerer Zeitraum | Mit **Jetzt** zur aktuellen Vorschau zurückkehren, gespeicherte Liste prüfen und bei eingeschaltetem TV **EPG aktualisieren** auslösen. |
+| **EPG deaktiviert** | Unter **EPG-Einstellungen** aktivieren und speichern. |
+| TV offline / gespeicherte Daten | Noch gültige Daten bleiben sichtbar. Frische Programmdaten benötigen einen erreichbaren TV. |
+| Programmdaten veraltet | Nach mehr als 24 Stunden seit dem letzten gültigen Abruf wird der Plan ausgeblendet; erneut abrufen. |
+| Auswahl inzwischen geändert | Übersicht neu laden und die Sendung erneut auswählen. |
+| Instanz oder Ansicht nicht erreichbar | Instanz starten, Build und Admin-Version prüfen; Admin nach dem Update neu laden. |
+| Admin-Sitzung abgelaufen oder nicht berechtigt | Über den vorhandenen Admin-Zugang erneut anmelden beziehungsweise Benutzerrechte prüfen. |
+| `uncertain` bei einer Aufnahme | Timerliste direkt am TV prüfen. Für die Protokollanpassung wird eine echte, auswertbare Timerantwort benötigt. |
+
+Öffnen, Suchen und Blättern lesen den vorhandenen Arbeitsspeicher-Cache und starten keine eigenen EPG-TV-Abfragen. **EPG aktualisieren** und das konfigurierte Intervall verwenden den bestehenden Hintergrundabgleich. Die EPG-Datenpunkte unter jedem Sender bleiben unverändert; neu ist das Aufnahmejournal `recordings.jobs`.
+
+Der direkte TV-EPG-Abruf wurde mit dem früheren 0.1.8-Stand vom Nutzer auf **bild 7.55 / SL420 / V5.4.6.0** und **bild 5.32 / SL310F / V5.4.6.0** bestätigt. Für **`0.1.11-epg-recording.1`**, die separate Seite und den Aufnahmeablauf stehen ein aktueller Browser- und Gerätetest noch aus. Weitere Diagnosefelder und Abrufgrenzen beschreibt die [EPG-Anleitung](EPG.md).

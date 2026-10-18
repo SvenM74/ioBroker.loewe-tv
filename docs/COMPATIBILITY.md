@@ -1,10 +1,12 @@
 # Gerätekompatibilität und bestätigte Tests
 
-Stand: **18. Oktober 2026**. Aktueller Adapter: **0.1.10**, Build **`0.1.10-epg-guide.1`**.
+Stand: **18. Oktober 2026**. Aktueller Adapter: **0.1.11**, Build **`0.1.11-epg-recording.1`**.
 
-Version 0.1.10 ergänzt die [Programmübersicht mit Zeitachse in den EPG-Einstellungen](EPG_GUI.md). Sie zeigt den vorhandenen TV-EPG-Cache der gespeicherten Senderliste. Die seit 0.1.9 vorhandene [Netzwerksuche](NETWORK_DISCOVERY.md) bietet erkannte Loewe-TV-Adressen zur Auswahl an. Für die neue eingebettete Übersicht wird Admin ab 7.7.28 benötigt. Der Adapter ruft Programminformationen weiterhin ausschließlich direkt vom Fernseher ab; externe EPG-Einstellungen und die zuvor entfernten Datenpunkte bleiben entfernt. Die [Updateanleitung](INSTALLATION.md#update-auf-0110) beschreibt die Installation des neuen Pakets. Die [EPG-Anleitung](EPG.md) beschreibt den aktuellen Funktionsumfang; der [Prüfbericht zu `0.1.8-tv-epg-only.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die vorherige TV-EPG-Überarbeitung.
+Version 0.1.11 trennt **EPG-Einstellungen** und **Programmübersicht** in eigene Reiter. Die [Programmübersicht](EPG_GUI.md) zeigt den TV-EPG-Cache der gespeicherten Senderliste und kann separat über die bestehende Admin-Adresse geöffnet werden. Laufende Sendungen lassen sich zum Umschalten auswählen; zukünftige Sendungen können nach Bestätigung zur Aufnahme vorgemerkt werden. Ein dauerhaftes Journal hält noch nicht übertragene Aufträge bis zur Erreichbarkeit des Fernsehers vor. Der Adapter verwendet dafür die in der App belegten Befehle `ProgramTimer` und `GetTimerList`; die [Aufnahme-Protokollbeschreibung](recording-protocol.md) nennt die Belege und Grenzen.
 
-**Für den neuen Build `0.1.10-epg-guide.1` liegt noch kein eigener Gerätetest vor.** Die folgenden EPG-Bestätigungen stammen vom früher bereitgestellten 0.1.8-Stand und bleiben als historische Geräteergebnisse erhalten.
+Die [Netzwerksuche](NETWORK_DISCOVERY.md), die Mindestversion Admin 7.7.28 und der ausschließliche EPG-Abruf vom TV bleiben erhalten. Die [Updateanleitung](INSTALLATION.md#update-auf-0111) beschreibt das neue Paket. Der [Prüfbericht zu 0.1.11](PRUEFBERICHT_0.1.11.md) dokumentiert die automatisierten Prüfungen.
+
+**Für `0.1.11-epg-recording.1` liegt noch kein eigener Gerätetest vor. Insbesondere die Timerprogrammierung und das tatsächliche Aufnehmen mit DR+ sind auf den beiden Fernsehern noch zu bestätigen.** Die folgenden EPG-Bestätigungen stammen vom früher bereitgestellten 0.1.8-Stand und bleiben als historische Geräteergebnisse erhalten.
 
 ## Rückmeldungen aus Gerätetests
 
@@ -14,7 +16,7 @@ Version 0.1.10 ergänzt die [Programmübersicht mit Zeitachse in den EPG-Einstel
 | **Loewe bild 5.32** | **SL310F** | **V5.4.6.0** | Direkter EPG-Abruf vom Fernseher mit dem damaligen 0.1.8-Stand am 18.10.2026 bestätigt. Die vom Nutzer ergänzte Gerätetabelle bestätigt außerdem Fernbedienung, Senderlisten und TV-Auswahl. |
 | **Loewe Connect 26 SL** | **MB180** laut Loewe-Serviceanleitung | Nicht mitgeteilt | Der Nutzer meldet, dass das Gerät mit dieser Steuerung nicht kompatibel ist. Für die verwendete Tablet-Schnittstelle liegt kein positiver Kompatibilitätsnachweis vor. |
 
-Die Modell-, Chassis- und Firmwareangaben der beiden bild-Geräte sowie ihre EPG-Ergebnisse stammen vom Nutzer. Seine Rückmeldung bestätigt den Abruf **vom Fernseher**. Die tatsächliche Verfügbarkeit aller Sender, Zeiträume und einzelnen EPG-Felder wurde dabei nicht vollständig dokumentiert. Automatische Aufnahmeprogrammierung ist weiterhin geplant, die Radiosteuerung bleibt zurückgestellt. Die vom Nutzer aktualisierte [Gerätetabelle in der README](../README.md#getestete-geräte) führt für beide bild-Geräte auch Fernbedienung, Senderlisten und TV-Auswahl auf.
+Die Modell-, Chassis- und Firmwareangaben der beiden bild-Geräte sowie ihre EPG-Ergebnisse stammen vom Nutzer. Seine Rückmeldung bestätigt den Abruf **vom Fernseher**. Die tatsächliche Verfügbarkeit aller Sender, Zeiträume und einzelnen EPG-Felder wurde dabei nicht vollständig dokumentiert. Bestätigte einzelne Aufnahmeaufträge sind in 0.1.11 implementiert, aber noch nicht am Gerät bestätigt. Eine automatische Suche nach Sendungen anhand von Regeln ist weiterhin geplant; die Radiosteuerung bleibt zurückgestellt. Die vom Nutzer aktualisierte [Gerätetabelle in der README](../README.md#getestete-geräte) führt für beide bild-Geräte auch Fernbedienung, Senderlisten und TV-Auswahl auf.
 
 ## Ein Suchtreffer ist noch kein Kompatibilitätsnachweis
 
@@ -28,7 +30,7 @@ Ein gefundener Name und ein offener Port bestätigen daher noch keine erfolgreic
 
 Schnellstart muss direkt am eingeschalteten Fernseher aktiviert werden. Ist der TV bereits über das Netzwerk unerreichbar, kann der Adapter diese Einstellung nicht ändern. Eine bekannte MAC-Adresse oder ein erfolgreich versendetes Wake-on-LAN-Paket hebt diese Voraussetzung nicht auf. Die Einstellung für Einschalten über LAN und die passenden Netzwerkparameter bleiben zusätzlich erforderlich. Die [Bedienungsanleitung](INSTALLATION.md#ein--und-ausschalten) beschreibt `control.powerOn` und seine Diagnosewerte.
 
-Für eine spätere Aufnahmeautomatik müssen neue Timer übertragen werden, solange der TV erreichbar ist, oder nach einem erfolgreichen Einschalten mit aktiviertem Schnellstart. Wie bereits im Fernseher gespeicherte Aufnahmetimer bei deaktiviertem Schnellstart ausgeführt werden, ist damit nicht geprüft und muss gesondert getestet werden.
+Neue Timer können nur übertragen werden, solange der TV erreichbar ist. Die Aufnahmeverwaltung wartet auf diese Erreichbarkeit und sendet selbst kein Wake-on-LAN und keinen Einschaltbefehl. Ist ein noch nicht übertragener Auftrag beim Sendungsbeginn weiterhin offen, wird er als verpasst markiert und nicht nachträglich programmiert. Wie bereits im Fernseher gespeicherte Aufnahmetimer bei deaktiviertem Schnellstart ausgeführt werden, ist damit nicht geprüft und muss gesondert getestet werden.
 
 ## Loewe Connect 26 SL
 
@@ -68,4 +70,8 @@ Für eine spätere Untersuchung des konkreten Geräts wären dessen **Softwareve
 
 ## Bedeutung für EPG und Aufnahmen
 
-Die weitere EPG- und Aufnahmeentwicklung kann sich auf die zwei positiv gemeldeten bild-Geräte konzentrieren. Programmdaten stehen bereits bei den TV-Sendern unter `channels.tv.<Sender-ID>.epg` und stammen im aktuellen Build ausschließlich vom Fernseher. Der nächste Gerätetest muss den neuen Build einschließlich Konfigurationsspeicherung und erneutem TV-EPG-Abruf prüfen. Für eine spätere Aufnahmeautomatik müssen Sendungszeiten, eindeutige Senderzuordnung und ein tatsächlich im Fernseher gespeicherter Aufnahmetimer gesondert geprüft werden. Eine vollständige Ereignisliste und Aufnahmedatenpunkte sind weiterhin geplant. Die [EPG-Anleitung](EPG.md), [Protokollbeschreibung](epg-protocol.md) und [Roadmap](ROADMAP.md) beschreiben diese nächsten Schritte.
+Die weitere EPG- und Aufnahmeentwicklung kann sich auf die zwei positiv gemeldeten bild-Geräte konzentrieren. Programmdaten stehen bei den TV-Sendern unter `channels.tv.<Sender-ID>.epg` und stammen ausschließlich vom Fernseher. Die Programmübersicht zeigt die vorhandene Ereignisliste; `recordings.jobs` speichert bestätigte Aufnahmeaufträge für diese Adapterinstanz.
+
+Der nächste Gerätetest muss den neuen Build einschließlich Konfigurationsspeicherung, erneutem TV-EPG-Abruf, gezieltem Umschalten und Timerübertragung prüfen. Ein Auftrag gilt erst mit einer eindeutig passenden TV-Timerkennung, Senderzuordnung und Start-/Endzeit als **im TV geplant**. Eine Antwort auf `ProgramTimer` allein genügt dafür nicht. Unklare Übertragungen werden zur Vermeidung doppelter Timer nicht automatisch erneut gesendet. Dafür ist besonders eine reale `GetTimerList`-Antwort der installierten Firmware hilfreich; die derzeitige Zeitparserprüfung arbeitet mit ausdrücklich datierten ISO-Zeitangaben samt Zeitzone.
+
+Die [EPG-Anleitung](EPG.md), [EPG-Protokollbeschreibung](epg-protocol.md), [Aufnahme-Protokollbeschreibung](recording-protocol.md) und [Roadmap](ROADMAP.md) beschreiben den Funktionsumfang und die noch offenen Hardwaretests.

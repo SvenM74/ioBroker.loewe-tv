@@ -18,10 +18,10 @@ const catalog = readJson('docs/protocol-templates.json');
 const remote115 = readJson('docs/remote115-keys.json');
 
 assert.equal(pkg.name, `iobroker.${io.common.name}`);
-assert.equal(pkg.version, '0.1.10');
+assert.equal(pkg.version, '0.1.11');
 assert.equal(pkg.version, io.common.version);
 assert.ok(BUILD_ID.startsWith(`${pkg.version}-`), 'Build identifier must match package version');
-assert.equal(BUILD_ID, '0.1.10-epg-guide.1');
+assert.equal(BUILD_ID, '0.1.11-epg-recording.1');
 assert.ok(!pkg.keywords.includes('xmltv'), 'Package keywords must describe the supported TV-only EPG');
 assert.equal(io.common.mode, 'daemon');
 assert.equal(io.common.messagebox, true, 'Admin list selection requires adapter messaging');
@@ -34,7 +34,7 @@ assert.ok(fs.existsSync(path.join(root, 'admin', io.common.icon)));
 assert.equal(admin.i18n, true);
 assert.equal(io.common.globalDependencies.find(dependency => dependency.admin)?.admin, '>=7.7.28',
     'The embedded programme guide needs native iframeSendTo support');
-assert.equal(admin.items._epg.items._epgGuide.type, 'iframeSendTo');
+assert.equal(admin.items._programmeGuide.items._epgGuide.type, 'iframeSendTo');
 for (const asset of ['epg.html', 'epg.css', 'epg.js', 'epg-bridge.js']) {
     assert.ok(fs.statSync(path.join(root, 'admin', asset)).isFile(), `Missing programme guide asset: ${asset}`);
 }
@@ -110,12 +110,16 @@ for (const advanced of [false, true]) {
         }
     }
     assert.equal([...ids].filter(id => /^remote\.[^.]+$/.test(id)).length, 42);
-    assert.equal(objects.length, 90);
+    assert.equal(objects.length, 92);
     for (const id of retiredStaticStates) {
         assert.ok(!ids.has(id), `Retired static data point must not be recreated: ${id}`);
     }
     assert.ok(![...ids].some(id => /^(?:api|media|channels\.radio)(?:\.|$)/.test(id)));
     assert.ok(ids.has('info.adapterBuild'));
+    const journal = objects.find(object => object.id === 'recordings.jobs');
+    assert.equal(journal?.common.write, false, 'Recording journal must be read-only');
+    assert.equal(journal?.common.type, 'string');
+    assert.deepEqual(JSON.parse(journal.common.def).jobs, []);
     assert.equal(objects.find(object => object.id === 'channels.view').common.write, false);
     assert.equal(objects.find(object => object.id === 'channels.epgRefresh')?.common.role, 'button');
     for (const id of ['channels.epgStatus', 'channels.epgLastUpdate', 'channels.epgLastError', 'channels.epgProgress']) {

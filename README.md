@@ -1,5 +1,13 @@
 # Loewe TV Adapter für ioBroker
 
+## Version 0.1.11
+
+Build **`0.1.11-epg-recording.1`** trennt **EPG-Einstellungen** und **Programmübersicht** in zwei Reiter. Die Übersicht zeigt die gespeicherte TV-Senderliste mit Zeitachse und Sendungsdetails. **Jetzt ansehen** schaltet auf eine zeitlich eindeutig laufende Sendung; zukünftige Sendungen lassen sich nach Bestätigung zur Aufnahme vormerken.
+
+Aufträge werden dauerhaft in **`recordings.jobs`** gespeichert. Ist der TV offline, wartet der Adapter auf seine Erreichbarkeit, ohne ihn aufzuwecken. Bleibt ein Auftrag bis zum Sendungsbeginn ungesendet, wird er **`missed`**. Ein möglicherweise bereits übertragener Auftrag wird nicht automatisch erneut gesendet. **`scheduled`** bedeutet, dass ein passender Timer in der TV-Timerliste nachgewiesen wurde; eine bloße Antwort auf den Aufnahmebefehl reicht dafür nicht aus. Für die neue Aufnahmefunktion fehlt noch eine echte Timerantwort der Nutzergeräte und ein Gerätetest. Bei unbekanntem Antwortformat bleibt der Auftrag **`uncertain`**.
+
+Über **Separat öffnen** ist die Programmübersicht auch außerhalb des Konfigurationsdialogs unter der bestehenden Admin-Adresse erreichbar. Sie verwendet die konfigurierte Admin-Anmeldung und benötigt keinen eigenen Port. [Bedienung, Aufnahmezustände und separate URL](docs/EPG_GUI.md).
+
 ## Getestete Geräte
 
 Die folgenden Ergebnisse stammen aus den Gerätetests des Nutzers. Sie gelten für die genannten Kombinationen aus Modell, Chassis und Software.
@@ -26,4 +34,4 @@ Deutsch und Englisch.
 
 Ab Version **0.1.9** kannst du in der Instanz-Konfiguration nach Loewe-TVs im lokalen Netzwerk suchen und eine der gefundenen IP-Adressen auswählen: [Fernseher suchen und auswählen](docs/NETWORK_DISCOVERY.md).
 
-Ab Version **0.1.10** zeigt der Reiter **EPG** die ausgewählte TV-Senderliste mit Programmvorschau auf einer Zeitleiste, Sendungsdetails und Suche: [Programmübersicht in der Instanz](docs/EPG_GUI.md). Die Vorschau verwendet die bereits vom Fernseher geladenen EPG-Daten.
+Die Programmvorschau verwendet ausschließlich die bereits vom Fernseher geladenen EPG-Daten. [EPG-Datenpunkte und Abruf](docs/EPG.md) · [Weitere Planung für automatische Aufnahmeregeln](docs/ROADMAP.md).

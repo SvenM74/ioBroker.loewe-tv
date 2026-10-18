@@ -11,6 +11,10 @@ const CONFIG = JSON.parse(fs.readFileSync(path.join(__dirname, '../admin/jsonCon
 const REVISION = 'a'.repeat(64);
 const CHANGED_REVISION = 'b'.repeat(64);
 const NO_RESPONSE = Symbol('no response');
+const SELECTION = Object.freeze({
+    channelId: 'channels.tv.das_erste_hd', eventId: 'event-123', start: 120000, end: 180000,
+    listView: 'my-list', catalogRevision: REVISION,
+});
 
 function page(total = 2, offset = 0, limit = 32, extra = {}) {
     const channels = Array.from({ length: Math.min(limit, total - offset) }, (_, i) => ({
@@ -140,11 +144,11 @@ function browser(options = {}) {
 }
 
 test('native iframe uses a read-only sendTo URL with Admin base prefix and no config fields', () => {
-    const guide = CONFIG.items._epg.items._epgGuide;
+    const guide = CONFIG.items._programmeGuide.items._epgGuide;
     assert.equal(guide.type, 'iframeSendTo');
     assert.equal(guide.command, 'getEpgGuideUrl');
     assert.equal(guide.doNotSave, true);
-    assert.equal(guide.sandbox, 'allow-scripts allow-same-origin');
+    assert.equal(guide.sandbox, 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox');
     // ConfigGeneric.getPattern evaluates a template literal, then the native
     // iframe component JSON.parse()s it. No hand-written placeholder parser.
     const expression = '`' + guide.jsonData.replace(/`/g, '\\`') + '`';
@@ -258,6 +262,140 @@ test('refresh binds to the complete guide catalog so an old frame cannot refresh
     assert.equal(view.requests[1].command, 'refreshEpgGuide');
     assert.equal(view.requests[1].instance, 'loewe-tv.3');
     view.dispose();
+});
+
+test('recording snapshot reads use only getRecordings and never start programme actions', async t => {
+    const snapshot = { schemaVersion: 1, ready: true, updatedAt: 100000, lastError: '', jobs: [] };
+    const view = browser({ respond: ({ command, payload }) => {
+        assert.equal(command, 'getRecordings');
+        assert.deepEqual(payload, {});
+        return snapshot;
+    } });
+    t.after(view.dispose);
+    assert.equal(view.requests.length, 0, 'Opening the bridge must not send a recording request');
+    assert.equal(await view.bridge.requestRecordings(), snapshot);
+    assert.equal(await view.bridge.requestRecordings(), snapshot);
+    assert.deepEqual(view.requests.map(entry => entry.command), ['getRecordings', 'getRecordings']);
+    assert.ok(view.requests.every(entry => entry.instance === 'loewe-tv.3'));
+    assert.equal(view.timers.size, 0);
+});
+
+test('programme actions preserve the real instance and send a recording only after explicit confirmation', async t => {
+    const confirmation = {
+        action: 'confirmRecording', selection: { ...SELECTION },
+        channel: { name: 'Das Erste HD', number: 1 },
+        programme: { title: 'Die Sendung', start: SELECTION.start, end: SELECTION.end },
+    };
+    const job = { id: 'job-123', status: 'queued', canCancel: true };
+    const view = browser({
+        href: 'https://broker.example/proxy/admin/adapter/loewe-tv/epg.html?instance=12',
+        respond: ({ command }) => ({
+            selectEpgProgramme: confirmation,
+            recordEpgProgramme: { action: 'recordingQueued', job },
+            cancelRecording: { job: { ...job, status: 'cancelled', canCancel: false } },
+        })[command],
+    });
+    t.after(view.dispose);
+    const result = await view.bridge.selectProgramme(SELECTION);
+    assert.equal(result, confirmation);
+    await view.flush();
+    assert.deepEqual(view.requests.map(entry => entry.command), ['selectEpgProgramme'],
+        'A future programme response must not implicitly submit a recording');
+    assert.deepEqual(view.requests[0].payload, SELECTION);
+    const confirmed = Object.freeze({ ...result.selection, confirmed: true });
+    assert.equal((await view.bridge.recordProgramme(confirmed)).action, 'recordingQueued');
+    assert.deepEqual(view.requests[1].payload, confirmed);
+    assert.equal((await view.bridge.cancelRecording(job.id)).job.status, 'cancelled');
+    assert.deepEqual(view.requests[2].payload, { jobId: 'job-123' });
+    assert.deepEqual(view.requests.map(entry => entry.command), [
+        'selectEpgProgramme', 'recordEpgProgramme', 'cancelRecording',
+    ]);
+    assert.ok(view.requests.every(entry => entry.instance === 'loewe-tv.12'));
+    assert.equal(view.connectionOptions[0].url, 'https://broker.example/proxy/admin/');
+    assert.equal(view.connectionOptions[0].options.path, '/proxy/admin/socket.io');
+    assert.equal(view.timers.size, 0);
+});
+
+test('bridge never synthesizes recording consent and preserves a runtime validation refusal', async t => {
+    const view = browser({ respond: ({ command }) => {
+        assert.equal(command, 'recordEpgProgramme');
+        return { error: 'Die Aufnahme muss ausdrücklich bestätigt werden.', code: 'EPG_ACTION_VALIDATION' };
+    } });
+    t.after(view.dispose);
+    for (const payload of [SELECTION, { ...SELECTION, confirmed: false }]) {
+        await assert.rejects(view.bridge.recordProgramme(payload), {
+            code: 'EPG_ACTION_VALIDATION', message: 'Die Aufnahme muss ausdrücklich bestätigt werden.',
+        });
+        assert.deepEqual(view.requests.at(-1).payload, payload);
+    }
+    await view.advance(60000);
+    assert.equal(view.requests.length, 2, 'Only the two explicit calls may be sent');
+    assert.equal(view.timers.size, 0);
+});
+
+test('programme mutation errors stay structured and never use the guide pagination retry', async t => {
+    for (const [method, payload, code] of [
+        ['selectProgramme', SELECTION, 'EPG_GUIDE_CHANGED'],
+        ['recordProgramme', { ...SELECTION, confirmed: true }, 'EPG_PROGRAMME_CHANGED'],
+        ['recordProgramme', { ...SELECTION, confirmed: true }, 'EPG_ACTION_EXPIRED'],
+        ['cancelRecording', 'job-123', 'EPG_GUIDE_CHANGED'],
+    ]) {
+        const view = browser({ respond: () => ({ error: 'Ausgewählte Sendung ist nicht mehr verfügbar.', code }) });
+        t.after(view.dispose);
+        await assert.rejects(view.bridge[method](payload), {
+            code, message: 'Ausgewählte Sendung ist nicht mehr verfügbar.',
+        });
+        await view.advance(60000);
+        assert.equal(view.requests.length, 1, `${method}: a rejected mutation must not be replayed`);
+        assert.notEqual(view.requests[0].command, 'getEpgGuide');
+        assert.equal(view.timers.size, 0);
+    }
+});
+
+test('timed-out programme actions ignore late replies and are not replayed after reconnection', async t => {
+    for (const [method, payload, command] of [
+        ['selectProgramme', SELECTION, 'selectEpgProgramme'],
+        ['recordProgramme', { ...SELECTION, confirmed: true }, 'recordEpgProgramme'],
+        ['cancelRecording', 'job-123', 'cancelRecording'],
+    ]) {
+        const snapshot = { schemaVersion: 1, ready: true, updatedAt: 112000, lastError: '', jobs: [] };
+        const view = browser({ respond: entry => entry.command === 'getRecordings' ? snapshot : NO_RESPONSE });
+        t.after(view.dispose);
+        const running = view.bridge[method](payload);
+        const rejected = assert.rejects(running, /antwortet nicht rechtzeitig/);
+        await view.flush();
+        assert.deepEqual(view.requests.map(entry => entry.command), [command]);
+        await view.advance(11999);
+        assert.equal(view.sockets[0].destroyed, false, 'Actions have their own bounded response deadline');
+        await view.advance(1);
+        await rejected;
+        assert.equal(view.sockets[0].destroyed, true);
+        assert.equal(view.timers.size, 0);
+        view.requests[0].callback({ action: 'recordingQueued', job: { id: 'late-job' } });
+        await view.advance(60000);
+        assert.equal(view.requests.length, 1, 'Neither timeout nor a late success may repeat a mutation');
+        assert.equal(await view.bridge.requestRecordings(), snapshot);
+        assert.equal(view.sockets.length, 2, 'An explicit read can reconnect after a lost action reply');
+        assert.deepEqual(view.requests.map(entry => entry.command), [command, 'getRecordings']);
+        assert.equal(view.timers.size, 0);
+    }
+});
+
+test('new guide actions cannot fall back to instance 0 or bypass the Admin session', async t => {
+    for (const options of [
+        { href: 'https://broker.example/adapter/loewe-tv/epg.html' },
+        { href: 'https://broker.example/adapter/loewe-tv/epg.html?instance=3&instance=0' },
+        { auth: false },
+    ]) {
+        const view = browser(options);
+        t.after(view.dispose);
+        for (const [method, payload] of [
+            ['selectProgramme', SELECTION], ['recordProgramme', { ...SELECTION, confirmed: true }],
+            ['requestRecordings', undefined], ['cancelRecording', 'job-123'],
+        ]) await assert.rejects(view.bridge[method](payload));
+        assert.equal(view.requests.length, 0);
+        assert.equal(view.timers.size, 0);
+    }
 });
 
 test('authentication failure sends no adapter commands and releases the connection', async () => {

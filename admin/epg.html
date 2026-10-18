@@ -21,6 +21,9 @@
                     <span class="list-name" id="listName"></span>
                     <span class="saved-configuration" data-i18n="savedConfiguration">Gespeicherte Instanz-Konfiguration</span>
                 </div>
+                <a class="button standalone-button" id="openStandalone" target="_blank" rel="noopener noreferrer" hidden>
+                    <span data-i18n="openStandalone">Separat öffnen</span><span aria-hidden="true">↗</span>
+                </a>
                 <button class="button refresh-button" id="refreshGuide" type="button" disabled>
                     <span class="refresh-symbol" aria-hidden="true">↻</span>
                     <span data-i18n="refresh">EPG aktualisieren</span>
@@ -44,6 +47,11 @@
                 <p class="programme-subtitle" id="detailSubtitle" hidden></p>
                 <p class="programme-description" id="detailDescription" data-i18n="loadingDescription">Die vorhandenen Programmdaten werden aus dem Adapter geladen.</p>
                 <div class="programme-progress" id="detailProgress" hidden aria-hidden="true"><span id="detailProgressBar"></span></div>
+                <div class="programme-actions" id="programmeActions" hidden>
+                    <button class="button programme-action" id="programmeAction" type="button" disabled></button>
+                    <span class="programme-action-hint" id="programmeActionHint"></span>
+                </div>
+                <p class="action-status" id="actionStatus" role="status" aria-live="polite" hidden></p>
             </div>
         </section>
 
@@ -83,6 +91,15 @@
             <button class="text-button" id="retryGuide" type="button" data-i18n="retry" hidden>Ansicht erneut laden</button>
         </div>
 
+        <details class="recordings-panel" id="recordingsPanel">
+            <summary><span data-i18n="recordingJobs">Aufnahmeaufträge</span><span class="recording-count" id="recordingCount">0</span></summary>
+            <div class="recordings-content">
+                <p class="recordings-status" id="recordingsStatus" role="status" aria-live="polite" data-i18n="recordingsLoading">Aufnahmeaufträge werden geladen …</p>
+                <ul class="recordings-list" id="recordingsList"></ul>
+                <p class="recordings-note" data-i18n="recordingsNote">Offline vorgemerkte Aufträge werden übertragen, sobald der Fernseher erreichbar ist. „Im TV geplant“ bedeutet, dass der Timer im Fernseher bestätigt wurde.</p>
+            </div>
+        </details>
+
         <section class="timeline-section" aria-label="TV-Programm nach Sender und Uhrzeit" data-i18n-aria="timeline">
             <div class="timeline-scroll" id="timelineScroll" tabindex="0" aria-label="Programmtabelle, horizontal und vertikal scrollbar" data-i18n-aria="scrollable">
                 <div class="timeline-grid" id="timelineGrid" role="grid" aria-label="TV-Programm" aria-describedby="keyboardHelp" data-i18n-aria="grid"></div>
@@ -99,7 +116,20 @@
             <span data-i18n="dataSource">Programmdaten vom Fernseher</span>
             <span id="keyboardHelp" data-i18n="keyboardHelp">Sendung anklicken für Details. Mit den Pfeiltasten zwischen Sendungen wechseln.</span>
         </footer>
-        <p class="source-note" data-i18n="sourceNote">Angezeigt werden die vom Fernseher gelieferten Sendungen. Leere Bereiche enthalten noch keine Programmdaten. Die Auswahl einer Sendung schaltet den Fernseher nicht um.</p>
+        <p class="source-note" data-i18n="sourceNote">Die Auswahl zeigt Sendungsdetails. „Jetzt ansehen“ schaltet auf eine laufende Sendung. Zukünftige Sendungen lassen sich nach Bestätigung zur Aufnahme vormerken.</p>
     </main>
+
+    <dialog class="recording-dialog" id="recordingDialog" aria-labelledby="recordingDialogTitle" aria-describedby="recordingDialogDescription">
+        <h2 id="recordingDialogTitle" data-i18n="recordingConfirmTitle">Sendung aufnehmen?</h2>
+        <p id="recordingDialogDescription" data-i18n="recordingConfirmDescription">Diese Sendung wird zur Aufnahme vorgemerkt:</p>
+        <p class="recording-confirm-channel" id="recordingConfirmChannel"></p>
+        <h3 id="recordingConfirmProgramme"></h3>
+        <p class="recording-confirm-time" id="recordingConfirmTime"></p>
+        <p class="recording-confirm-note" data-i18n="recordingConfirmNote">Ist der Fernseher offline, wartet der Adapter auf die Verbindung. Kann der Auftrag vor Sendungsbeginn nicht übertragen werden, ist die Aufnahme nicht gesichert.</p>
+        <div class="recording-dialog-actions">
+            <button class="button" id="cancelRecordingConfirm" type="button" data-i18n="cancel">Abbrechen</button>
+            <button class="button programme-action" id="confirmRecording" type="button" data-i18n="confirmRecording">Aufnahme vormerken</button>
+        </div>
+    </dialog>
 </body>
 </html>

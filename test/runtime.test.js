@@ -8,6 +8,7 @@ const { EventEmitter } = require('node:events');
 const { AdapterRuntime } = require('../lib/adapter-runtime');
 const { parseChannelPage } = require('../lib/loewe-client');
 const { runPowerOn } = require('../lib/power-on');
+const { createCache } = require('../lib/epg-data');
 
 // Explicit upgrade fixtures: these public states were retired in the TV-only build.
 const RETIRED_STATIC_STATES = [
@@ -129,8 +130,8 @@ class FakeClient extends EventEmitter {
         return this.invoke('backspace', [], response('InjectKeyboardKey'));
     }
 
-    zap(locator) {
-        return this.invoke('zap', [locator], response('ZapToMedia'));
+    zap(locator, options) {
+        return this.invoke('zap', options === undefined ? [locator] : [locator, options], response('ZapToMedia'));
     }
 
     getChannelLists(start = 0, count = 100, options) {
@@ -156,8 +157,16 @@ class FakeClient extends EventEmitter {
         }));
     }
 
-    request(action, parametersXml = '') {
-        return this.invoke('request', [action, parametersXml], response(action));
+    request(action, parametersXml = '', options) {
+        return this.invoke('request', options === undefined ? [action, parametersXml] : [action, parametersXml, options], response(action));
+    }
+
+    getTimerList(options) {
+        return this.invoke('getTimerList', [options], { recognized: true, complete: true, comparable: true, timers: [] });
+    }
+
+    programTimer(timer, options) {
+        return this.invoke('programTimer', [timer, options], { acknowledged: true });
     }
 
     wake(macs, broadcast) {
@@ -308,6 +317,224 @@ function write({ adapter, runtime }, id, val) {
     adapter.states.set(id, state);
     return runtime.handleStateChange(`${adapter.namespace}.${id}`, state);
 }
+
+async function epgActionHarness(t, { future = false, endUnknown = false } = {}) {
+    let now = Date.UTC(2026, 9, 18, 12);
+    const h = await harness(t, { pollInterval: 0, epgEnabled: true, epgRefreshInterval: 0 }, () => {},
+        { epgOptions: { now: () => now } });
+    h.runtime.channelObjects.acceptPage(parseChannelPage(await h.client.getChannels('fastscan-fixture')), 'video');
+    await h.runtime.channelObjects.whenIdle();
+    await h.runtime.epg._initialization;
+    const service = h.runtime.channelObjects.services.get('channels.tv.Fixture_TV');
+    assert.ok(service);
+    const event = { eventId: 'event-recording-fixture', title: 'Fixture programme',
+        start: future ? now + 3600000 : now - 60000, end: endUnknown ? null : now + (future ? 7200000 : 3600000) };
+    h.runtime.epg.entries.get(service.id).cache = createCache(service, { source: 'tv', events: [event] }, now);
+    const guide = h.runtime.epg.guide();
+    const selection = { channelId: service.id, eventId: event.eventId, start: event.start, end: event.end,
+        listView: service.listView, catalogRevision: guide.catalogRevision };
+    h.client.calls.length = 0;
+    return { ...h, service, event, selection, now: () => now, advance: ms => { now += ms; } };
+}
+
+test('EPG currently-running action uses the registered TV locator and guards the final zap', async t => {
+    const h = await epgActionHarness(t);
+    h.client.hooks.zap = (locator, options) => {
+        assert.equal(locator, h.service.locator);
+        assert.equal(options.canSend(), true);
+        assert.equal(options.deadline, h.now() + 8000);
+        return response('ZapToMedia', { Result: '0' });
+    };
+    const result = await h.runtime.handleMessage('selectEpgProgramme', h.selection);
+    assert.equal(result.action, 'switched');
+    assert.equal(result.status, 'accepted');
+    assert.equal(result.stationConfirmed, false, 'A transport result must not pretend to confirm a visible programme');
+    assert.deepEqual(h.client.calls.map(call => call.method), ['zap']);
+    assert.equal(h.runtime.recordings.snapshot().jobs.length, 0);
+});
+
+test('future programme asks for confirmation without a TV write; confirmed offline request is durable and deduplicated', async t => {
+    const h = await epgActionHarness(t, { future: true });
+    const before = h.adapter.writes.length;
+    const result = await h.runtime.handleMessage('selectEpgProgramme', h.selection);
+    assert.equal(result.action, 'confirmRecording');
+    assert.deepEqual(result.selection, h.selection);
+    assert.equal(result.programme.title, h.event.title);
+    assert.deepEqual(h.client.calls, []);
+    assert.equal(h.adapter.writes.length, before);
+    await assert.rejects(h.runtime.handleMessage('recordEpgProgramme', h.selection), { code: 'EPG_ACTION_VALIDATION' });
+    const [first, second] = await Promise.all([
+        h.runtime.handleMessage('recordEpgProgramme', { ...h.selection, confirmed: true }),
+        h.runtime.handleMessage('recordEpgProgramme', { ...h.selection, confirmed: true }),
+    ]);
+    assert.equal(first.action, 'recordingQueued');
+    assert.equal(first.job.id, second.job.id);
+    assert.equal(first.job.status, 'queued');
+    const saved = JSON.parse(h.adapter.states.get('recordings.jobs').val);
+    assert.equal(saved.jobs.length, 1);
+    assert.equal(saved.jobs[0].channel.locator, h.service.locator);
+    assert.equal(saved.jobs[0].programme.title, h.event.title);
+    assert.equal(h.adapter.states.get('recordings.jobs').ack, true);
+    assert.deepEqual(h.client.calls, [], 'Confirmation only stores the request; the worker runs separately');
+});
+
+test('recording confirmation does not return until the actual journal write has completed', async t => {
+    const h = await epgActionHarness(t, { future: true });
+    const save = h.adapter.setStateAsync.bind(h.adapter);
+    const pending = deferred();
+    let saving = false;
+    let replied = false;
+    h.adapter.setStateAsync = async (id, value) => {
+        if (id === 'recordings.jobs') { saving = true; await pending.promise; }
+        return save(id, value);
+    };
+    const request = h.runtime.handleMessage('recordEpgProgramme', { ...h.selection, confirmed: true });
+    void request.then(() => { replied = true; });
+    await waitUntil(() => saving, 'Journal save should have started');
+    assert.equal(replied, false);
+    assert.deepEqual(h.client.calls, []);
+    pending.resolve();
+    const result = await request;
+    assert.equal(JSON.parse(h.adapter.states.get('recordings.jobs').val).jobs[0].id, result.job.id);
+});
+
+test('offline recording waits and transfers once after reconnect, with write-ahead intent and timer-list confirmation', async t => {
+    const h = await epgActionHarness(t, { future: true });
+    const { job } = await h.runtime.handleMessage('recordEpgProgramme', { ...h.selection, confirmed: true });
+    h.runtime._connected = false;
+    h.client.hooks.request = () => { throw codedError('NETWORK', 'Simulated TV is offline'); };
+    await h.runtime.recordings._work();
+    assert.equal(h.runtime.recordings.snapshot().jobs[0].status, 'queued');
+    assert.deepEqual(h.client.calls.map(call => call.method), ['request']);
+    let sent = false;
+    h.client.hooks.request = (action, xml, options) => {
+        assert.equal(action, 'GetDeviceData');
+        assert.equal(options.canSend(), true);
+        return response(action);
+    };
+    h.client.hooks.programTimer = (timer, options) => {
+        const saved = JSON.parse(h.adapter.states.get('recordings.jobs').val).jobs[0];
+        assert.equal(saved.status, 'sending');
+        assert.equal(saved.attempts, 1);
+        assert.equal(options.canSend(), true);
+        assert.deepEqual(timer, { locator: h.service.locator, start: h.event.start, end: h.event.end });
+        sent = true;
+        return { acknowledged: true, confirmed: false, result: '0' };
+    };
+    h.client.hooks.getTimerList = () => ({ recognized: true, complete: true, comparable: true, timers: sent
+        ? [{ id: 'timer-fixture', start: job.programme.start, end: job.programme.end,
+            sourceUuid: job.channel.mediaItemUuid, sourceAncestorUuid: 'sl-fixture', matchable: true }] : [] });
+    await h.runtime.recordings._work();
+    assert.equal(h.runtime.recordings.snapshot().jobs[0].status, 'scheduled');
+    await h.runtime.recordings._work();
+    assert.equal(h.client.calls.filter(call => call.method === 'programTimer').length, 1);
+    assert.equal(h.client.calls.some(call => ['wake', 'key', 'zap'].includes(call.method)), false);
+});
+
+test('recording journal survives a runtime restart and supports a read-only list and cancellation', async t => {
+    const h = await epgActionHarness(t, { future: true });
+    const { job } = await h.runtime.handleMessage('recordEpgProgramme', { ...h.selection, confirmed: true });
+    const saved = structuredClone(h.adapter.states.get('recordings.jobs'));
+    await h.runtime.stop();
+    const restored = await harness(t, { pollInterval: 0 }, adapter => adapter.states.set('recordings.jobs', saved),
+        { epgOptions: { now: h.now } });
+    const before = restored.adapter.writes.length;
+    const overview = await restored.runtime.handleMessage('getRecordings', {});
+    assert.equal(overview.ready, true);
+    assert.equal(overview.jobs[0].id, job.id);
+    assert.equal(overview.jobs[0].status, 'queued');
+    assert.equal(restored.adapter.writes.length, before);
+    assert.deepEqual(restored.client.calls, []);
+    const result = await restored.runtime.handleMessage('cancelRecording', { jobId: job.id });
+    assert.equal(result.job.status, 'cancelled');
+    assert.equal(JSON.parse(restored.adapter.states.get('recordings.jobs').val).jobs[0].status, 'cancelled');
+    assert.deepEqual(restored.client.calls, []);
+});
+
+test('an EPG action cannot zap after the programme ends while waiting in the serial queue', async t => {
+    const h = await epgActionHarness(t);
+    const gate = deferred();
+    const block = h.runtime._enqueue('fixture-block', () => gate.promise);
+    const attempt = h.runtime.handleMessage('selectEpgProgramme', h.selection);
+    const rejected = assert.rejects(attempt, { code: 'EPG_ACTION_EXPIRED' });
+    h.advance(3600001);
+    gate.resolve();
+    await block;
+    await rejected;
+    assert.deepEqual(h.client.calls, []);
+});
+
+test('the final EPG guard catches a changed plan or expiry after a diagnostic DB write', async t => {
+    const h = await epgActionHarness(t);
+    const save = h.adapter.setStateAsync.bind(h.adapter);
+    h.adapter.setStateAsync = async (id, value) => {
+        if (id === 'channels.lastSelection' && JSON.parse(value.val).status === 'running') h.advance(3600001);
+        return save(id, value);
+    };
+    await assert.rejects(h.runtime.handleMessage('selectEpgProgramme', h.selection), { code: 'EPG_ACTION_EXPIRED' });
+    assert.deepEqual(h.client.calls, []);
+});
+
+test('a confirmed programme that starts before submission is never silently recorded or switched', async t => {
+    const h = await epgActionHarness(t, { future: true });
+    h.advance(3600000);
+    await assert.rejects(h.runtime.handleMessage('recordEpgProgramme', { ...h.selection, confirmed: true }), { code: 'EPG_ACTION_EXPIRED' });
+    assert.equal(h.runtime.recordings.snapshot().jobs.length, 0);
+    assert.deepEqual(h.client.calls, []);
+});
+
+test('a programme with an unknown end or a stale catalogue causes no action', async t => {
+    const h = await epgActionHarness(t, { endUnknown: true });
+    assert.equal((await h.runtime.handleMessage('selectEpgProgramme', h.selection)).action, 'unavailable');
+    await assert.rejects(h.runtime.handleMessage('selectEpgProgramme', { ...h.selection, catalogRevision: 'f'.repeat(64) }), { code: 'EPG_GUIDE_CHANGED' });
+    assert.deepEqual(h.client.calls, []);
+});
+
+test('a never-entered recording queue request expires safely and a late callback cannot send', async t => {
+    const h = await epgActionHarness(t, { future: true });
+    await h.runtime.handleMessage('recordEpgProgramme', { ...h.selection, confirmed: true });
+    h.runtime._connected = true;
+    const gate = deferred();
+    let block;
+    h.client.hooks.getTimerList = () => {
+        block = h.runtime._enqueue('fixture-block', () => gate.promise);
+        return { recognized: true, complete: true, comparable: true, timers: [] };
+    };
+    const work = h.runtime.recordings._work();
+    await waitUntil(() => [...h.adapter.timers.values()].some(timer => timer.ms === 9750)
+        && h.runtime.recordings.snapshot().jobs[0].status === 'sending', 'Recording should wait behind the blocked TV queue');
+    const [timerId, timer] = [...h.adapter.timers].find(([, value]) => value.ms === 9750);
+    h.adapter.timers.delete(timerId);
+    h.advance(9750);
+    timer.fn();
+    await work;
+    assert.equal(h.runtime.recordings.snapshot().jobs[0].status, 'queued', 'Proven unsent work remains retryable');
+    assert.equal(h.runtime.recordings.snapshot().jobs[0].attempts, 0);
+    gate.resolve();
+    await block;
+    await h.runtime._tail;
+    assert.equal(h.client.calls.some(call => call.method === 'programTimer'), false);
+});
+
+test('stop cancels queued recording work without a late TV command or journal mutation', async t => {
+    const h = await epgActionHarness(t, { future: true });
+    await h.runtime.handleMessage('recordEpgProgramme', { ...h.selection, confirmed: true });
+    h.runtime._connected = true;
+    const gate = deferred();
+    const block = h.runtime._enqueue('fixture-block', () => gate.promise);
+    const work = h.runtime.recordings._work();
+    const settled = work.catch(error => error);
+    await waitUntil(() => h.runtime._pendingCount >= 2, 'Read-only timer query should wait in the queue');
+    await h.runtime.stop();
+    const writes = h.adapter.writes.length;
+    gate.resolve();
+    await block;
+    await settled;
+    await h.runtime._tail;
+    assert.equal(h.adapter.writes.length, writes);
+    assert.equal(h.client.calls.length, 0);
+    assert.equal(h.adapter.timers.size, 0);
+});
 
 test('guide snapshots do not cause TV requests, database writes or native configuration changes', async t => {
     const { runtime, adapter, client } = await harness(t, { pollInterval: 0 });

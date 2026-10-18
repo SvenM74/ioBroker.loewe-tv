@@ -13,7 +13,7 @@ const event = (title, start = START, end = START + ui.HOUR, extra = {}) => ({
 });
 const channel = (id, number, events = []) => ({ id, name: id, number, available: true, status: 'ready', events });
 const payload = channels => ({ schemaVersion: 1, source: 'tv', now: NOW, instance: 'loewe-tv.0',
-    listName: 'ASTRA LCN', listView: 'selected-list', status: 'ready', lastUpdate: NOW, connected: true, channels });
+    listName: 'ASTRA LCN', listView: 'selected-list', catalogRevision: 'verified-catalogue', status: 'ready', lastUpdate: NOW, connected: true, channels });
 
 test('guide accepts only the expected TV snapshot and a bounded event list', () => {
     for (const invalid of [null, {}, { ...payload([]), source: 'xmltv' },
@@ -169,4 +169,108 @@ test('untrusted TV text remains data and the guide has no direct network or play
     assert.doesNotMatch(code, /\bfetch\s*\(|XMLHttpRequest|WebSocket|ZapToMedia|streamingUrl|thumbnailUrl/iu);
     const html = fs.readFileSync(path.join(__dirname, '../admin/epg.html'), 'utf8');
     assert.doesNotMatch(html, /<(?:video|iframe|img)\b|(?:src|href)="https?:/iu);
+});
+
+test('programme actions use half-open times and never execute without a known ending', () => {
+    assert.equal(ui.programmeAction(event('current'), NOW), 'view');
+    assert.equal(ui.programmeAction(event('starts now', NOW, NOW + 1), NOW), 'view');
+    assert.equal(ui.programmeAction(event('future', NOW + 1, NOW + ui.HOUR), NOW), 'record');
+    assert.equal(ui.programmeAction(event('ends now', START, NOW), NOW), 'ended');
+    assert.equal(ui.programmeAction(event('past', START - ui.HOUR, START), NOW), 'ended');
+    for (const end of [null, undefined, START, START - 1, 'unknown']) {
+        assert.equal(ui.programmeAction({ ...event('unknown'), end }, NOW), 'unknownEnd');
+    }
+    assert.equal(ui.programmeAction(event('unavailable'), NOW, false), 'unavailable');
+    assert.equal(ui.programmeAction(null, NOW), 'unavailable');
+    assert.equal(ui.programmeAction(event('invalid clock'), 'now'), 'unavailable');
+});
+
+test('programme selection contains identity references and no client-supplied tuning or recording fields', () => {
+    const guide = ui.normalizeGuide(payload([channel('channels.tv.eins', 1, [event('one')])]));
+    const selected = guide.channels[0];
+    const reference = ui.programmeSelection(guide, selected, selected.events[0]);
+    assert.deepEqual(reference, { channelId: 'channels.tv.eins', eventId: 'one', start: START, end: START + ui.HOUR,
+        listView: 'selected-list', catalogRevision: 'verified-catalogue' });
+    assert.equal(ui.programmeSelection({ ...guide, catalogRevision: '' }, selected, selected.events[0]), null);
+    assert.equal(ui.programmeSelection(guide, selected, { ...selected.events[0], end: null }), null);
+    assert.equal(ui.selectionExists(guide, reference), true);
+    for (const change of [{ listView: 'other' }, { catalogRevision: 'other-tv' }, { eventId: 'other-event' },
+        { start: START + 1 }, { end: START + 2 * ui.HOUR }, { channelId: 'channels.tv.other' }]) {
+        assert.equal(ui.selectionExists(guide, { ...reference, ...change }), false);
+    }
+    selected.available = false;
+    assert.equal(ui.selectionExists(guide, reference), false);
+});
+
+test('recording confirmation must echo the exact selected channel, list revision and programme times', () => {
+    const guide = ui.normalizeGuide(payload([channel('channels.tv.eins', 1, [event('future', NOW + ui.HOUR, NOW + 2 * ui.HOUR)])]));
+    const selected = guide.channels[0];
+    const reference = ui.programmeSelection(guide, selected, selected.events[0]);
+    const response = { action: 'confirmRecording', selection: { ...reference },
+        channel: { name: '<img src=x>', number: 1 }, programme: { title: '<script>data</script>', start: reference.start, end: reference.end } };
+    const normalized = ui.normalizeAction(response, reference);
+    assert.equal(normalized.channel.name, '<img src=x>');
+    assert.equal(normalized.programme.title, '<script>data</script>');
+    assert.deepEqual(normalized.selection, reference);
+    assert.notEqual(normalized.selection, response.selection);
+    for (const invalid of [null, {}, { action: 'recorded' }, { ...response, selection: undefined },
+        { ...response, selection: { ...reference, channelId: 'channels.tv.other' } },
+        { ...response, selection: { ...reference, catalogRevision: 'different-tv' } },
+        { ...response, programme: { ...response.programme, end: null } },
+        { ...response, programme: { ...response.programme, start: reference.start + 1 } }]) {
+        assert.throws(() => ui.normalizeAction(invalid, reference), /EPG_PROGRAMME_RESPONSE_INVALID/);
+    }
+    assert.equal(ui.normalizeAction({ action: 'switched' }, reference).action, 'switched');
+    assert.equal(ui.normalizeAction({ action: 'unavailable', message: 'Abgelaufen' }, reference).message, 'Abgelaufen');
+    assert.throws(() => ui.normalizeAction({ action: 'recordingQueued', job: {} }, reference), /EPG_PROGRAMME_RESPONSE_INVALID/);
+    assert.equal(ui.normalizeAction({ action: 'recordingQueued', job: { id: 'saved-job', status: 'queued',
+        channel: response.channel, programme: response.programme } }, reference).job.id, 'saved-job');
+});
+
+test('recording snapshots preserve server status and allow cancellation only for explicitly cancellable unsent jobs', () => {
+    const statuses = ['queued', 'sending', 'uncertain', 'scheduled', 'rejected', 'missed', 'cancelled', 'blockedDevice', 'unexpected'];
+    const raw = { schemaVersion: 1, ready: true, updatedAt: NOW, jobs: statuses.map((status, index) => ({
+        id: `job-${index}`, status, canCancel: true, createdAt: NOW + index, channel: { name: 'Das Erste', number: 1 },
+        programme: { title: 'Sendung', start: NOW + ui.HOUR, end: NOW + 2 * ui.HOUR },
+    })) };
+    const result = ui.normalizeRecordings(raw);
+    assert.equal(result.ready, true);
+    assert.equal(result.jobs.length, 9);
+    assert.deepEqual(result.jobs.filter(job => job.canCancel).map(job => job.status).sort(), ['blockedDevice', 'queued']);
+    assert.equal(result.jobs.find(job => job.id === 'job-8').status, 'unknown');
+    assert.equal(result.jobs.find(job => job.id === 'job-3').status, 'scheduled');
+    assert.equal(ui.normalizeRecordings({ ...raw, jobs: [{ ...raw.jobs[0], canCancel: false }] }).jobs[0].canCancel, false);
+});
+
+test('recording snapshots reject oversized responses, strip controls and keep invalid entries out of the actionable list', () => {
+    const job = { id: 'one', status: 'queued', canCancel: true,
+        channel: { name: 'Sender\u0000<img src=x>', number: 0 },
+        programme: { title: '<script>data</script>', start: NOW, end: NOW + ui.HOUR }, lastError: 'X'.repeat(5000) };
+    const payload = { schemaVersion: 1, ready: false, jobs: [job, { ...job }, { ...job, id: 'no-end', programme: { ...job.programme, end: null } }] };
+    const result = ui.normalizeRecordings(payload);
+    assert.equal(result.ready, false);
+    assert.equal(result.jobs.length, 1);
+    assert.equal(result.jobs[0].channel.name, 'Sender<img src=x>');
+    assert.equal(result.jobs[0].lastError.length, 800);
+    assert.equal(result.jobs[0].channel.number, 0);
+    for (const invalid of [null, {}, { ...payload, schemaVersion: 2 }, { ...payload, jobs: 'jobs' },
+        { ...payload, jobs: Array(513).fill(job) }]) assert.throws(() => ui.normalizeRecordings(invalid), /EPG_RECORDINGS_RESPONSE_INVALID/);
+});
+
+test('standalone URLs retain the current Admin origin, proxy path and instance without copying unrelated URL parameters', () => {
+    assert.equal(ui.standaloneUrl('https://iobroker.example:8081/proxy/admin/adapter/loewe-tv/epg.html?instance=12&extra=private#details'),
+        'https://iobroker.example:8081/proxy/admin/adapter/loewe-tv/epg.html?instance=12');
+    assert.equal(ui.standaloneUrl('http://iobroker.local:8081/adapter/loewe-tv/epg.html?instance=0'),
+        'http://iobroker.local:8081/adapter/loewe-tv/epg.html?instance=0');
+    for (const invalid of ['javascript:alert(1)', '/adapter/loewe-tv/epg.html?instance=0',
+        'https://user:password@example.com/adapter/loewe-tv/epg.html?instance=0',
+        'https://example.com/adapter/other/epg.html?instance=0',
+        'https://example.com/adapter/loewe-tv/epg.html',
+        'https://example.com/adapter/loewe-tv/epg.html?instance=0&instance=1',
+        'https://example.com/adapter/loewe-tv/epg.html?instance=-1',
+        'https://example.com/adapter/loewe-tv/epg.html?instance=null']) assert.equal(ui.standaloneUrl(invalid), '');
+    const html = fs.readFileSync(path.join(__dirname, '../admin/epg.html'), 'utf8');
+    assert.match(html, /id="openStandalone" target="_blank" rel="noopener noreferrer"/u);
+    assert.match(html, /<dialog[^>]+id="recordingDialog"/u);
+    assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '../admin/epg.js'), 'utf8'), /window\.confirm\s*\(|window\.alert\s*\(/u);
 });

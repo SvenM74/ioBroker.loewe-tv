@@ -2,6 +2,8 @@
 
 Stand: **18. Oktober 2026 (UTC)**. Build: **`0.1.8-epg-config-fix.1`**.
 
+**Historischer Bericht zu einem früheren 0.1.8-Build.** Der aktuelle Stand `0.1.8-tv-epg-only.1` entfernt die alternative EPG-Quelle und überflüssige Datenpunkte. Seine Änderungen und Prüfergebnisse stehen im [neuen Prüfbericht](PRUEFBERICHT_0.1.8_TV_EPG.md). Die folgenden damaligen Ergebnisse und Updatehinweise bleiben zur Nachvollziehbarkeit erhalten; für die aktuelle Installation gilt die [Installationsanleitung](INSTALLATION.md#update-auf-018).
+
 ## Nachtrag vom 18. Oktober 2026: TV-EPG bestätigt
 
 Nach Bereitstellung von **0.1.8** hat der Nutzer den erfolgreichen direkten EPG-Abruf vom Fernseher für folgende Geräte bestätigt:
@@ -88,7 +90,7 @@ npm pack
 
 ## Update und Gerätetest
 
-Das Paket heißt **`iobroker.loewe-tv-0.1.8.tgz`**. Nach der [Updateanleitung](../README.md#update-auf-018) die Admin-Seite vollständig neu laden und die Konfiguration erneut öffnen. Die bestehende Instanz und ihre Senderlistenauswahl weiterverwenden. `info.adapterBuild` muss **`0.1.8-epg-config-fix.1`** anzeigen.
+Das Paket heißt **`iobroker.loewe-tv-0.1.8.tgz`**. Nach der [damaligen Updateanleitung](https://github.com/SvenM74/ioBroker.loewe-tv/blob/99b074b58a5e365ce2f75760e976b8247a58f129/README.md#update-auf-018) die Admin-Seite vollständig neu laden und die Konfiguration erneut öffnen. Die bestehende Instanz und ihre Senderlistenauswahl weiterverwenden. `info.adapterBuild` muss **`0.1.8-epg-config-fix.1`** anzeigen.
 
 Für den TV-Test EPG aktivieren, Quelle **Nur TV** wählen, die optionale XMLTV-Adresse leer lassen und speichern. Den Fernseher einschalten und `channels.epgRefresh=true` mit `ack: false` auslösen. Anschließend den Abschluss über `channels.epgProgress` und `channels.epgStatus` beobachten. Aktuelle und nächste Sendung an zwei bekannten Sendern mit der TV-Anzeige vergleichen.
 

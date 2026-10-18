@@ -6,8 +6,10 @@ const { setImmediate: nextTurn } = require('node:timers/promises');
 const { createHash } = require('node:crypto');
 const { AdapterRuntime } = require('../lib/adapter-runtime');
 const { parseChannelPage } = require('../lib/loewe-client');
-const { MAX_CATALOG_BYTES } = require('../lib/channel-catalog');
-const { createEpgDefinitions, EPG_CHILD_TYPES } = require('../lib/epg-states');
+const { MAX_CATALOG_BYTES, mergeChannelPage } = require('../lib/channel-catalog');
+const { createEpgDefinitions, EPG_CHILD_TYPES, OBSOLETE_EPG_CHILD_TYPES } = require('../lib/epg-states');
+const { EpgManager } = require('../lib/epg-manager');
+const { createCache } = require('../lib/epg-data');
 
 const VIEW = 'fastscan-integration-fixture';
 const DYNAMIC = /^channels\.(tv|radio)\.[A-Za-z0-9_]+(?:\.|$)/u;
@@ -181,8 +183,13 @@ function write(h, id, val, ack = false) {
 
 async function query(h, entries, options = {}) {
     h.client.nextChannels = channels(entries, options);
-    await write(h, 'channels.start', options.start || 0);
-    await write(h, 'channels.getChannels', true);
+    // Feed parsed pages through the same serialized transport as the full-list
+    // refresh. Partial-page cases exercise catalogue safety independently of
+    // the removed public paging controls; full refresh has its own tests.
+    await h.runtime._enqueue('channels.refresh', async () => {
+        const response = await h.runtime._call('getChannels', h.runtime.config.channelListView, options.start || 0, 500, 'video');
+        h.runtime.channelObjects.acceptPage(parseChannelPage(response), 'video');
+    });
     if (options.idle !== false) await h.runtime.channelObjects.whenIdle();
 }
 
@@ -209,7 +216,7 @@ async function within(promise, message) {
     } finally { clearTimeout(timer); }
 }
 
-test('a mixed list creates only named TV folders and preserves TV positions plus raw pagination', async t => {
+test('a mixed list creates only named TV folders and preserves positions plus internal pagination', async t => {
     const h = await harness(t);
     await query(h, [entry('first', '1'), entry('first', '100'), entry('first', '1000'), entry('second', '2'), entry('radio', '100', 'audio')]);
     assert.equal(h.runtime.channelObjects.services.size, 2);
@@ -222,16 +229,19 @@ test('a mixed list creates only named TV folders and preserves TV positions plus
     assert.equal(first.id, 'channels.tv.Fixture_first');
     assert.equal(h.adapter.objects.get(first.id).common.name, '1');
     assert.equal(h.adapter.objects.get(first.id).common.desc, 'Fixture first');
-    assert.deepEqual(JSON.parse(state(h, `${first.id}.numbers`).val), ['1', '100', '1000']);
+    assert.deepEqual(JSON.parse(state(h, `${first.id}.positions`).val).map(position => position.caption), ['1', '100', '1000']);
     assert.equal(state(h, `${first.id}.number`).val, 1);
     assert.equal(state(h, `${first.id}.locator`).val, 'channel://1:ch-first:sl-fixture');
-    assert.deepEqual(JSON.parse(state(h, `${first.id}.locators`).val), [1, 100, 1000].map(number => `channel://${number}:ch-first:sl-fixture`));
+    assert.deepEqual(JSON.parse(state(h, `${first.id}.positions`).val).map(position => position.locator),
+        [1, 100, 1000].map(number => `channel://${number}:ch-first:sl-fixture`));
+    for (const suffix of ['numbers', 'locators', 'listView', ...Object.keys(OBSOLETE_EPG_CHILD_TYPES)]) {
+        assert.equal(h.adapter.objects.has(`${first.id}.${suffix}`), false);
+        assert.equal(h.adapter.states.has(`${first.id}.${suffix}`), false);
+    }
     assert.equal(h.adapter.objects.get(`${first.id}.epg.status`).common.def, 'waiting');
     assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
     assert.equal(h.client.calls.length, 1, 'Object materialization must not make extra TV requests.');
-    assert.equal(state(h, 'channels.returnedNumber').val, 5);
     assert.equal(h.client.calls[0].args[3], 'video');
-    assert.equal(JSON.parse(state(h, 'channels.entries').val).length, 4);
     assert.equal(h.adapter.dynamicCalls.some(call => call.id.startsWith('channels.radio.')), false);
     const catalog = JSON.parse(state(h, 'channels.catalog').val);
     assert.equal(catalog.pages[0].returnedResults, 5);
@@ -290,9 +300,9 @@ test('nonzero ZapToMedia result is an error for channel buttons and manual locat
     assert.match(state(h, 'info.lastError').val, /TV_REJECTED/u);
 });
 
-test('upgrade from 0.1.2 builds sender objects from channels.items without contacting the TV', async t => {
-    const raw = channels([entry('first'), entry('radio', '100', 'audio')]).data;
-    const h = await harness(t, adapter => adapter.states.set('channels.items', { val: JSON.stringify(raw), ack: true }));
+test('a saved catalogue alone restores sender objects offline without obsolete raw paging states', async t => {
+    const catalog = mergeChannelPage(null, parseChannelPage(channels([entry('first'), entry('radio', '100', 'audio')])));
+    const h = await harness(t, adapter => adapter.states.set('channels.catalog', { val: JSON.stringify(catalog), ack: true }));
     assert.equal(h.client.calls.length, 0);
     assert.equal(h.runtime.channelObjects.services.size, 1);
     assert.equal(state(h, `${service(h, 'first').id}.select`).val, false);
@@ -325,6 +335,253 @@ test('restart restores cache/native service identities and clears saved true but
     assert.deepEqual(restarted.client.calls, [{ method: 'zap', args: ['channel://1:ch-first:sl-fixture'] }]);
 });
 
+const OBSOLETE_CHANNEL_FIELDS = ['numbers', 'locators', 'listView', 'epg.source', 'epg.sourceChannelId',
+    'epg.now.endEstimated', 'epg.next.endEstimated'];
+
+function installObsoleteFields(adapter, root, { owner = 'loewe-tv-channel-catalog', fields = OBSOLETE_CHANNEL_FIELDS } = {}) {
+    for (const suffix of fields) {
+        const boolean = suffix.endsWith('.endEstimated');
+        const id = `${root}.${suffix}`;
+        adapter.objects.set(id, { type: 'state', common: {
+            name: suffix, type: boolean ? 'boolean' : 'string', read: true, write: false,
+        }, native: owner ? { managedBy: owner } : {} });
+        adapter.states.set(id, { val: boolean ? true : `Previous ${suffix}`, ack: true });
+    }
+}
+
+test('startup removes seven obsolete channel fields offline while retaining catalogue identity and programme values', async t => {
+    const original = await harness(t);
+    await query(original, [entry('first'), entry('first', '100')]);
+    const root = service(original, 'first').id;
+    const h = await harness(t, adapter => {
+        adapter.config.host = '';
+        adapter.objects = structuredClone(original.adapter.objects);
+        adapter.states = structuredClone(original.adapter.states);
+        installObsoleteFields(adapter, root);
+        adapter.states.set(`${root}.epg.now.title`, { val: 'Current TV programme', ack: true });
+    });
+    assert.equal(h.client.calls.length, 0);
+    assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
+    assert.equal(service(h, 'first').id, root);
+    assert.equal(h.adapter.objects.get(root).native.channelService.service.listView, VIEW);
+    assert.deepEqual(JSON.parse(state(h, `${root}.positions`).val), service(original, 'first').positions);
+    assert.equal(state(h, `${root}.epg.now.title`).val, 'Current TV programme');
+    assert.equal(h.adapter.objects.has(`${root}.epg.data`), true);
+    assert.equal(h.adapter.objects.has(`${root}.epg.cache`), true);
+    for (const suffix of OBSOLETE_CHANNEL_FIELDS) {
+        const id = `${root}.${suffix}`;
+        assert.equal(h.adapter.objects.has(id), false, id);
+        assert.equal(h.adapter.states.has(id), false, id);
+        assert.equal(h.runtime._objects.has(id), false, id);
+        assert.equal(h.runtime._lastValues.has(id), false, id);
+    }
+    assert.equal(h.adapter.dynamicCalls.filter(call => call.operation === 'delete').length, 7);
+    const restarted = await harness(t, adapter => {
+        adapter.objects = structuredClone(h.adapter.objects);
+        adapter.states = structuredClone(h.adapter.states);
+    });
+    assert.equal(restarted.adapter.dynamicCalls.some(call => call.operation === 'delete'), false);
+    await write(restarted, `${root}.select`, true);
+    assert.deepEqual(restarted.client.calls, [{ method: 'zap', args: ['channel://1:ch-first:sl-fixture'] }]);
+});
+
+test('obsolete orphaned fields require explicit ownership and preserve foreign, protected and nested user objects', async t => {
+    const h = await harness(t, adapter => {
+        installObsoleteFields(adapter, 'channels.tv.Orphan');
+        installObsoleteFields(adapter, 'channels.tv.Foreign', { owner: 'another-adapter' });
+        installObsoleteFields(adapter, 'channels.tv.Unowned', { owner: '' });
+        installObsoleteFields(adapter, 'channels.tv.Protected');
+        adapter.objects.get('channels.tv.Protected.numbers').common.dontDelete = true;
+        adapter.objects.get('channels.tv.Protected.epg.source').common.custom = { 'history.0': { enabled: true } };
+        installObsoleteFields(adapter, 'channels.tv.UserRoot');
+        adapter.objects.set('channels.tv.UserRoot', { type: 'channel', common: { name: 'My channel' }, native: {} });
+        installObsoleteFields(adapter, 'channels.tv.UserAncestor');
+        adapter.objects.set('channels.tv.UserAncestor.epg', { type: 'channel', common: { name: 'My programmes' }, native: {} });
+        installObsoleteFields(adapter, 'channels.tv.WrongType', { fields: ['numbers'] });
+        adapter.objects.get('channels.tv.WrongType.numbers').type = 'channel';
+        installObsoleteFields(adapter, 'channels.tv.Personal.extra', { fields: ['numbers'] });
+    });
+    for (const suffix of OBSOLETE_CHANNEL_FIELDS) {
+        assert.equal(h.adapter.objects.has(`channels.tv.Orphan.${suffix}`), false);
+        assert.equal(h.adapter.states.has(`channels.tv.Orphan.${suffix}`), false);
+        for (const name of ['Foreign', 'Unowned', 'UserRoot']) {
+            assert.equal(h.adapter.objects.has(`channels.tv.${name}.${suffix}`), true, `${name}.${suffix}`);
+            assert.ok(state(h, `channels.tv.${name}.${suffix}`));
+        }
+    }
+    assert.equal(h.adapter.objects.get('channels.tv.Protected.numbers').common.dontDelete, true);
+    assert.equal(h.adapter.objects.get('channels.tv.Protected.epg.source').common.custom['history.0'].enabled, true);
+    assert.equal(state(h, 'channels.tv.Protected.epg.source').val, 'Previous epg.source');
+    assert.equal(h.adapter.objects.has('channels.tv.Protected.locators'), false);
+    assert.equal(h.adapter.objects.has('channels.tv.UserAncestor.numbers'), false);
+    assert.equal(h.adapter.objects.has('channels.tv.UserAncestor.epg.source'), true);
+    assert.equal(h.adapter.objects.has('channels.tv.UserAncestor.epg.now.endEstimated'), true);
+    assert.equal(h.adapter.objects.has('channels.tv.WrongType.numbers'), true);
+    assert.equal(h.adapter.objects.has('channels.tv.Personal.extra.numbers'), true);
+    assert.equal(h.runtime.channelObjects.services.size, 0);
+    assert.equal(h.client.calls.length, 0);
+    assert.ok(h.adapter.logs.some(row => row.level === 'warn' && row.message.includes('channels.tv.Protected')));
+});
+
+test('obsolete-field migration respects protected roots and parent folders before deleting any descendant', async t => {
+    const original = await harness(t);
+    await query(original, [entry('protected'), entry('epg-parent', '2')]);
+    const h = await harness(t, adapter => {
+        adapter.objects = structuredClone(original.adapter.objects);
+        adapter.states = structuredClone(original.adapter.states);
+        for (const root of ['channels.tv.Fixture_protected', 'channels.tv.Fixture_epg_parent']) installObsoleteFields(adapter, root);
+        adapter.objects.get('channels.tv.Fixture_protected').common.dontDelete = true;
+        adapter.objects.get('channels.tv.Fixture_epg_parent.epg').common.custom = { 'history.0': { enabled: true } };
+    });
+    for (const suffix of OBSOLETE_CHANNEL_FIELDS) {
+        assert.ok(h.adapter.objects.has(`channels.tv.Fixture_protected.${suffix}`), suffix);
+        assert.equal(h.adapter.objects.has(`channels.tv.Fixture_epg_parent.${suffix}`), suffix.startsWith('epg.'), suffix);
+    }
+    assert.equal(h.runtime.channelObjects.services.size, 2);
+    assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
+    // A later refresh can finish a migration after protection was removed.
+    delete h.adapter.objects.get('channels.tv.Fixture_protected').common.dontDelete;
+    h.adapter.objects.get('channels.tv.Fixture_epg_parent.epg').common.custom = {};
+    await query(h, [entry('protected'), entry('epg-parent', '2')]);
+    for (const suffix of OBSOLETE_CHANNEL_FIELDS) {
+        assert.equal(h.adapter.objects.has(`channels.tv.Fixture_protected.${suffix}`), false);
+        assert.equal(h.adapter.objects.has(`channels.tv.Fixture_epg_parent.${suffix}`), false);
+    }
+});
+
+test('obsolete-field migration rechecks changed ownership and late protection before a non-recursive delete', async t => {
+    const h = await harness(t, adapter => {
+        installObsoleteFields(adapter, 'channels.tv.Late', { fields: ['numbers', 'locators'] });
+        adapter.objectHook = async id => {
+            if (id === 'channels.tv.Late.numbers') adapter.objects.get(id).common.dontDelete = true;
+            if (id === 'channels.tv.Late.locators') adapter.objects.get(id).native.managedBy = 'user';
+        };
+    });
+    assert.equal(h.adapter.objects.get('channels.tv.Late.numbers').common.dontDelete, true);
+    assert.equal(h.adapter.objects.get('channels.tv.Late.locators').native.managedBy, 'user');
+    assert.equal(h.adapter.dynamicCalls.some(call => call.operation === 'delete'), false);
+});
+
+test('retiring a channel recognizes all obsolete metadata and EPG descendants even after startup migration', async t => {
+    const h = await harness(t);
+    await query(h, [entry('first')]);
+    const root = service(h, 'first').id;
+    installObsoleteFields(h.adapter, root);
+    await query(h, []);
+    assert.equal(h.adapter.objects.has(root), false);
+    assert.equal([...h.adapter.objects.keys()].some(id => id.startsWith(`${root}.`)), false);
+    assert.equal([...h.adapter.states.keys()].some(id => id.startsWith(`${root}.`)), false);
+    assert.equal(h.runtime.channelObjects.services.size, 0);
+});
+
+test('a timed-out obsolete-field deletion must settle before a newer catalogue can proceed', async t => {
+    const gate = deferred();
+    const reported = deferred();
+    t.after(() => gate.resolve());
+    const h = await harness(t, adapter => {
+        installObsoleteFields(adapter, 'channels.tv.Orphan', { fields: ['numbers'] });
+        adapter.dynamicHook = call => call.operation === 'delete' ? gate.promise : undefined;
+        adapter.stateHook = (id, value) => { if (id === 'channels.catalogStatus' && value.val === 'error') reported.resolve(); };
+    }, { idle: false });
+    const database = h.runtime._database.bind(h.runtime);
+    h.runtime._database = (operation, label, timeout) => database(operation, label, label.endsWith('entfernen') ? 15 : timeout);
+    await within(reported.promise, 'The obsolete-field delete deadline was not reported.');
+    const callsAtTimeout = h.adapter.dynamicCalls.length;
+    await query(h, [entry('first')], { idle: false });
+    await within(write(h, 'remote.home', true), 'Obsolete-field cleanup blocked remote control.');
+    assert.equal(h.adapter.dynamicCalls.length, callsAtTimeout);
+    assert.equal(h.adapter.objects.has('channels.tv.Fixture_first'), false);
+    gate.resolve();
+    await h.runtime.channelObjects.whenIdle();
+    assert.equal(h.adapter.objects.has('channels.tv.Orphan.numbers'), false);
+    assert.equal(h.adapter.objects.has('channels.tv.Fixture_first.select'), true);
+    assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
+});
+
+test('failed obsolete-field cleanup cannot preserve external EPG or prevent a manual direct-TV refresh', async t => {
+    const now = Date.UTC(2026, 9, 17, 12);
+    const channel = { ...entry('chl0:00-00080001ffff03fb283d'), '@_shortInfo': 'Das Erste HD',
+        '@_locator': 'channel://1:ch-fixture-ard:sl-fixture' };
+    const catalog = mergeChannelPage(null, parseChannelPage(channels([channel])));
+    const selected = catalog.services[0];
+    const root = selected.id;
+    const events = [
+        { eventId: 'old-current', title: 'External current', start: now - 60000, end: now + 60000 },
+        { eventId: 'old-next', title: 'External next', start: now + 60000, end: now + 120000 },
+    ];
+    const oldCache = { ...createCache(selected, { source: 'tv', events }, now), schemaVersion: 1,
+        source: 'xmltv', sourceChannelId: 'old-provider', fingerprint: 'old-config' };
+    const h = await harness(t, (adapter, client) => {
+        adapter.config.epgRefreshInterval = 0;
+        adapter.states.set('channels.catalog', { val: JSON.stringify(catalog), ack: true });
+        installObsoleteFields(adapter, root, { fields: ['epg.source'] });
+        for (const [suffix, val] of [
+            ['epg.cache', JSON.stringify(oldCache)], ['epg.now.title', 'External current'],
+            ['epg.next.title', 'External next'], ['epg.data', JSON.stringify({ source: 'xmltv', now: events[0], next: events[1] })],
+        ]) adapter.states.set(`${root}.${suffix}`, { val, ack: true });
+        adapter.dynamicHook = call => {
+            if (call.operation === 'delete' && call.id === `${root}.epg.source`) {
+                throw Object.assign(new Error('Obsolete field delete failed'), { code: 'DATABASE' });
+            }
+        };
+        client.request = async (action, parameters, options) => {
+            client.calls.push({ method: 'request', args: [action, parameters, options] });
+            assert.equal(action, 'CreateIterator');
+            return response('CreateIterator', { Result: '0', Id: 'fixture-epg-iterator', Rows: {
+                '@_startIndex': '0', '@_totalResults': '2', '@_returnedResults': '2',
+                Row: [
+                    { V: ['10301', '1019', '1', 'tv-current', 'TV current', 'Current subtitle', 'Current description',
+                        String((now - 60000) / 1000), String((now + 60000) / 1000)] },
+                    { V: ['10301', '1019', '1', 'tv-next', 'TV next', 'Next subtitle', 'Next description',
+                        String((now + 60000) / 1000), String((now + 120000) / 1000)] },
+                ],
+            } });
+        };
+    }, { epgFactory: runtime => new EpgManager(runtime, { now: () => now }) });
+    await h.runtime.epg._initialization;
+    assert.equal(state(h, 'channels.catalogStatus').val, 'error');
+    assert.match(state(h, 'channels.catalogError').val, /DATABASE.*Obsolete field delete failed/u);
+    assert.ok(h.adapter.objects.has(`${root}.epg.source`), 'The simulated database error still prevents deleting this old object.');
+    assert.equal(h.runtime.epg.entries.get(root).initialized, true);
+    assert.equal(state(h, `${root}.epg.now.title`).val, '');
+    assert.equal(state(h, `${root}.epg.next.title`).val, '');
+    assert.equal(state(h, `${root}.epg.cache`).val, '{}');
+    assert.equal(JSON.parse(state(h, `${root}.epg.data`).val).now, null);
+    assert.equal(JSON.parse(state(h, `${root}.epg.data`).val).next, null);
+    assert.equal(h.client.calls.length, 0, 'No automatic fetch runs with a zero EPG interval.');
+    assert.equal(h.runtime.epg._fetchTimer, null);
+
+    await write(h, 'channels.epgRefresh', true);
+    assert.equal(h.client.calls.length, 1);
+    assert.equal(h.client.calls[0].args[0], 'CreateIterator');
+    assert.match(h.client.calls[0].args[1], /<TableName>de\.loewe\.sl2\.epg<\/TableName>/u);
+    assert.equal(state(h, `${root}.epg.now.title`).val, 'TV current');
+    assert.equal(state(h, `${root}.epg.next.title`).val, 'TV next');
+    assert.equal(JSON.parse(state(h, `${root}.epg.cache`).val).source, 'tv');
+    assert.equal(JSON.parse(state(h, `${root}.epg.data`).val).tvDiagnostic.status, 'received');
+    assert.equal(state(h, 'channels.epgStatus').val, 'ready');
+    assert.equal(state(h, 'channels.catalogStatus').val, 'error', 'The independent cleanup failure remains visible.');
+    assert.equal(h.runtime.epg._fetchTimer, null);
+});
+
+test('stopping during obsolete-field migration prevents all later object mutations', async t => {
+    const gate = deferred();
+    t.after(() => gate.resolve());
+    const h = await harness(t, adapter => {
+        installObsoleteFields(adapter, 'channels.tv.Orphan');
+        adapter.dynamicHook = call => call.operation === 'delete' ? gate.promise : undefined;
+    }, { idle: false });
+    await until(() => h.adapter.dynamicCalls.some(call => call.operation === 'delete'), 'Expected obsolete-state migration to start.');
+    await h.runtime.stop();
+    const callsAtStop = h.adapter.dynamicCalls.length;
+    gate.resolve();
+    await h.runtime.channelObjects.whenIdle();
+    assert.equal(h.adapter.dynamicCalls.length, callsAtStop);
+    assert.equal(h.adapter.dynamicCalls.filter(call => call.operation === 'delete').length, 1);
+    assert.equal(h.adapter.objects.has('channels.tv.Orphan.locators'), true);
+    assert.equal(h.adapter.objects.has('channels.tv.Orphan.epg.source'), true);
+});
+
 test('old named radio caches and native objects cannot return after TV-only startup or execute a saved selection', async t => {
     const original = await harness(t);
     await query(original, [entry('first')]);
@@ -355,7 +612,8 @@ test('old named radio caches and native objects cannot return after TV-only star
     assert.equal(restarted.adapter.dynamicCalls.some(call => call.id.startsWith('channels.radio.')), false);
     assert.equal(state(restarted, `${radio.id}.select`), undefined);
     assert.equal(state(restarted, 'channels.catalog').val.includes('old-radio'), false);
-    assert.deepEqual(JSON.parse(state(restarted, 'channels.entries').val).map(item => item.itemClass), ['video']);
+    assert.equal(state(restarted, 'channels.entries'), undefined);
+    assert.equal(state(restarted, 'channels.items'), undefined);
     await restarted.runtime.handleStateChange(`${restarted.adapter.namespace}.${radio.id}.select`, { val: true, ack: false });
     assert.equal(restarted.client.calls.length, 0);
 
@@ -381,9 +639,11 @@ test('native restoration with a saved or live partial first page preserves unque
         const restarted = await harness(t, adapter => {
             adapter.objects = structuredClone(original.adapter.objects);
             adapter.states.set('channels.catalog', { val: '{}', ack: true });
-            const raw = source === 'saved'
-                ? JSON.stringify(channels([entry('new', '3')], { start: 0, total: 5, itemClass: 'video' }).data) : '{}';
-            adapter.states.set('channels.items', { val: raw, ack: true });
+            if (source === 'saved') {
+                const partial = mergeChannelPage(null, parseChannelPage(channels([entry('new', '3')],
+                    { start: 0, total: 5, itemClass: 'video' })));
+                adapter.states.set('channels.catalog', { val: JSON.stringify(partial), ack: true });
+            }
         });
         assert.equal(restarted.client.calls.length, 0);
         assert.equal(service(restarted, 'first').available, true);
@@ -734,7 +994,7 @@ test('numeric 0.1.4 caches and native roots migrate to stable service names with
         assert.equal(h.runtime.channelObjects.services.size, 1);
         assert.equal(h.client.calls.length, 0);
         assert.equal(h.adapter.objects.get('channels.tv.Fixture_first').common.name, '1');
-        assert.deepEqual(JSON.parse(state(h, 'channels.tv.Fixture_first.numbers').val), ['1', '100', '1000']);
+        assert.deepEqual(JSON.parse(state(h, 'channels.tv.Fixture_first.positions').val).map(position => position.caption), ['1', '100', '1000']);
         assert.equal(h.adapter.objects.has('channels.radio.Fixture_radio'), false);
         for (const old of previous) {
             assert.equal(h.adapter.objects.has(old.id), false);
@@ -882,7 +1142,7 @@ test('v1 grouped cache and native folders migrate offline to name IDs and remove
             assert.deepEqual(state(h, `${id}.select`), { val: false, ack: true });
             assert.equal(h.adapter.objects.get(id).native.channelService.schemaVersion, 3);
         }
-        assert.deepEqual(JSON.parse(state(h, 'channels.tv.Fixture_first.numbers').val), ['1', '100', '1000']);
+        assert.deepEqual(JSON.parse(state(h, 'channels.tv.Fixture_first.positions').val).map(position => position.caption), ['1', '100', '1000']);
         for (const old of legacy) {
             assert.equal([...h.adapter.objects.keys()].some(id => id === old.id || id.startsWith(`${old.id}.`)), false);
             assert.equal([...h.adapter.states.keys()].some(id => id.startsWith(`${old.id}.`)), false);
@@ -909,13 +1169,12 @@ test('three conflicting legacy occupants remain unavailable until a fresh respon
     assert.deepEqual(h.client.calls.filter(call => call.method === 'zap').at(-1).args, ['channel://1:ch-confirmed:sl-fixture']);
 });
 
-test('damaged catalogue and raw caches cannot discard a valid live response queued during restoration', async t => {
+test('a damaged catalogue cannot discard a valid live response queued during restoration', async t => {
     const gate = deferred();
     t.after(() => gate.resolve());
     let readingCache = false;
     const h = await harness(t, adapter => {
         adapter.states.set('channels.catalog', { val: '{invalid catalogue', ack: true });
-        adapter.states.set('channels.items', { val: '{invalid response', ack: true });
         let restoring = false;
         const getObjects = adapter.getAdapterObjectsAsync.bind(adapter);
         adapter.getAdapterObjectsAsync = async () => {
@@ -939,7 +1198,7 @@ test('damaged catalogue and raw caches cannot discard a valid live response queu
     assert.equal(state(h, 'channels.catalogStatus').val, 'ready');
     assert.equal(h.runtime.channelObjects.pending.length, 0);
     assert.equal(h.runtime.channelObjects.appliedSelectionEpoch, h.runtime.channelObjects.selectionEpoch);
-    assert.ok(h.adapter.logs.filter(log => /INVALID_RESPONSE/u.test(log.message)).length >= 2);
+    assert.ok(h.adapter.logs.some(log => /INVALID_RESPONSE/u.test(log.message)));
     await write(h, 'channels.tv.Fixture_live.select', true);
     assert.deepEqual(h.client.calls, [{ method: 'zap', args: ['channel://1:ch-live:sl-fixture'] }]);
 });
@@ -1174,7 +1433,7 @@ test('EPG definitions are read-only TV descendants with one complete retirement 
     assert.deepEqual(Object.fromEntries(definitions.map(definition => [definition.id.slice(root.length + 1), definition.type])),
         EPG_CHILD_TYPES);
     for (const slot of ['now', 'next']) {
-        for (const field of ['available', 'title', 'subtitle', 'description', 'eventId', 'start', 'end', 'endEstimated']) {
+        for (const field of ['available', 'title', 'subtitle', 'description', 'eventId', 'start', 'end']) {
             const definition = definitions.find(value => value.id === `${root}.epg.${slot}.${field}`);
             assert.ok(definition, `Missing ${slot}.${field}`);
             assert.equal(definition.common.read, true);
@@ -1185,12 +1444,16 @@ test('EPG definitions are read-only TV descendants with one complete retirement 
     assert.ok(definitions.filter(definition => definition.type === 'state')
         .every(definition => Object.hasOwn(definition.common, 'def')));
     assert.equal(definitions.find(value => value.id === `${root}.epg.cache`).common.expert, true);
+    for (const suffix of Object.keys(OBSOLETE_EPG_CHILD_TYPES)) {
+        assert.equal(definitions.some(value => value.id === `${root}.${suffix}`), false);
+        assert.equal(Object.hasOwn(EPG_CHILD_TYPES, suffix), false);
+    }
     for (const invalid of ['channels.radio.Bayern_1', 'media', 'channels.tv', 'channels.tv.Station.epg', 'channels.tv.a-b']) {
         assert.throws(() => createEpgDefinitions(invalid), /TV channel root/u);
     }
 });
 
-test('EPG catalogue preparation precedes materialization and ready follows registered current-epoch objects', async t => {
+test('EPG catalogue preparation precedes materialization and readiness requires registered current-service objects', async t => {
     const gate = deferred();
     t.after(() => gate.resolve());
     let preparing = false;
@@ -1207,8 +1470,7 @@ test('EPG catalogue preparation precedes materialization and ready follows regis
             }
         },
         catalogReady() {
-            ready.push({ epoch: runtime.channelObjects.appliedSelectionEpoch,
-                acceptedEpoch: runtime.channelObjects.selectionEpoch,
+            ready.push({ acceptedEpoch: runtime.channelObjects.selectionEpoch,
                 registered: [...runtime.channelObjects.services].every(([id]) => runtime._objects.has(`${id}.epg.now.title`)),
             });
         },
@@ -1223,8 +1485,7 @@ test('EPG catalogue preparation precedes materialization and ready follows regis
     await h.runtime.channelObjects.whenIdle();
     assert.equal(snapshots.at(-1).length, 1);
     assert.equal(snapshots.at(-1)[0].itemClass, 'video');
-    assert.deepEqual(ready.at(-1), { epoch: h.runtime.channelObjects.selectionEpoch,
-        acceptedEpoch: h.runtime.channelObjects.selectionEpoch, registered: true });
+    assert.deepEqual(ready.at(-1), { acceptedEpoch: h.runtime.channelObjects.selectionEpoch, registered: true });
     assert.equal(h.adapter.objects.has('channels.radio'), false);
 });
 
@@ -1233,7 +1494,7 @@ test('a programme position update cannot reset EPG values or a stored programme 
     await query(h, [entry('first')]);
     const root = 'channels.tv.Fixture_first';
     const values = {
-        status: 'ready', source: 'xmltv', lastUpdate: 1790000000000,
+        status: 'ready', lastUpdate: 1790000000000,
         'now.available': true, 'now.title': 'Running programme', 'now.start': 1790000000000, 'now.end': 1790003600000,
         'next.title': 'Following programme', data: '{"now":{"title":"Running programme"}}', cache: '{"schemaVersion":1}',
     };

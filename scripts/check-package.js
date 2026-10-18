@@ -18,8 +18,11 @@ const catalog = readJson('docs/protocol-templates.json');
 const remote115 = readJson('docs/remote115-keys.json');
 
 assert.equal(pkg.name, `iobroker.${io.common.name}`);
+assert.equal(pkg.version, '0.1.8');
 assert.equal(pkg.version, io.common.version);
 assert.ok(BUILD_ID.startsWith(`${pkg.version}-`), 'Build identifier must match package version');
+assert.equal(BUILD_ID, '0.1.8-tv-epg-only.1');
+assert.ok(!pkg.keywords.includes('xmltv'), 'Package keywords must describe the supported TV-only EPG');
 assert.equal(io.common.mode, 'daemon');
 assert.equal(io.common.messagebox, true, 'Admin list selection requires adapter messaging');
 assert.equal(io.common.connectionType, 'local');
@@ -61,10 +64,26 @@ for (const language of ['de', 'en']) {
     for (const key of translationKeys) assert.ok(translations[key], `${language} translation missing: ${key}`);
 }
 
-const config = normalizeConfig({ ...io.native, host: 'fixture.invalid' });
-for (const key of ['epgEnabled', 'epgSource', 'epgRefreshInterval', 'epgXmltvUrl', 'epgXmltvMappings']) {
+const config = normalizeConfig({
+    ...io.native, host: 'fixture.invalid',
+    epgSource: 'xmltv', epgXmltvUrl: 'not a guide URL', epgXmltvMappings: [{}],
+});
+for (const key of ['epgEnabled', 'epgRefreshInterval']) {
     assert.deepEqual(config[key], io.native[key], `Runtime must preserve the EPG default: ${key}`);
 }
+for (const key of ['epgSource', 'epgXmltvUrl', 'epgXmltvMappings']) {
+    assert.ok(!configFields.has(key), `Removed EPG setting must not appear in Admin: ${key}`);
+    assert.ok(!Object.hasOwn(io.native, key), `Removed EPG setting must not have a native default: ${key}`);
+    assert.ok(!Object.hasOwn(config, key), `Runtime must ignore obsolete EPG settings: ${key}`);
+}
+const retiredStaticStates = [
+    'info.lastResponse', 'status.volumeRaw',
+    'channels.start', 'channels.listStart', 'channels.count',
+    'channels.getLists', 'channels.getChannels', 'channels.lists', 'channels.items',
+    'channels.entries', 'channels.totalNumber', 'channels.returnedNumber',
+    'channels.nextStart', 'channels.nextListStart', 'channels.lastUpdate',
+    'channels.lastError', 'channels.availableLists',
+];
 for (const advanced of [false, true]) {
     const objects = createDefinitions({ ...config, enableAdvanced: advanced });
     const ids = new Set();
@@ -85,7 +104,10 @@ for (const advanced of [false, true]) {
         }
     }
     assert.equal([...ids].filter(id => /^remote\.[^.]+$/.test(id)).length, 42);
-    assert.equal(objects.length, 107);
+    assert.equal(objects.length, 90);
+    for (const id of retiredStaticStates) {
+        assert.ok(!ids.has(id), `Retired static data point must not be recreated: ${id}`);
+    }
     assert.ok(![...ids].some(id => /^(?:api|media|channels\.radio)(?:\.|$)/.test(id)));
     assert.ok(ids.has('info.adapterBuild'));
     assert.equal(objects.find(object => object.id === 'channels.view').common.write, false);

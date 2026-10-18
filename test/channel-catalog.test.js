@@ -593,9 +593,17 @@ test('folder ID contains the station name, common name is its preferred position
     assert.equal(button.common.def, false);
     assert.equal(Object.hasOwn(values, button.id), false);
     assert.equal(values[prefix + '.number'], 1);
-    assert.deepEqual(JSON.parse(values[prefix + '.numbers']), ['001', '100']);
     assert.deepEqual(JSON.parse(values[prefix + '.positions']), one.positions);
-    assert.deepEqual(JSON.parse(values[prefix + '.locators']), ['channel://001:ch-one:sl-fixture', 'channel://100:ch-one:sl-fixture']);
+    assert.deepEqual(JSON.parse(values[prefix + '.positions']), [
+        { caption: '001', locator: 'channel://001:ch-one:sl-fixture' },
+        { caption: '100', locator: 'channel://100:ch-one:sl-fixture' },
+    ]);
+    for (const suffix of ['numbers', 'locators', 'listView', 'epg.source', 'epg.sourceChannelId',
+        'epg.now.endEstimated', 'epg.next.endEstimated']) {
+        assert.equal(definitions.some(definition => definition.id === `${prefix}.${suffix}`), false, suffix);
+        assert.equal(Object.hasOwn(values, `${prefix}.${suffix}`), false, suffix);
+    }
+    assert.equal(definitions[0].native.listView, one.listView, 'The internal list identity still belongs to the service.');
     assert.ok(!Object.keys(values).some(id => id.startsWith(prefix + '.epg.')),
         'Programme values are owned by the EPG manager, not by ordinary station metadata updates.');
     assert.equal(definitions.find(definition => definition.id === prefix + '.epg.status').common.def, 'waiting');

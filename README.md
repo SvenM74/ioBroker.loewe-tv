@@ -21,3 +21,5 @@ Die folgenden Ergebnisse stammen aus den Gerätetests des Nutzers. Sie gelten f�
 Der laufende Adapter arbeitet lokal. Für die Installation kann ioBroker benötigte Node.js-Abhängigkeiten aus dem Internet nachladen. Das lokale `.tgz`-Paket ist deshalb keine Zusage einer vollständig netzlosen Installation.
 
 Deutsch und Englisch.
+
+[Installation, Update und Datenpunkte](docs/INSTALLATION.md)

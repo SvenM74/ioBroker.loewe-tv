@@ -156,36 +156,27 @@ test('Admin lists use the saved native selection and a temporary reload trigger'
     assert.equal(translations[reload.label], 'Senderlisten neu laden');
 });
 
-test('EPG configuration defaults to TV first and stores XMLTV mappings as row data', () => {
+test('EPG configuration reads directly from the TV with only enable and refresh settings', () => {
     const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
     const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
     const panel = config.items._epg;
     const items = panel.items;
-    const expected = {
-        epgEnabled: true,
-        epgSource: 'auto',
-        epgRefreshInterval: 900,
-        epgXmltvUrl: '',
-        epgXmltvMappings: [],
-    };
+    const expected = { epgEnabled: true, epgRefreshInterval: 900 };
     assert.equal(panel.type, 'panel');
     assert.deepEqual(Object.keys(items).filter(key => !key.startsWith('_')).sort(), Object.keys(expected).sort());
     for (const [key, value] of Object.entries(expected)) {
         assert.deepEqual(io.native[key], value);
         assert.deepEqual(items[key].default, value);
     }
-    assert.deepEqual(items.epgSource.options.map(option => option.value), ['auto', 'tv', 'xmltv']);
-    assert.equal(items.epgXmltvMappings.type, 'table');
-    // Admin 7.0.23 ConfigTable receives an array of columns with attr names;
-    // a panel-style object here would break rendering or save incorrect data.
-    assert.ok(Array.isArray(items.epgXmltvMappings.items));
-    assert.deepEqual(items.epgXmltvMappings.items.map(column => column.attr), ['channel', 'xmltvId']);
-    assert.deepEqual(items.epgXmltvMappings.uniqueColumns, ['channel']);
-    assert.ok(!Object.hasOwn(io.native, 'channel'));
-    assert.ok(!Object.hasOwn(io.native, 'xmltvId'));
-    const translatedItems = [panel, ...Object.values(items), ...items.epgSource.options, ...items.epgXmltvMappings.items];
+    assert.match(items._epgHelp.text, /directly from the TV/u);
+    assert.doesNotMatch(JSON.stringify(panel), /xmltv|epgSource|guide URL/iu);
+    for (const key of ['epgSource', 'epgXmltvUrl', 'epgXmltvMappings']) {
+        assert.equal(Object.hasOwn(io.native, key), false, `Obsolete EPG default: ${key}`);
+    }
+    const translatedItems = [panel, ...Object.values(items)];
     for (const language of ['de', 'en']) {
         const translations = JSON.parse(fs.readFileSync(path.join(root, `admin/i18n/${language}/translations.json`), 'utf8'));
+        assert.doesNotMatch(JSON.stringify(translations), /xmltv/iu, `${language} must not contain obsolete XMLTV guidance`);
         for (const item of translatedItems) {
             for (const key of ['label', 'title', 'text', 'help', 'validatorErrorText']) {
                 if (item[key]) assert.ok(translations[item[key]], `${language} translation missing: ${item[key]}`);
@@ -202,10 +193,6 @@ test('EPG form validates manual-only operation and bounded automatic intervals',
     assert.equal(validateInterval(undefined), true, 'A missing upgrade setting uses the 900-second default');
     for (const value of [-1, 1, 299, 300.5, 86401, null, '900']) assert.equal(validateInterval(value), false, String(value));
     assert.equal(items.epgRefreshInterval.validatorNoSaveOnError, true);
-    const validateSource = value => executeAdminFunction(items.epgSource.validator, { epgSource: value });
-    for (const value of ['auto', 'tv', 'xmltv']) assert.equal(validateSource(value), true);
-    assert.equal(validateSource(undefined), true, 'A missing upgrade setting uses Automatic');
-    for (const value of ['', 'all', null]) assert.equal(validateSource(value), false);
     assert.equal(executeAdminFunction(items.epgRefreshInterval.disabled, { epgEnabled: false }), true);
     assert.equal(executeAdminFunction(items.epgRefreshInterval.disabled, { epgEnabled: true }), false);
     assert.equal(executeAdminFunction(items.epgRefreshInterval.disabled, {}), false, 'EPG defaults to enabled while Admin initializes upgrade defaults');
@@ -213,117 +200,69 @@ test('EPG form validates manual-only operation and bounded automatic intervals',
     assert.match(items.epgRefreshInterval.help, /channels\.epgRefresh/u);
 });
 
-test('optional XMLTV guide URLs use the same HTTP and credential rules as the downloader', () => {
-    const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
-    const field = config.items._epg.items.epgXmltvUrl;
-    const validate = value => executeAdminFunction(field.validator, { epgXmltvUrl: value });
-    for (const value of [undefined, '', '  ', 'http://192.168.178.10:8080/guide.xml', 'https://guide.example/epg.xml.gz', 'http://[::1]:8080/guide.xml', 'https://guide.example/'.padEnd(4096, 'a')]) {
-        assert.equal(validate(value), true, value);
-    }
-    for (const value of ['not-a-url', '/guide.xml', 'file:///guide.xml', 'data:text/xml,<tv/>', 'https://', 'https://user:secret@guide.example/guide.xml', 'https://guide.example/gu\nide.xml', 'https://guide.example/'.padEnd(4097, 'a'), null, 17]) {
-        assert.equal(validate(value), false, String(value));
-    }
-    assert.equal(field.validatorNoSaveOnError, true);
-    assert.equal(executeAdminFunction(field.disabled, { epgEnabled: true, epgSource: 'tv' }), true);
-    assert.equal(executeAdminFunction(field.disabled, { epgEnabled: true, epgSource: 'auto' }), false);
-});
-
-test('XMLTV mapping validators accept explicit identifiers and reject incomplete rows', () => {
-    const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
-    const field = config.items._epg.items.epgXmltvMappings;
-    const validate = mappings => executeAdminFunction(field.validator, { epgXmltvMappings: mappings });
-    const mappings = [
-        { channel: 'channels.tv.Das_Erste_HD', xmltvId: 'DasErste.de@HD' },
-        { channel: 'WDR HD Köln', xmltvId: 'WDRFernsehenKoeln.de@HD' },
-        { channel: 'Film "Titel" ${text}', xmltvId: 'Exact.Channel-Id' },
-    ];
-    assert.equal(validate([]), true);
-    assert.equal(validate(undefined), true, 'A missing upgrade mapping table is empty');
-    assert.equal(validate(mappings), true);
-    assert.equal(validate([{ channel: ` ${'a'.repeat(1024)} `, xmltvId: ` ${'b'.repeat(512)} ` }]), true);
-    const maximumMappings = Array.from({ length: 2000 }, (_, index) => ({ channel: `Sender ${index}`, xmltvId: `station${index}` }));
-    assert.equal(validate(maximumMappings), true);
-    for (const invalid of [
-        null, {}, [null], [{}],
-        [{ channel: 'Das Erste HD' }],
-        [{ channel: ' ', xmltvId: 'id' }],
-        [{ channel: 'Sender', xmltvId: '' }],
-        [{ channel: 'a'.repeat(1025), xmltvId: 'id' }],
-        [{ channel: 'Sender', xmltvId: 'a'.repeat(513) }],
-        [{ channel: 'Sender\nHD', xmltvId: 'id' }],
-        [{ channel: 'Sender', xmltvId: 'id\tHD' }],
-        [{ channel: 'Sender', xmltvId: 'a' }, { channel: ' Sender ', xmltvId: 'b' }],
-        [...maximumMappings, { channel: 'One too many', xmltvId: 'id' }],
-    ]) {
-        assert.equal(validate(invalid), false);
-    }
-    for (const column of field.items) {
-        for (const [index, row] of mappings.entries()) {
-            assert.equal(executeAdminFunction(column.validator, row, { globalData: { epgXmltvMappings: mappings }, arrayIndex: index }), true);
-        }
-        assert.equal(executeAdminFunction(column.validator, { [column.attr]: '' }, { globalData: { epgXmltvMappings: [] }, arrayIndex: 0 }), false);
-        assert.equal(column.validatorNoSaveOnError, true);
-    }
-});
-
 test('Admin function-body evaluation catches nested-return expressions that would lock Save', () => {
-    const oldPattern = "typeof data.epgXmltvUrl === 'string' && (!data.epgXmltvUrl.trim() || (() => { return true; })())";
-    const data = { epgXmltvUrl: '' };
-    assert.equal(vm.runInNewContext(oldPattern, { data }), true, 'Expression-only evaluation missed the defect');
-    assert.equal(executeAdminFunction(oldPattern, data), undefined, 'Admin receives no outer return and blocks saving');
+    const brokenPattern = 'Number.isInteger(data.epgRefreshInterval) && (() => { return true; })()';
+    const data = { epgRefreshInterval: 900 };
+    assert.equal(vm.runInNewContext(brokenPattern, { data }), true, 'Expression-only evaluation misses the defect');
+    assert.equal(executeAdminFunction(brokenPattern, data), undefined, 'Admin receives no outer return and blocks saving');
     const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
-    assert.equal(executeAdminFunction(config.items._epg.items.epgXmltvUrl.validator, data), true);
+    assert.equal(executeAdminFunction(config.items._epg.items.epgRefreshInterval.validator, data), true);
 });
 
-test('all Admin validators allow a valid form with optional XMLTV empty, including disabled controls', () => {
+test('all Admin validators allow saving with EPG enabled, disabled or manual-only', () => {
     const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
     const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
     for (const epgEnabled of [true, false]) {
-        for (const epgSource of ['auto', 'tv', 'xmltv']) {
-            const data = { ...clone(io.native), host: '192.168.178.35', epgEnabled, epgSource };
-            assert.deepEqual(adminValidationErrors(config, data), [], `${epgSource}, enabled=${epgEnabled}`);
+        for (const epgRefreshInterval of [0, 300, 900, 86400]) {
+            const data = { ...clone(io.native), host: '192.168.178.35', epgEnabled, epgRefreshInterval };
+            assert.deepEqual(adminValidationErrors(config, data), [], `enabled=${epgEnabled}, interval=${epgRefreshInterval}`);
         }
     }
 });
 
-test('upgrading an existing instance without EPG settings does not block Save while defaults initialize', () => {
+test('missing EPG defaults and obsolete settings do not block Save while upgrade defaults initialize', () => {
     const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
     const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
-    const data = { ...clone(io.native), host: 'tv.example', channelListView: 'selected-favourites' };
     const epgFields = Object.entries(config.items._epg.items).filter(([key]) => !key.startsWith('_'));
-    for (const [key] of epgFields) delete data[key];
-    // ConfigGeneric.componentDidMount initializes absent defaults via a 100 ms
-    // timer. Validate before, during and after those separate updates, including
-    // an untouched EPG tab when the user edits another part of the form.
-    for (const order of [epgFields, epgFields.slice().reverse()]) {
-        const native = clone(data);
-        assert.deepEqual(adminValidationErrors(config, native), []);
-        assert.deepEqual(native, data, 'Validation must not mutate the native settings');
-        for (const [key, field] of order) {
-            native[key] = clone(field.default);
-            assert.deepEqual(adminValidationErrors(config, native), [], `After initializing ${key}`);
+    for (const legacy of [
+        {},
+        { epgSource: 'xmltv', epgXmltvUrl: 'file:///old-guide.xml', epgXmltvMappings: [{}] },
+        { epgSource: {}, epgXmltvUrl: 17, epgXmltvMappings: null },
+    ]) {
+        const data = { ...clone(io.native), ...legacy, host: 'tv.example', channelListView: 'selected-favourites' };
+        for (const [key] of epgFields) delete data[key];
+        // ConfigGeneric.componentDidMount initializes absent defaults via a
+        // 100 ms timer. Validate before, during and after those separate updates,
+        // including an untouched EPG tab while another field is edited.
+        for (const order of [epgFields, epgFields.slice().reverse()]) {
+            const native = clone(data);
+            assert.deepEqual(adminValidationErrors(config, native), []);
+            assert.deepEqual(native, data, 'Validation must not mutate the native settings');
+            for (const [key, field] of order) {
+                native[key] = clone(field.default);
+                assert.deepEqual(adminValidationErrors(config, native), [], `After initializing ${key}`);
+            }
+            assert.equal(native.channelListView, 'selected-favourites');
         }
-        assert.equal(native.channelListView, 'selected-favourites');
     }
 });
 
-test('Admin root and table-row scopes validate XMLTV mappings without losing normal form validation', () => {
+test('obsolete XMLTV values are ignored while current form validation remains active', () => {
     const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
     const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
-    const data = {
-        ...clone(io.native), host: 'tv.example', epgXmltvUrl: 'https://guide.example/guide.xml',
-        epgXmltvMappings: [{ channel: 'channels.tv.Das_Erste_HD', xmltvId: 'DasErste.de@HD' }],
-    };
-    assert.deepEqual(adminValidationErrors(config, data), []);
-    data.epgXmltvMappings[0].xmltvId = '';
-    assert.deepEqual(adminValidationErrors(config, data), ['_epg.epgXmltvMappings', '_epg.epgXmltvMappings.0.xmltvId']);
-    data.epgXmltvMappings = [];
-    assert.deepEqual(adminValidationErrors(config, data), [], 'Removing an unfinished optional mapping makes its values valid again');
-    data.epgXmltvUrl = 'file:///guide.xml';
-    assert.deepEqual(adminValidationErrors(config, data), ['_epg.epgXmltvUrl']);
-    data.epgXmltvUrl = '';
-    data.host = '';
-    assert.deepEqual(adminValidationErrors(config, data), ['_connection.host'], 'The fix must not disable the normal validation rules');
+    for (const epgEnabled of [true, false]) {
+        const data = {
+            ...clone(io.native), host: 'tv.example', epgEnabled, epgRefreshInterval: 0,
+            epgSource: 'invalid', epgXmltvUrl: 'file:///guide.xml', epgXmltvMappings: [{ channel: '', xmltvId: '' }],
+        };
+        assert.deepEqual(adminValidationErrors(config, data), [], `Legacy values must not block Save, enabled=${epgEnabled}`);
+        data.epgRefreshInterval = 299;
+        assert.deepEqual(adminValidationErrors(config, data), ['_epg.epgRefreshInterval']);
+        delete data.epgRefreshInterval;
+        assert.deepEqual(adminValidationErrors(config, data), [], 'Missing current settings use their defaults');
+        data.host = '';
+        assert.deepEqual(adminValidationErrors(config, data), ['_connection.host'], 'Required connection validation stays active');
+    }
 });
 
 test('main registers and forwards Admin discovery with the original callback exactly once', async () => {

@@ -86,7 +86,7 @@ test('the manufacturer response is accepted with its absolute seek offset and ex
     assert.deepEqual(page, {
         startIndex: 41, totalResults: 864, returnedResults: 1,
         events: [{ eventId: '', title: 'Rote Rosen (2539)', subtitle: '', description: '',
-            start: 1509973800000, end: null, endEstimated: false }],
+            start: 1509973800000, end: null }],
     });
     assert.throws(() => parseIteratorPage(parsed, BASIC_FIELDS, DVB, 42), { code: 'EPG_TV_INVALID' });
 });
@@ -241,7 +241,7 @@ test('the real SOAP parser and iterator source produce canonical events with UTC
     const { source, calls } = makeSource(() => parsed);
     const deadline = Date.now() + 20000;
     const result = await source.read(SERVICE, { now: NOW, deadline });
-    assert.deepEqual(result.events, [current, next].map(value => ({ ...value, endEstimated: false })));
+    assert.deepEqual(result.events, [current, next]);
     assert.equal(result.source, 'tv');
     assert.equal(result.diagnostic.schema, 'extended');
     assert.equal(result.diagnostic.complete, true);
@@ -275,7 +275,7 @@ test('missing or zero end times remain unknown and are never inferred from the n
     const second = event(NOW + 60000, 0, 'Nächste Sendung');
     const { source } = makeSource(() => response([first, second]));
     const result = await source.read(SERVICE, { now: NOW });
-    assert.deepEqual(result.events.map(value => [value.end, value.endEstimated]), [[null, false], [null, false]]);
+    assert.deepEqual(result.events.map(value => value.end), [null, null]);
 });
 
 test('an explicit optional-field SOAP rejection falls back once and remembers the basic schema until reset', async () => {

@@ -3,25 +3,24 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { DAY, MAX_EVENTS, MAX_CACHE_BYTES, MIN_CACHE_BYTES, normalizeEvents, selectNowNext,
-    createCache, restoreCache, sourceFingerprint } = require('../lib/epg-data');
+    createCache, restoreCache } = require('../lib/epg-data');
 
 const NOW = Date.parse('2026-10-17T22:30:00Z');
 const MINUTE = 60000;
 const SERVICE = { id: 'channels.tv.Das_Erste_HD', itemClass: 'video', name: 'Das Erste HD',
     listView: 'fastscan-test', mediaItemUuid: 'chl0:00-00080001ffff03fb283d', number: 1 };
-const CONFIG = { epgSource: 'auto', epgXmltvUrl: 'https://example.test/guide.xml', epgXmltvMappings: [] };
 
 function event(title, start, end, extra = {}) {
     return { eventId: title, title, subtitle: '', description: '', start: NOW + start,
-        end: end === null ? null : NOW + end, endEstimated: false, ...extra };
+        end: end === null ? null : NOW + end, ...extra };
 }
 
 function choose(events, now = NOW) { return selectNowNext(normalizeEvents(events, now), now); }
-function cache(events = [], config = CONFIG, source = 'tv', now = NOW, limit) {
-    return createCache(SERVICE, { source, events }, config, now, limit);
+function cache(events = [], source = 'tv', now = NOW, limit) {
+    return createCache(SERVICE, { source, events }, now, limit);
 }
-function restore(value, service = SERVICE, config = CONFIG, now = NOW) {
-    return restoreCache(JSON.stringify(value), service, config, now);
+function restore(value, service = SERVICE, now = NOW) {
+    return restoreCache(JSON.stringify(value), service, now);
 }
 
 test('start is inclusive, end is exclusive, and an expired programme never remains current', () => {
@@ -97,15 +96,16 @@ test('a schedule gap remains empty now while a future programme can still be sho
     assert.equal(selected.ambiguous, false);
 });
 
-test('a valid explicitly estimated end can be used, and its visible flag survives deduplication and cache', () => {
-    const estimated = event('Jetzt', -MINUTE, MINUTE, { endEstimated: true });
-    const events = normalizeEvents([{ ...estimated, endEstimated: false }, estimated], NOW);
+test('estimated ends are rejected and legacy false flags are removed from normalized data', () => {
+    const confirmed = event('Jetzt', -MINUTE, MINUTE, { endEstimated: false });
+    const events = normalizeEvents([confirmed, confirmed], NOW);
     assert.equal(events.length, 1);
-    assert.equal(selectNowNext(events, NOW).now.endEstimated, true);
-    const restored = restore(cache(events));
-    assert.equal(restored.events[0].endEstimated, true);
-    const unknown = normalizeEvents([event('Ende fehlt', MINUTE, null, { endEstimated: true })], NOW);
-    assert.equal(unknown[0].endEstimated, false);
+    assert.equal(Object.hasOwn(events[0], 'endEstimated'), false);
+    assert.equal(Object.hasOwn(restore(cache(events)).events[0], 'endEstimated'), false);
+    for (const end of [MINUTE, null]) {
+        assert.throws(() => normalizeEvents([event('Nur geschätzt', 0, end, { endEstimated: true })], NOW),
+            { code: 'EPG_DATA' });
+    }
 });
 
 test('exact duplicates collapse but different end times remain ambiguous evidence', () => {
@@ -202,39 +202,57 @@ test('a very long current candidate still retains an older unknown-end replaceme
     assert.equal(selected.ambiguous, true);
 });
 
-test('cache round-trip binds the source, service and configuration and recomputes programme selection', () => {
-    const result = createCache(SERVICE, { source: 'xmltv', sourceChannelId: 'DasErste.de', events: [
-        event('Jetzt', -MINUTE, MINUTE), event('Danach', MINUTE, 2 * MINUTE),
-    ] }, CONFIG, NOW);
-    const restored = restore(result, SERVICE, CONFIG, NOW + MINUTE);
-    assert.equal(restored.source, 'xmltv');
-    assert.equal(restored.sourceChannelId, 'DasErste.de');
+test('TV cache round-trip binds the service and recomputes programme selection', () => {
+    const result = cache([event('Jetzt', -MINUTE, MINUTE), event('Danach', MINUTE, 2 * MINUTE)]);
+    const restored = restore(result, SERVICE, NOW + MINUTE);
+    assert.equal(restored.schemaVersion, 2);
+    assert.equal(restored.source, 'tv');
+    assert.equal(Object.hasOwn(restored, 'sourceChannelId'), false);
+    assert.equal(Object.hasOwn(restored, 'fingerprint'), false);
     assert.equal(restored.fetchedAt, NOW);
     assert.equal(selectNowNext(restored.events, NOW + MINUTE).now.title, 'Danach');
-    assert.equal(restore(result, { ...SERVICE, name: 'Umbenannt', number: 50 }).sourceChannelId, 'DasErste.de');
+    assert.ok(restore(result, { ...SERVICE, name: 'Umbenannt', number: 50 }));
 });
 
-test('changed list, DVB identity, source mode, guide URL or mappings invalidate persisted data', () => {
+test('changed list, media type or service identity invalidates persisted data', () => {
     const value = cache();
-    for (const service of [{ ...SERVICE, listView: 'other-list' }, { ...SERVICE, mediaItemUuid: 'other-service' }]) {
-        assert.equal(restore(value, service), null);
+    for (const service of [{ ...SERVICE, listView: 'other-list' }, { ...SERVICE, mediaItemUuid: 'other-service' },
+        { ...SERVICE, itemClass: 'audio' }]) assert.equal(restore(value, service), null);
+});
+
+test('legacy TV caches migrate without external configuration metadata or estimated flags', () => {
+    const legacy = { ...cache([event('Jetzt', -MINUTE, MINUTE)]), schemaVersion: 1,
+        fingerprint: 'old-external-config-fingerprint', sourceChannelId: 'obsolete-source-id' };
+    legacy.events[0].endEstimated = false;
+    const restored = restore(legacy);
+    assert.equal(restored.schemaVersion, 2);
+    assert.equal(restored.source, 'tv');
+    assert.equal(restored.events[0].title, 'Jetzt');
+    assert.equal(Object.hasOwn(restored, 'fingerprint'), false);
+    assert.equal(Object.hasOwn(restored, 'sourceChannelId'), false);
+    assert.equal(Object.hasOwn(restored.events[0], 'endEstimated'), false);
+    assert.equal(restored.fetchedAt, NOW);
+});
+
+test('external, missing-origin and estimated legacy caches never become TV programmes', () => {
+    for (const schemaVersion of [1, 2]) {
+        const value = { ...cache([event('Extern', -MINUTE, MINUTE)]), schemaVersion };
+        for (const source of ['xmltv', 'auto', '', 'TV', undefined, null, {}]) {
+            assert.equal(restore({ ...value, source }), null);
+        }
+        for (const endEstimated of [true, 'false', null]) {
+            assert.equal(restore({ ...value, events: [{ ...value.events[0], endEstimated }] }), null);
+        }
     }
-    for (const config of [{ ...CONFIG, epgSource: 'xmltv' }, { ...CONFIG, epgXmltvUrl: 'https://other.test/guide.xml' },
-        { ...CONFIG, epgXmltvMappings: [{ channel: SERVICE.id, xmltvId: 'Other.de' }] }]) {
-        assert.notEqual(sourceFingerprint(config), sourceFingerprint(CONFIG));
-        assert.equal(restore(value, SERVICE, config), null);
-    }
-    for (const source of ['tv', 'xmltv']) {
-        const config = { ...CONFIG, epgSource: source };
-        const wrong = cache([], config, source === 'tv' ? 'xmltv' : 'tv');
-        assert.equal(restore(wrong, SERVICE, config), null);
+    for (const source of ['xmltv', undefined, null, 'auto']) {
+        assert.throws(() => createCache(SERVICE, { source, events: [] }, NOW), { code: 'EPG_DATA' });
     }
 });
 
 test('cache age is limited to 24 hours and future timestamps allow only the documented small clock skew', () => {
     const value = cache();
-    assert.ok(restore(value, SERVICE, CONFIG, NOW + DAY));
-    assert.equal(restore(value, SERVICE, CONFIG, NOW + DAY + 1), null);
+    assert.ok(restore(value, SERVICE, NOW + DAY));
+    assert.equal(restore(value, SERVICE, NOW + DAY + 1), null);
     assert.ok(restore({ ...value, fetchedAt: NOW + 300000 }));
     assert.equal(restore({ ...value, fetchedAt: NOW + 300001 }), null);
     for (const fetchedAt of ['1792276200000', null, true, 0, 4102444800000]) {
@@ -245,16 +263,14 @@ test('cache age is limited to 24 hours and future timestamps allow only the docu
 test('malformed, oversized, wrong-version and untrusted cache values are rejected without throwing', () => {
     const value = cache([event('Jetzt', -MINUTE, MINUTE)]);
     for (const raw of ['', '{', 'null', '[]', '{}', 'x'.repeat(MAX_CACHE_BYTES + 1), 0, null, {}]) {
-        assert.equal(restoreCache(raw, SERVICE, CONFIG, NOW), null);
+        assert.equal(restoreCache(raw, SERVICE, NOW), null);
     }
-    for (const changed of [{ ...value, schemaVersion: 2 }, { ...value, source: 'remote' },
+    for (const changed of [{ ...value, schemaVersion: 3 }, { ...value, source: 'remote' },
         { ...value, events: null }, { ...value, events: Array(2049).fill(null) },
         { ...value, events: [{ ...value.events[0], end: NOW - MINUTE }] },
-        { ...value, events: [{ ...value.events[0], endEstimated: 'false' }] },
-        { ...value, sourceChannelId: {} }]) assert.equal(restore(changed), null);
-    assert.equal(restore(value, {}, CONFIG), null);
-    assert.equal(restore(value, SERVICE, null), null);
-    assert.equal(restore(value, SERVICE, CONFIG, NaN), null);
+        { ...value, events: [{ ...value.events[0], endEstimated: 'false' }] }]) assert.equal(restore(changed), null);
+    assert.equal(restore(value, {}), null);
+    assert.equal(restore(value, SERVICE, NaN), null);
 });
 
 test('an untrusted cache cannot use normalization limits to make overlapping current events seem unique', () => {
@@ -268,7 +284,7 @@ test('a smaller per-channel byte budget preserves current and next, trims metada
     const events = [event('Jetzt', -MINUTE, MINUTE), ...Array.from({ length: 30 }, (_, index) => event(`Später ${index}`,
         (index + 1) * MINUTE, (index + 2) * MINUTE))].map(value => ({ ...value,
         description: 'Beschreibung 😀'.repeat(400), subtitle: 'Folge 😀'.repeat(200) }));
-    const result = cache(events, CONFIG, 'tv', NOW, MIN_CACHE_BYTES);
+    const result = cache(events, 'tv', NOW, MIN_CACHE_BYTES);
     assert.ok(Buffer.byteLength(JSON.stringify(result)) <= MIN_CACHE_BYTES);
     const selected = selectNowNext(result.events, NOW);
     assert.equal(selected.now.title, 'Jetzt');
@@ -287,7 +303,7 @@ test('byte truncation retains every alternative of the earliest future start gro
         ...Array.from({ length: 3 }, (_, index) => event(`Alternative ${index}`, MINUTE, 2 * MINUTE, heavy(index + 1))),
         ...Array.from({ length: 10 }, (_, index) => event(`Später ${index}`, (index + 2) * MINUTE,
             (index + 3) * MINUTE, heavy(index + 10)))];
-    const result = cache(events, CONFIG, 'tv', NOW, MIN_CACHE_BYTES);
+    const result = cache(events, 'tv', NOW, MIN_CACHE_BYTES);
     assert.ok(Buffer.byteLength(JSON.stringify(result)) <= MIN_CACHE_BYTES);
     assert.equal(result.events.filter(value => value.start === NOW + MINUTE).length, 3);
     assert.equal(selectNowNext(result.events, NOW).next, null);
@@ -297,15 +313,15 @@ test('byte truncation retains every alternative of the earliest future start gro
 test('an impossible byte budget fails rather than discarding current overlaps or next alternatives', () => {
     const heavy = Array.from({ length: 8 }, (_, index) => event(`Läuft ${index}`, -MINUTE, MINUTE,
         { eventId: `${index}` + '😀'.repeat(127), title: `${index}` + '😀'.repeat(255) }));
-    assert.throws(() => cache(heavy, CONFIG, 'tv', NOW, MIN_CACHE_BYTES), { code: 'EPG_DATA' });
+    assert.throws(() => cache(heavy, 'tv', NOW, MIN_CACHE_BYTES), { code: 'EPG_DATA' });
     const future = heavy.map(value => ({ ...value, start: NOW + MINUTE, end: NOW + 2 * MINUTE }));
-    assert.throws(() => cache(future, CONFIG, 'tv', NOW, MIN_CACHE_BYTES), { code: 'EPG_DATA' });
+    assert.throws(() => cache(future, 'tv', NOW, MIN_CACHE_BYTES), { code: 'EPG_DATA' });
 });
 
 test('invalid cache budgets, timestamps and sources fail explicitly', () => {
     for (const limit of [0, MIN_CACHE_BYTES - 1, MIN_CACHE_BYTES + 0.5, MAX_CACHE_BYTES + 1, Infinity, NaN]) {
-        assert.throws(() => cache([], CONFIG, 'tv', NOW, limit), { code: 'EPG_DATA' });
+        assert.throws(() => cache([], 'tv', NOW, limit), { code: 'EPG_DATA' });
     }
-    assert.throws(() => cache([], CONFIG, 'other'), { code: 'EPG_DATA' });
-    assert.throws(() => cache([], CONFIG, 'tv', NaN), { code: 'EPG_DATA' });
+    assert.throws(() => cache([], 'other'), { code: 'EPG_DATA' });
+    assert.throws(() => cache([], 'tv', NaN), { code: 'EPG_DATA' });
 });

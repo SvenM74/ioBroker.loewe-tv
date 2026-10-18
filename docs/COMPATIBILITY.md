@@ -1,16 +1,20 @@
 # Gerätekompatibilität und bestätigte Tests
 
-Stand: **18. Oktober 2026**. Aktueller Adapter: **0.1.8**, Build **`0.1.8-epg-config-fix.1`**. Dieser Nachtrag ergänzt die Dokumentation; er ändert keine Adapterfunktionen und erfordert kein erneutes Paketupdate.
+Stand: **18. Oktober 2026**. Aktueller Adapter: **0.1.8**, Build **`0.1.8-tv-epg-only.1`**.
+
+Der aktuelle Build ruft Programminformationen ausschließlich direkt vom Fernseher ab. Er entfernt die externe EPG-Quelle, deren Einstellungen und überflüssige Datenpunkte. **Das neue Paket muss auch dann installiert werden, wenn bereits Version 0.1.8 angezeigt wird.** Der Build-Bezeichner unterscheidet die Paketstände. Die [EPG-Anleitung](EPG.md) beschreibt den aktuellen Funktionsumfang; der [Prüfbericht zum TV-EPG-Build](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die Überarbeitung.
+
+**Der neue Build `0.1.8-tv-epg-only.1` selbst wurde noch nicht am Gerät getestet.** Die folgenden EPG-Bestätigungen stammen vom früher bereitgestellten 0.1.8-Stand und bleiben als historische Geräteergebnisse erhalten.
 
 ## Rückmeldungen aus Gerätetests
 
 | Modell | Chassis | TV-Software | Bestätigter Umfang |
 |---|---|---|---|
-| **Loewe bild 7.55** | **SL420** | **V5.4.6.0** | Direkter EPG-Abruf vom Fernseher am 18.10.2026 bestätigt. Frühere Rückmeldungen bestätigen Senderabruf, Senderordner, konfigurierte Senderliste und TV-Auswahl nach kurzem Test sowie die bereits vorhandenen Fernbedienungstaster. |
-| **Loewe bild 5.32** | **SL310F** | **V5.4.6.0** | Direkter EPG-Abruf vom Fernseher am 18.10.2026 bestätigt. Die übrigen Funktionen wurden in dieser Rückmeldung nicht gesondert bewertet. |
+| **Loewe bild 7.55** | **SL420** | **V5.4.6.0** | Direkter EPG-Abruf vom Fernseher mit dem damaligen 0.1.8-Stand am 18.10.2026 bestätigt. Frühere Rückmeldungen bestätigen Senderabruf, Senderordner, konfigurierte Senderliste und TV-Auswahl nach kurzem Test sowie die bereits vorhandenen Fernbedienungstaster. |
+| **Loewe bild 5.32** | **SL310F** | **V5.4.6.0** | Direkter EPG-Abruf vom Fernseher mit dem damaligen 0.1.8-Stand am 18.10.2026 bestätigt. Die vom Nutzer ergänzte Gerätetabelle bestätigt außerdem Fernbedienung, Senderlisten und TV-Auswahl. |
 | **Loewe Connect 26 SL** | **MB180** laut Loewe-Serviceanleitung | Nicht mitgeteilt | Der Nutzer meldet, dass das Gerät mit dieser Steuerung nicht kompatibel ist. Für die verwendete Tablet-Schnittstelle liegt kein positiver Kompatibilitätsnachweis vor. |
 
-Die Modell-, Chassis- und Firmwareangaben der beiden bild-Geräte sowie ihre EPG-Ergebnisse stammen vom Nutzer. Seine Rückmeldung bestätigt den Abruf **vom Fernseher**. Die tatsächliche Verfügbarkeit aller Sender, Zeiträume und einzelnen EPG-Felder wurde dabei nicht vollständig dokumentiert. Automatische Aufnahmeprogrammierung ist weiterhin geplant. Die bisher fehlende Bestätigung des Einschaltens und die zurückgestellte Radiosteuerung werden durch den EPG-Test nicht geändert. Die genaueren bisherigen Testergebnisse zum bild 7.55 stehen in der [README](../README.md#bisherige-rückmeldungen-zum-bild-755).
+Die Modell-, Chassis- und Firmwareangaben der beiden bild-Geräte sowie ihre EPG-Ergebnisse stammen vom Nutzer. Seine Rückmeldung bestätigt den Abruf **vom Fernseher**. Die tatsächliche Verfügbarkeit aller Sender, Zeiträume und einzelnen EPG-Felder wurde dabei nicht vollständig dokumentiert. Automatische Aufnahmeprogrammierung ist weiterhin geplant. Die bisher fehlende Bestätigung des Einschaltens und die zurückgestellte Radiosteuerung werden durch den EPG-Test nicht geändert. Die vom Nutzer aktualisierte [Gerätetabelle in der README](../README.md#getestete-geräte) führt für beide bild-Geräte auch Fernbedienung, Senderlisten und TV-Auswahl auf.
 
 ## Loewe Connect 26 SL
 
@@ -50,4 +54,4 @@ Für eine spätere Untersuchung des konkreten Geräts wären dessen **Softwareve
 
 ## Bedeutung für EPG und Aufnahmen
 
-Die weitere EPG- und Aufnahmeentwicklung kann sich auf die zwei positiv gemeldeten bild-Geräte konzentrieren. Programmdaten stehen bereits bei den TV-Sendern unter `channels.tv.<Sender-ID>.epg`. Für eine spätere Aufnahmeautomatik müssen Sendungszeiten, eindeutige Senderzuordnung und ein tatsächlich im Fernseher gespeicherter Aufnahmetimer gesondert geprüft werden. Die [EPG-Anleitung](EPG.md), [Protokollbeschreibung](epg-protocol.md) und [Roadmap](ROADMAP.md) beschreiben diese nächsten Schritte.
+Die weitere EPG- und Aufnahmeentwicklung kann sich auf die zwei positiv gemeldeten bild-Geräte konzentrieren. Programmdaten stehen bereits bei den TV-Sendern unter `channels.tv.<Sender-ID>.epg` und stammen im aktuellen Build ausschließlich vom Fernseher. Der nächste Gerätetest muss den neuen Build einschließlich Konfigurationsspeicherung und erneutem TV-EPG-Abruf prüfen. Für eine spätere Aufnahmeautomatik müssen Sendungszeiten, eindeutige Senderzuordnung und ein tatsächlich im Fernseher gespeicherter Aufnahmetimer gesondert geprüft werden. Eine vollständige Ereignisliste und Aufnahmedatenpunkte sind weiterhin geplant. Die [EPG-Anleitung](EPG.md), [Protokollbeschreibung](epg-protocol.md) und [Roadmap](ROADMAP.md) beschreiben diese nächsten Schritte.

@@ -7,7 +7,7 @@ const assert = require('node:assert/strict');
 const { setImmediate: nextTurn } = require('node:timers/promises');
 const { AdapterRuntime, normalizeConfig } = require('../lib/adapter-runtime');
 const { BATCH_SIZE } = require('../lib/epg-manager');
-const { createEpgDefinitions } = require('../lib/epg-states');
+const { createEpgDefinitions, OBSOLETE_EPG_CHILD_TYPES } = require('../lib/epg-states');
 const { createCache, MAX_CACHE_AGE } = require('../lib/epg-data');
 
 const NOW = Date.UTC(2026, 9, 17, 12);
@@ -37,7 +37,7 @@ function service(number = 1, extra = {}) {
 
 function programme(title, start, end, extra = {}) {
     return { eventId: `event-${title}`, title, subtitle: `${title} subtitle`,
-        description: `${title} description`, start, end, endEstimated: false, ...extra };
+        description: `${title} description`, start, end, ...extra };
 }
 
 function programmes(prefix = 'TV', time = NOW) {
@@ -48,12 +48,8 @@ function programmes(prefix = 'TV', time = NOW) {
     ];
 }
 
-function tvResult(events = programmes(), sourceChannelId = 'tv-guide-1') {
-    return { source: 'tv', sourceChannelId, events };
-}
-
-function feed(channels, fetchedAt = NOW) {
-    return { channels: new Map(channels.map(channel => [channel.id, channel])), fetchedAt };
+function tvResult(events = programmes()) {
+    return { source: 'tv', events };
 }
 
 class FakeAdapter {
@@ -104,9 +100,10 @@ async function harness(t, options = {}) {
     const config = normalizeConfig({ host: 'fixture.invalid', channelListView: 'fixture-list',
         pollInterval: 0, channelRefreshInterval: 0, epgRefreshInterval: 0,
         ...options.config });
+    Object.assign(config, options.injectedConfig);
     const adapter = new FakeAdapter(config);
     for (const [id, val] of options.saved || []) adapter.states.set(id, { val, ack: true });
-    const calls = { tv: [], xmltv: [], requests: [], reset: 0 };
+    const calls = { tv: [], requests: [], reset: 0 };
     const source = options.tvSource || {
         reset() { calls.reset++; },
         async read(selected, settings) {
@@ -115,13 +112,7 @@ async function harness(t, options = {}) {
         },
     };
     const runtime = new AdapterRuntime(adapter, { epgOptions: {
-        now: () => time, tvSource: source,
-        xmltvLoader: async (url, settings) => {
-            calls.xmltv.push({ url, settings });
-            if (options.loadXmltv) return options.loadXmltv(url, settings);
-            throw error('EPG_XMLTV', 'No XMLTV feed configured in this fixture');
-        },
-        ...(options.xmltvResolver ? { xmltvResolver: options.xmltvResolver } : {}),
+        now: () => time, tvSource: source, ...options.epgOptions,
     } });
     runtime.config = config;
     runtime.client = options.client === null ? null : options.client || {
@@ -162,53 +153,42 @@ async function harness(t, options = {}) {
     };
 }
 
-test('EPG configuration defaults are automatic, enabled and refreshed every fifteen minutes', () => {
+test('EPG defaults expose only enablement and the fifteen-minute refresh interval', () => {
     const config = normalizeConfig({});
     assert.equal(config.epgEnabled, true);
-    assert.equal(config.epgSource, 'auto');
     assert.equal(config.epgRefreshInterval, 900);
-    assert.equal(config.epgXmltvUrl, '');
-    assert.deepEqual(config.epgXmltvMappings, []);
+    assert.deepEqual(Object.keys(config).filter(key => key.startsWith('epg')).sort(), ['epgEnabled', 'epgRefreshInterval']);
     for (const interval of [0, 300, 86400]) {
         assert.equal(normalizeConfig({ epgRefreshInterval: interval }).epgRefreshInterval, interval);
     }
-    const configured = normalizeConfig({ epgSource: 'xmltv', epgEnabled: false,
-        epgXmltvUrl: 'http://192.0.2.1:3000/guide.xml?token=private',
-        epgXmltvMappings: [{ channel: ' Sender 1 ', xmltvId: ' DasErste.de@SD ' }] });
-    assert.deepEqual(configured.epgXmltvMappings, [{ channel: 'Sender 1', xmltvId: 'DasErste.de@SD' }]);
 });
 
-test('EPG configuration rejects ambiguous mappings, invalid intervals and unsafe URL forms', () => {
-    const invalid = [
-        { epgEnabled: 'true' }, { epgSource: 'unknown' },
-        { epgRefreshInterval: 299 }, { epgRefreshInterval: -1 }, { epgRefreshInterval: 86401 },
-        { epgRefreshInterval: 300.5 },
-        { epgXmltvUrl: 'file:///etc/passwd' }, { epgXmltvUrl: 'not a URL' },
-        { epgXmltvUrl: 'https://private-user:private-password@example.invalid/guide.xml' },
-        { epgXmltvUrl: 'https://example.invalid/a\nb.xml' },
-        { epgXmltvMappings: {} }, { epgXmltvMappings: [null] },
-        { epgXmltvMappings: [{ channel: '', xmltvId: 'one' }] },
-        { epgXmltvMappings: [{ channel: 'one', xmltvId: '' }] },
-        { epgXmltvMappings: [{ channel: 'A\nB', xmltvId: 'one' }] },
-        { epgXmltvMappings: [{ channel: 'one', xmltvId: 'A\u0000B' }] },
-        { epgXmltvMappings: [{ channel: 'one', xmltvId: 'a' }, { channel: ' one ', xmltvId: 'b' }] },
-    ];
-    for (const config of invalid) {
-        assert.throws(() => normalizeConfig(config), caught => {
-            assert.equal(caught.code, 'VALIDATION');
-            assert.doesNotMatch(caught.message, /private-user|private-password/u);
-            return true;
-        }, JSON.stringify(config));
+test('obsolete source options are ignored even when their values are invalid', () => {
+    for (const legacy of [
+        { epgSource: 'xmltv', epgXmltvUrl: 'file:///obsolete.xml', epgXmltvMappings: {} },
+        { epgSource: {}, epgXmltvUrl: 42, epgXmltvMappings: [null] },
+        { epgSource: 'unknown', epgXmltvUrl: 'not a URL', epgXmltvMappings: null },
+    ]) {
+        const config = normalizeConfig({ ...legacy, epgEnabled: false, epgRefreshInterval: 300 });
+        assert.equal(config.epgEnabled, false);
+        assert.equal(config.epgRefreshInterval, 300);
+        assert.deepEqual(Object.keys(config).filter(key => key.startsWith('epg')).sort(), ['epgEnabled', 'epgRefreshInterval']);
     }
 });
 
-test('complete TV programmes publish per-channel fields and a final consistent snapshot without loading XMLTV', async t => {
-    const h = await harness(t, { config: { epgXmltvUrl: 'https://fixture.invalid/guide.xml' } });
+test('EPG configuration still rejects invalid enablement and refresh intervals', () => {
+    for (const config of [
+        { epgEnabled: 'true' }, { epgRefreshInterval: 299 }, { epgRefreshInterval: -1 },
+        { epgRefreshInterval: 86401 }, { epgRefreshInterval: 300.5 },
+    ]) assert.throws(() => normalizeConfig(config), { code: 'VALIDATION' });
+});
+
+test('complete TV programmes publish useful per-channel fields and a final consistent snapshot', async t => {
+    const h = await harness(t);
     const id = service().id;
     const begin = h.adapter.completedWrites.length;
     await h.manager.refresh({ manual: true });
     assert.equal(h.calls.tv.length, 1);
-    assert.equal(h.calls.xmltv.length, 0);
     assert.equal(h.value(id, 'epg.now.title'), 'TV current');
     assert.equal(h.value(id, 'epg.next.title'), 'TV next');
     assert.equal(h.value(id, 'epg.now.start'), NOW - MINUTE);
@@ -216,8 +196,11 @@ test('complete TV programmes publish per-channel fields and a final consistent s
     assert.equal(h.value(id, 'epg.now.available'), true);
     const snapshot = h.snapshot();
     assert.equal(snapshot.status, 'ready');
-    assert.equal(snapshot.source, 'tv');
-    assert.equal(snapshot.sourceChannelId, 'tv-guide-1');
+    assert.equal(snapshot.schemaVersion, 2);
+    assert.equal(Object.hasOwn(snapshot, 'source'), false);
+    assert.equal(Object.hasOwn(snapshot, 'sourceChannelId'), false);
+    assert.equal(Object.hasOwn(snapshot.now, 'endEstimated'), false);
+    assert.equal(Object.hasOwn(snapshot.next, 'endEstimated'), false);
     assert.equal(snapshot.now.eventId, 'event-TV current');
     assert.equal(snapshot.lastUpdate, NOW);
     const writes = h.adapter.completedWrites.slice(begin).filter(write => write.id.startsWith(`${id}.epg.`));
@@ -323,15 +306,19 @@ test('TV failure diagnostics identify the actual request and skipped channels se
     assert.equal(h.snapshot(service(2).id).tvDiagnostic.details, undefined, 'Do not attribute another station response to this one');
 });
 
-test('successful XMLTV fallback retains the TV failure metadata for diagnosis', async t => {
-    const h = await harness(t, { config: { epgXmltvUrl: 'http://fixture.invalid/guide.xml' },
+test('injected obsolete source configuration and loader hooks cannot replace failed TV requests', async t => {
+    let externalCalls = 0;
+    const h = await harness(t, {
+        injectedConfig: { epgSource: 'xmltv', epgXmltvUrl: 'http://fixture.invalid/guide.xml', epgXmltvMappings: [] },
+        epgOptions: { xmltvLoader() { externalCalls++; }, xmltvResolver() { externalCalls++; } },
         readTv: async () => { throw Object.assign(error('SOAP'), { epgDiagnostic: { schema: 'basic', requests: 1 } }); },
-        loadXmltv: async () => feed([{ id: 'one', names: ['Sender 1'], events: programmes('External') }]),
     });
     await h.manager.refresh({ manual: true });
-    assert.equal(h.snapshot().source, 'xmltv');
-    assert.equal(h.snapshot().status, 'ready');
-    assert.equal(h.snapshot().lastError, '');
+    assert.equal(h.calls.tv.length, 1);
+    assert.equal(externalCalls, 0);
+    assert.equal(h.snapshot().status, 'error');
+    assert.equal(h.snapshot().now, null);
+    assert.match(h.snapshot().lastError, /SOAP/u);
     assert.equal(h.snapshot().tvDiagnostic.code, 'SOAP');
 });
 
@@ -341,145 +328,81 @@ test('TV attempt diagnostics are bounded and are reset when a channel service is
     assert.deepEqual(h.snapshot().tvDiagnostic.details, { omitted: true, reason: 'size' });
     await h.catalog([service(1, { mediaItemUuid: 'different-service' })]);
     assert.equal(h.snapshot().tvDiagnostic, null);
-    const external = await harness(t, { config: { epgSource: 'xmltv', epgXmltvUrl: 'http://fixture.invalid/guide.xml' },
-        loadXmltv: async () => feed([{ id: 'one', names: ['Sender 1'], events: programmes('External') }]),
-    });
-    await external.manager.refresh({ manual: true });
-    assert.equal(external.snapshot().tvDiagnostic, null, 'XMLTV-only has no TV attempt to report');
+
 });
 
-test('automatic fallback loads one feed and applies exact explicit IDs independently for each selected TV channel', async t => {
-    const selected = [service(1), service(2)];
-    const guide = feed([
-        { id: 'first@SD', names: ['Unrelated display name'], events: programmes('External one') },
-        { id: 'second@HD', names: [], events: programmes('External two') },
-    ], NOW - 5000);
-    const h = await harness(t, { services: selected, config: {
-        epgXmltvUrl: 'http://192.0.2.1:3000/guide.xml', epgXmltvMappings: [
-            { channel: selected[0].id, xmltvId: 'first@SD' },
-            { channel: selected[1].name, xmltvId: 'second@HD' },
-        ],
-    }, readTv: async () => tvResult(programmes('Partial TV').slice(0, 1)), loadXmltv: async () => guide });
-    await h.manager.refresh({ manual: true });
-    assert.equal(h.calls.tv.length, 2);
-    assert.equal(h.calls.xmltv.length, 1);
-    for (const [index, selectedService] of selected.entries()) {
-        const data = h.snapshot(selectedService.id);
-        assert.equal(data.source, 'xmltv');
-        assert.equal(data.sourceChannelId, index === 0 ? 'first@SD' : 'second@HD');
-        assert.equal(data.now.title, index === 0 ? 'External one current' : 'External two current');
-        assert.equal(data.lastUpdate, NOW - 5000);
+test('injected auto and XMLTV source modes never change complete, partial or empty TV programmes', async t => {
+    for (const epgSource of ['auto', 'xmltv', 'tv', 'unknown']) {
+        for (const events of [programmes(), programmes().slice(0, 1), []]) {
+            let externalCalls = 0;
+            const h = await harness(t, {
+                injectedConfig: { epgSource, epgXmltvUrl: 'http://fixture.invalid/guide.xml',
+                    epgXmltvMappings: [{ channel: service().id, xmltvId: 'other' }] },
+                epgOptions: { xmltvLoader() { externalCalls++; }, xmltvResolver() { externalCalls++; } },
+                readTv: async () => tvResult(events),
+            });
+            await h.manager.refresh({ manual: true });
+            assert.equal(h.calls.tv.length, 1);
+            assert.equal(externalCalls, 0);
+            assert.equal(h.snapshot().status, events.length === 3 ? 'ready' : events.length ? 'partial' : 'empty');
+            assert.equal(h.snapshot().now?.title ?? null, events.length ? 'TV current' : null);
+            assert.equal(h.snapshot().next?.title ?? null, events.length === 3 ? 'TV next' : null);
+            assert.equal(h.snapshot().lastError, '');
+            assert.deepEqual(JSON.parse(h.value('channels.epgProgress')), { completed: 1, total: 1, successful: 1, failed: 0 });
+            h.manager.stop();
+        }
     }
 });
 
-test('automatic selection keeps one provider and never combines the TV current event with an unrelated XMLTV next event', async t => {
-    const h = await harness(t, { config: { epgXmltvUrl: 'http://fixture.invalid/guide.xml' },
-        readTv: async () => tvResult(programmes('TV only').slice(0, 1)),
-        loadXmltv: async () => feed([{ id: 'one', names: ['Sender 1'], events: programmes('Other').slice(1, 2) }]),
-    });
-    await h.manager.refresh({ manual: true });
-    assert.equal(h.calls.xmltv.length, 1);
-    assert.equal(h.snapshot().source, 'tv');
-    assert.equal(h.snapshot().now.title, 'TV only current');
-    assert.equal(h.snapshot().next, null);
-    assert.equal(h.snapshot().status, 'partial');
-});
-
-test('a failed external fallback keeps fresh partial TV information and reports the degraded result', async t => {
-    const h = await harness(t, { services: [service(1), service(2)],
-        config: { epgXmltvUrl: 'http://fixture.invalid/guide.xml' },
-        readTv: async () => tvResult(programmes('Partial TV').slice(0, 1)),
-        loadXmltv: async () => { throw error('EPG_XMLTV_HTTP', 'Guide temporarily unavailable'); },
-    });
-    await h.manager.refresh({ manual: true });
-    assert.equal(h.calls.tv.length, 2);
-    assert.equal(h.calls.xmltv.length, 1, 'A failed feed load is also shared by the whole cycle');
-    for (const selected of [service(1), service(2)]) {
-        const snapshot = h.snapshot(selected.id);
-        assert.equal(snapshot.source, 'tv');
-        assert.equal(snapshot.status, 'partial');
-        assert.equal(snapshot.now.title, 'Partial TV current');
-        assert.equal(snapshot.next, null);
-        assert.match(snapshot.lastError, /EPG_XMLTV_HTTP/u);
-        assert.equal(snapshot.lastUpdate, NOW);
-    }
-    assert.equal(h.value('channels.epgStatus'), 'partial');
-    assert.match(h.value('channels.epgLastError'), /EPG_XMLTV_HTTP/u);
-    assert.deepEqual(JSON.parse(h.value('channels.epgProgress')),
-        { completed: 2, total: 2, successful: 2, failed: 0, degraded: 2 });
-});
-
-test('an empty TV response and failed external fallback do not erase a still-valid previous schedule', async t => {
+test('an authoritative empty TV response clears a previously cached schedule', async t => {
     let empty = false;
-    const h = await harness(t, { config: { epgXmltvUrl: 'http://fixture.invalid/guide.xml' },
-        readTv: async () => tvResult(empty ? [] : programmes('Saved TV')),
-        loadXmltv: async () => { throw error('EPG_XMLTV_HTTP'); },
-    });
+    const h = await harness(t, { readTv: async () => tvResult(empty ? [] : programmes('Saved TV')) });
     await h.manager.refresh({ manual: true });
-    const saved = h.value(service().id, 'epg.cache');
     empty = true;
     h.setTime(NOW + 10000);
     await h.manager.refresh({ manual: true });
-    assert.equal(h.calls.xmltv.length, 1);
-    assert.equal(h.snapshot().status, 'cached');
-    assert.equal(h.snapshot().now.title, 'Saved TV current');
-    assert.equal(h.snapshot().next.title, 'Saved TV next');
-    assert.equal(h.snapshot().lastUpdate, NOW);
-    assert.match(h.snapshot().lastError, /EPG_XMLTV_HTTP/u);
-    assert.equal(h.value(service().id, 'epg.cache'), saved);
-    assert.equal(h.value('channels.epgStatus'), 'error');
+    assert.equal(h.snapshot().status, 'empty');
+    assert.equal(h.snapshot().now, null);
+    assert.equal(h.snapshot().next, null);
+    assert.equal(h.snapshot().lastUpdate, NOW + 10000);
+    assert.equal(h.snapshot().lastError, '');
+    assert.deepEqual(JSON.parse(h.value(service().id, 'epg.cache')).events, []);
 });
 
-test('XMLTV-only operation works without a TV connection and never sends TV EPG requests', async t => {
-    const h = await harness(t, { client: null, config: { epgSource: 'xmltv', epgXmltvUrl: 'http://fixture.invalid/guide.xml' },
-        loadXmltv: async () => feed([{ id: 'one', names: ['Sender 1'], events: programmes('Guide') }]),
+test('legacy external-source options cannot provide programmes when no TV is configured', async t => {
+    let externalCalls = 0;
+    const h = await harness(t, { client: null,
+        config: { epgSource: 'xmltv', epgXmltvUrl: 'http://fixture.invalid/guide.xml' },
+        epgOptions: { xmltvLoader() { externalCalls++; } },
     });
     await h.manager.refresh({ manual: true });
     assert.equal(h.calls.tv.length, 0);
     assert.equal(h.calls.requests.length, 0);
-    assert.equal(h.calls.xmltv.length, 1);
-    assert.equal(h.snapshot().source, 'xmltv');
-    assert.equal(h.snapshot().now.title, 'Guide current');
-});
-
-test('XMLTV name ambiguity produces an unmapped channel rather than selecting an arbitrary schedule', async t => {
-    const h = await harness(t, { config: { epgSource: 'xmltv', epgXmltvUrl: 'http://fixture.invalid/guide.xml' },
-        loadXmltv: async () => feed([
-            { id: 'one@SD', names: ['Sender 1'], events: programmes('SD') },
-            { id: 'one@HD', names: ['Sender 1'], events: programmes('HD') },
-        ]),
-    });
-    await h.manager.refresh({ manual: true });
-    assert.equal(h.snapshot().status, 'unmapped');
+    assert.equal(externalCalls, 0);
+    assert.equal(h.snapshot().status, 'error');
     assert.equal(h.snapshot().now, null);
-    assert.equal(h.snapshot().next, null);
-    assert.equal(h.snapshot().source, '');
-    assert.match(h.snapshot().lastError, /EPG_UNMAPPED/u);
-    assert.equal(h.value('channels.epgStatus'), 'error');
+    assert.match(h.snapshot().lastError, /EPG_TV_UNAVAILABLE/u);
+    assert.deepEqual(h.snapshot().tvDiagnostic,
+        { at: NOW, status: 'skipped', reason: 'notConfigured', code: 'EPG_TV_UNAVAILABLE' });
 });
 
-test('TV-only mode reports unsupported EPG without contacting a configured external guide', async t => {
-    const h = await harness(t, { config: { epgSource: 'tv', epgXmltvUrl: 'https://fixture.invalid/guide.xml' },
-        readTv: async () => { throw error('EPG_TV_UNSUPPORTED'); },
-    });
+test('unsupported TV EPG remains visible with no substitute source', async t => {
+    const h = await harness(t, { readTv: async () => { throw error('EPG_TV_UNSUPPORTED'); } });
     await h.manager.refresh({ manual: true });
-    assert.equal(h.calls.xmltv.length, 0);
     assert.equal(h.snapshot().status, 'unsupported');
     assert.equal(h.snapshot().now, null);
 });
 
-test('a TV transport failure is limited to one attempt per cycle while the remaining channels share the external feed', async t => {
+test('a TV transport failure is limited to one attempt per cycle and the remaining channels are skipped', async t => {
     const h = await harness(t, { services: [service(1), service(2), service(3)],
-        config: { epgXmltvUrl: 'http://fixture.invalid/guide.xml' },
         readTv: async () => { throw error('NETWORK'); },
-        loadXmltv: async () => feed([1, 2, 3].map(number =>
-            ({ id: `guide-${number}`, names: [`Sender ${number}`], events: programmes(`Guide ${number}`) }))),
     });
     await h.manager.refresh({ manual: true });
     assert.equal(h.calls.tv.length, 1);
-    assert.equal(h.calls.xmltv.length, 1);
-    assert.equal(h.snapshot(service(3).id).now.title, 'Guide 3 current');
-    assert.equal(h.value('channels.epgStatus'), 'ready');
+    assert.equal(h.snapshot(service(3).id).now, null);
+    assert.equal(h.snapshot(service(3).id).tvDiagnostic.reason, 'previousFailure');
+    assert.equal(h.value('channels.epgStatus'), 'error');
+    assert.deepEqual(JSON.parse(h.value('channels.epgProgress')), { completed: 3, total: 3, successful: 0, failed: 3 });
     await h.manager.refresh({ manual: true });
     assert.equal(h.calls.tv.length, 2, 'A new cycle may retry the TV after a prior failure');
 });
@@ -495,7 +418,7 @@ test('temporary source errors preserve valid cached programmes and the clock adv
     await h.manager.refresh({ manual: true });
     assert.equal(h.snapshot().status, 'cached');
     assert.equal(h.snapshot().now.title, 'TV current');
-    assert.match(h.snapshot().lastError, /\[Guide-URL\]/u);
+    assert.match(h.snapshot().lastError, /\[URL\]/u);
     assert.doesNotMatch(h.snapshot().lastError + h.value('channels.epgLastError'), /private-secret/u);
     h.setTime(NOW + MINUTE);
     await h.manager.tick();
@@ -521,13 +444,11 @@ test('cached guide data is not advertised as current after its maximum age even 
     await h.manager.tick();
     assert.equal(h.snapshot().status, 'stale');
     assert.equal(h.snapshot().now, null);
-    assert.equal(h.snapshot().source, '');
     assert.equal(h.snapshot().lastUpdate, NOW);
 });
 
 test('saved programmes restore after restart and remain attached to the same service when its channel position changes', async t => {
-    const config = normalizeConfig({ epgRefreshInterval: 0, channelListView: 'fixture-list' });
-    const cached = createCache(service(), tvResult(), config, NOW - 5000);
+    const cached = createCache(service(), tvResult(), NOW - 5000);
     const moved = service(1, { number: 42, caption: '42', locator: 'channel://42:ch-fixture-1:sl-fixture',
         positions: [{ caption: '42', locator: 'channel://42:ch-fixture-1:sl-fixture' }] });
     const h = await harness(t, { services: [moved], saved: [[`${moved.id}.epg.cache`, JSON.stringify(cached)]] });
@@ -537,25 +458,81 @@ test('saved programmes restore after restart and remain attached to the same ser
     assert.equal(h.snapshot().channel.mediaItemUuid, moved.mediaItemUuid);
 });
 
-test('a persisted cache cannot migrate to a different service, selected list or guide configuration', async t => {
-    const originalConfig = normalizeConfig({ epgRefreshInterval: 0, channelListView: 'fixture-list' });
-    const cached = JSON.stringify(createCache(service(), tvResult(), originalConfig, NOW));
+test('a persisted cache cannot migrate to a different service, selected list or expired time', async t => {
+    const cached = JSON.stringify(createCache(service(), tvResult(), NOW));
     const variants = [
         { services: [service(1, { mediaItemUuid: 'replacement-service' })] },
         { services: [service(1, { listView: 'other-list' })], config: { channelListView: 'other-list' } },
-        { config: { epgSource: 'tv' } },
-        { config: { epgXmltvUrl: 'https://fixture.invalid/changed-guide.xml' } },
-        { config: { epgXmltvMappings: [{ channel: service().id, xmltvId: 'changed@SD' }] } },
         { now: NOW + MAX_CACHE_AGE + 1 },
     ];
     for (const variant of variants) {
         const h = await harness(t, { ...variant, saved: [[`${service().id}.epg.cache`, cached]] });
         assert.equal(h.snapshot().now, null);
-        assert.equal(h.snapshot().source, '');
         assert.equal(h.value(service().id, 'epg.cache'), '{}');
         assert.equal(h.calls.tv.length, 0);
         h.manager.stop();
     }
+});
+
+test('old external caches and their published fields are cleared before the first TV refresh', async t => {
+    const id = service().id;
+    for (const source of ['xmltv', undefined, null]) {
+        const old = { ...createCache(service(), tvResult(programmes('External')), NOW),
+            schemaVersion: 1, source, sourceChannelId: 'old-provider', fingerprint: 'old-config' };
+        const h = await harness(t, {
+            config: { epgSource: 'xmltv', epgXmltvUrl: 'invalid old URL', epgXmltvMappings: {} },
+            saved: [[`${id}.epg.cache`, JSON.stringify(old)], [`${id}.epg.now.title`, 'External current'],
+                [`${id}.epg.next.title`, 'External next'], [`${id}.epg.data`, JSON.stringify({ now: old.events[0] })]],
+        });
+        assert.equal(h.snapshot().now, null);
+        assert.equal(h.snapshot().next, null);
+        assert.equal(h.snapshot().lastUpdate, 0);
+        assert.equal(h.value(id, 'epg.now.title'), '');
+        assert.equal(h.value(id, 'epg.next.title'), '');
+        assert.equal(h.value(id, 'epg.cache'), '{}');
+        assert.equal(h.calls.tv.length, 0);
+        assert.ok(h.adapter.writes.every(write => !String(write.val).includes('External')));
+        await h.manager.refresh({ manual: true });
+        assert.equal(h.snapshot().now.title, 'TV current');
+        assert.equal(JSON.parse(h.value(id, 'epg.cache')).source, 'tv');
+        h.manager.stop();
+    }
+});
+
+test('valid legacy TV caches survive obsolete configuration and are rewritten in the TV-only schema', async t => {
+    const id = service().id;
+    const old = { ...createCache(service(), tvResult(), NOW - 5000), schemaVersion: 1,
+        fingerprint: 'old-external-config', sourceChannelId: 'legacy-tv-id' };
+    old.events = old.events.map(event => ({ ...event, endEstimated: false }));
+    const h = await harness(t, { saved: [[`${id}.epg.cache`, JSON.stringify(old)]],
+        config: { epgSource: 'xmltv', epgXmltvUrl: 'invalid old URL', epgXmltvMappings: [null] },
+    });
+    assert.equal(h.calls.tv.length, 0);
+    assert.equal(h.snapshot().now.title, 'TV current');
+    assert.equal(h.snapshot().lastUpdate, NOW - 5000);
+    const migrated = JSON.parse(h.value(id, 'epg.cache'));
+    assert.equal(migrated.schemaVersion, 2);
+    assert.equal(Object.hasOwn(migrated, 'sourceChannelId'), false);
+    assert.equal(Object.hasOwn(migrated, 'fingerprint'), false);
+    assert.equal(Object.hasOwn(migrated.events[0], 'endEstimated'), false);
+});
+
+test('removed source and estimated-end states are never created or written, even if still registered', async t => {
+    const h = await harness(t);
+    const id = service().id;
+    const obsolete = Object.keys(OBSOLETE_EPG_CHILD_TYPES).map(suffix => `${id}.${suffix}`);
+    assert.equal(createEpgDefinitions(id).some(definition => obsolete.includes(definition.id)), false);
+    for (const stateId of obsolete) {
+        const object = { type: 'state', native: { managedBy: 'loewe-tv-channel-catalog' } };
+        h.adapter.objects.set(stateId, object);
+        h.runtime._objects.set(stateId, object);
+    }
+    await h.manager.refresh({ manual: true });
+    h.setTime(NOW + MINUTE);
+    await h.manager.tick();
+    await h.catalog([]);
+    await h.manager.retire(id, { retain: true });
+    assert.equal(h.adapter.writes.some(write => obsolete.includes(write.id)), false);
 });
 
 test('EPG only reads materialized TV channels from the configured list', async t => {
@@ -594,7 +571,6 @@ test('no selected list leaves EPG unconfigured without creating a source request
     const h = await harness(t, { config: { channelListView: '' } });
     await h.manager.refresh({ manual: true });
     assert.equal(h.calls.tv.length, 0);
-    assert.equal(h.calls.xmltv.length, 0);
     assert.equal(h.value('channels.epgStatus'), 'notConfigured');
     assert.equal(h.manager.entries.size, 0);
     assert.equal(h.adapter.objects.size, 0);
@@ -741,23 +717,22 @@ test('manual-only refreshes coalesce while pending and do not create a periodic 
     assert.ok(h.manager._clockTimer !== null, 'The programme clock still runs in manual refresh mode');
 });
 
-test('a manual refresh continues after 64 channels and reuses the same XMLTV feed in the next batch', async t => {
+test('a manual TV refresh continues after 64 channels without adding a periodic refresh', async t => {
     const selected = Array.from({ length: BATCH_SIZE + 1 }, (_, index) => service(index + 1));
-    const h = await harness(t, { services: selected, config: {
-        epgSource: 'xmltv', epgXmltvUrl: 'http://fixture.invalid/guide.xml',
-        epgXmltvMappings: selected.map(channel => ({ channel: channel.id, xmltvId: 'shared' })),
-    }, loadXmltv: async () => feed([{ id: 'shared', names: [], events: programmes('Shared') }]) });
+    const h = await harness(t, { services: selected,
+        readTv: async channel => tvResult(programmes(channel.name)),
+    });
     await h.manager.refresh({ manual: true });
-    assert.equal(h.calls.xmltv.length, 1);
+    assert.equal(h.calls.tv.length, BATCH_SIZE);
     assert.deepEqual(JSON.parse(h.value('channels.epgProgress')),
-        { completed: BATCH_SIZE, total: BATCH_SIZE + 1, successful: BATCH_SIZE, failed: 0, degraded: 0 });
+        { completed: BATCH_SIZE, total: BATCH_SIZE + 1, successful: BATCH_SIZE, failed: 0 });
     assert.equal(h.snapshot(selected.at(-1).id).status, 'waiting');
     assert.equal(h.adapter.timers.get(h.manager._fetchTimer).ms, 1000);
     h.adapter.fire(h.manager._fetchTimer);
     assert.ok(h.manager._fetchPromise);
     await h.manager._fetchPromise;
-    assert.equal(h.calls.xmltv.length, 1);
-    assert.equal(h.snapshot(selected.at(-1).id).now.title, 'Shared current');
+    assert.equal(h.calls.tv.length, BATCH_SIZE + 1);
+    assert.equal(h.snapshot(selected.at(-1).id).now.title, `Sender ${BATCH_SIZE + 1} current`);
     assert.equal(h.value('channels.epgStatus'), 'ready');
     assert.equal(h.manager._fetchTimer, null);
     assert.equal(h.manager._cycle, null);
@@ -777,11 +752,11 @@ test('automatic refresh uses one timer and resumes at the configured interval af
     assert.equal(h.adapter.timers.get(h.manager._fetchTimer).ms, 1000);
 });
 
-test('stopping aborts an outstanding XMLTV load and prevents later writes or new timers', async t => {
+test('stopping aborts an outstanding TV read and prevents later writes or new timers', async t => {
     const entered = deferred();
     let signal;
-    const h = await harness(t, { config: { epgSource: 'xmltv', epgXmltvUrl: 'http://fixture.invalid/guide.xml', epgRefreshInterval: 300 },
-        loadXmltv: async (_url, options) => {
+    const h = await harness(t, { config: { epgRefreshInterval: 300 },
+        readTv: async (_channel, options) => {
             signal = options.signal;
             entered.resolve();
             return new Promise((resolve, reject) => signal.addEventListener('abort', () => reject(error('CLOSED')), { once: true }));

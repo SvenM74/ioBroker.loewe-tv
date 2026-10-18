@@ -9,6 +9,16 @@ const { AdapterRuntime } = require('../lib/adapter-runtime');
 const { parseChannelPage } = require('../lib/loewe-client');
 const { runPowerOn } = require('../lib/power-on');
 
+// Explicit upgrade fixtures: these public states were retired in the TV-only build.
+const RETIRED_STATIC_STATES = [
+    'info.lastResponse', 'status.volumeRaw',
+    'channels.start', 'channels.listStart', 'channels.count',
+    'channels.getLists', 'channels.getChannels',
+    'channels.lists', 'channels.items', 'channels.entries', 'channels.availableLists',
+    'channels.totalNumber', 'channels.returnedNumber', 'channels.nextStart', 'channels.nextListStart',
+    'channels.lastUpdate', 'channels.lastError',
+];
+
 function deferred() {
     let resolve;
     let reject;
@@ -213,6 +223,10 @@ class FakeAdapter {
         return this.states.get(this.localId(id)) || null;
     }
 
+    async getObjectAsync(id) {
+        return structuredClone(this.objects.get(this.localId(id)) || null);
+    }
+
     async getObjectListAsync(options) {
         assert.deepEqual(options, { startkey: `${this.namespace}.`, endkey: `${this.namespace}.\u9999`, include_docs: true });
         return { rows: [...this.objects].map(([key, object]) => {
@@ -330,12 +344,14 @@ test('upgrade removes only the requested own paths before creating a client or r
         // A missing parent must not leave orphaned radio children behind.
         'channels.radio.Legacy_Radio', 'channels.radio.Legacy_Radio.select', 'channels.radio.saved.child',
         'remote.radio_mode_on', 'channels.mediaType',
+        ...RETIRED_STATIC_STATES,
     ];
     const preserved = [
         'channels', 'channels.tv', 'channels.tv.Das_Erste_HD', 'channels.tv.Das_Erste_HD.select',
         'channels.tv.Das_Erste_HD.personal', 'channels.radio_backup', 'channels.radio_backup.keep',
         'apiary', 'apiary.keep', 'remote.tv_mode_on', 'remote.radio_mode_on.personal', 'channels.mediaType.personal',
         'media_backup', 'media_backup.keep', 'loewe-tv.1.media.text',
+        'channels.items_backup', 'channels.items.personal', 'loewe-tv.1.channels.items',
         'loewe-tv.1.api.SetVolume.send', 'loewe-tv.1.channels.radio.Legacy_Radio.select', 'other.0.api',
     ];
     for (const id of [...obsolete, ...preserved]) {
@@ -366,12 +382,13 @@ test('upgrade removes only the requested own paths before creating a client or r
         { id: 'channels.radio', recursive: true }, { id: 'api', recursive: true },
         { id: 'media', recursive: true },
         { id: 'remote.radio_mode_on', recursive: false }, { id: 'channels.mediaType', recursive: false },
+        ...RETIRED_STATIC_STATES.map(id => ({ id, recursive: false })),
     ]);
     assert.ok([...runtime._objects.keys()].every(id => !/^(?:api|media|channels\.radio)(?:\.|$)/u.test(id)));
     assert.equal(Object.hasOwn(runtime.config, 'enableAdvanced'), false);
 });
 
-test('offline upgrade removes saved audio entries and radio selection diagnostics while keeping raw evidence', async t => {
+test('offline upgrade removes obsolete raw pages and radio selection diagnostics', async t => {
     const television = { name: 'Fixture TV', itemClass: 'video', mediaItemUuid: 'tv-fixture', locator: 'channel://001:tv' };
     const radio = { name: 'Legacy Radio', itemClass: 'audio', mediaItemUuid: 'radio-fixture', locator: 'channel://210:radio' };
     const raw = JSON.stringify({ response: { audio: radio } });
@@ -389,15 +406,15 @@ test('offline upgrade removes saved audio entries and radio selection diagnostic
     });
     assert.equal(h.runtime.client, null, 'Migration must also run before a TV host is configured.');
     assert.deepEqual(h.client.calls, []);
-    assert.deepEqual(JSON.parse(h.adapter.states.get('channels.entries').val), [television]);
+    assert.equal(h.adapter.states.has('channels.entries'), false);
     assert.deepEqual(JSON.parse(h.adapter.states.get('channels.lastSelection').val), {});
-    assert.equal(h.adapter.states.get('channels.items').val, raw);
+    assert.equal(h.adapter.states.has('channels.items'), false);
     assert.equal(h.adapter.objects.has('api.Legacy.send'), false);
     assert.equal(h.adapter.objects.has('media.text'), false);
     assert.equal(h.adapter.objects.has('channels.radio.Legacy_Radio.select'), false);
 });
 
-test('offline upgrade retains the existing TV selection and normalized TV page unchanged', async t => {
+test('offline upgrade retains the current TV selection while discarding redundant page copies', async t => {
     const entries = JSON.stringify([{ itemClass: 'video', name: 'Das Erste HD', mediaItemUuid: 'tv-fixture' }]);
     const selection = JSON.stringify({ requested: { id: 'channels.tv.Das_Erste_HD', itemClass: 'video' },
         status: 'accepted', result: 0, stationConfirmed: false, verification: 'notChecked', locatorSource: 'GetChannelList' });
@@ -406,7 +423,7 @@ test('offline upgrade retains the existing TV selection and normalized TV page u
         adapter.states.set('channels.entries', { val: entries, ack: true });
         adapter.states.set('channels.lastSelection', { val: selection, ack: true });
     });
-    assert.equal(h.adapter.states.get('channels.entries').val, entries);
+    assert.equal(h.adapter.states.has('channels.entries'), false);
     assert.equal(h.adapter.states.get('channels.lastSelection').val, selection);
     assert.ok(h.adapter.writes.every(write => !['channels.entries', 'channels.lastSelection'].includes(write.id)));
 });
@@ -472,7 +489,7 @@ test('volume state reflects the returned level, never an optimistic requested le
     assert.equal(h.adapter.states.get('control.volume').val, 14);
     assert.equal(h.adapter.states.get('control.volume').ack, true);
     assert.equal(h.adapter.states.get('status.volume').val, 14);
-    assert.equal(h.adapter.states.get('status.volumeRaw').val, 140000);
+    assert.equal(h.adapter.states.has('status.volumeRaw'), false);
 });
 
 test('out-of-range and wrongly typed volume commands never reach the TV', async t => {
@@ -496,7 +513,7 @@ test('mute state uses confirmed TV feedback even when it differs from the comman
     assert.equal(h.adapter.states.get('status.mute').val, false);
 });
 
-test('configured list is authoritative while page parameters are staged until the query button is pressed', async t => {
+test('configured list stays authoritative and complete refresh ignores retired paging parameters', async t => {
     const h = await harness(t, { channelListView: ' fixture-list ' });
     const baseline = h.client.calls.length;
     await write(h, 'channels.view', 'attempted-other-list');
@@ -506,13 +523,14 @@ test('configured list is authoritative while page parameters are staged until th
     assert.equal(h.adapter.states.get('channels.view').ack, true);
     assert.equal(h.adapter.states.get('channels.view').val, 'fixture-list');
     assert.equal(h.adapter.objects.get('channels.view').common.write, false);
-    await write(h, 'channels.getChannels', true);
+    await write(h, 'channels.refresh', true);
+    await h.runtime.channelObjects.whenIdle();
     assert.deepEqual(calls(h.client, 'getChannels').map(call => call.args), [
-        ['fixture-list', 100, 25, 'video'],
+        ['fixture-list', 0, 500, 'video'],
     ]);
-    assert.equal(h.adapter.states.get('channels.getChannels').val, false);
-    assert.equal(h.adapter.states.get('channels.getChannels').ack, true);
-    assert.doesNotThrow(() => JSON.parse(h.adapter.states.get('channels.items').val));
+    assert.deepEqual(h.adapter.states.get('channels.refresh'), { val: false, ack: true });
+    assert.equal(h.adapter.states.get('channels.refreshCount').val, 1);
+    assert.equal(h.adapter.objects.has('channels.tv.Fixture_TV.select'), true);
 });
 
 for (const savedView of [undefined, 'old-tv-list']) {
@@ -522,19 +540,17 @@ for (const savedView of [undefined, 'old-tv-list']) {
             adapter.states.set('channels.entries', { val: '[{"itemClass":"video","name":"Old TV"}]', ack: true });
             adapter.states.set('channels.items', { val: '{"old":"raw list"}', ack: true });
         });
-        await write(h, 'channels.getChannels', true);
+        await write(h, 'channels.refresh', true);
         assert.deepEqual(h.client.calls, []);
         assert.equal(h.adapter.states.get('channels.view').val, '');
-        assert.deepEqual(JSON.parse(h.adapter.states.get('channels.entries').val), []);
-        assert.deepEqual(JSON.parse(h.adapter.states.get('channels.items').val), {});
-        assert.equal(h.adapter.states.get('channels.totalNumber').val, -1);
-        assert.equal(h.adapter.states.get('channels.nextStart').val, -1);
-        assert.match(h.adapter.states.get('channels.lastError').val, /NO_CHANNEL_LIST.*Adapterkonfiguration/u);
-        assert.equal(h.adapter.states.get('channels.getChannels').val, false);
+        for (const id of RETIRED_STATIC_STATES) assert.equal(h.adapter.states.has(id), false, id);
+        assert.equal(h.adapter.states.get('channels.refreshStatus').val, 'notConfigured');
+        assert.match(h.adapter.states.get('channels.refreshError').val, /CHANNEL_LIST_REQUIRED.*Adapter-Konfiguration/u);
+        assert.equal(h.adapter.states.get('channels.refresh').val, false);
     });
 }
 
-test('manual channel queries request video and filter mixed replies without changing pagination or raw evidence', async t => {
+test('complete refresh requests video and builds only TV objects from a mixed reply', async t => {
     const h = await harness(t, { pollInterval: 0 });
     h.client.hooks.getChannels = view => response('GetChannelList', {
         ChannelListView: view,
@@ -548,23 +564,19 @@ test('manual channel queries request video and filter mixed replies without chan
             ],
         },
     });
-    await write(h, 'channels.getChannels', true);
+    await write(h, 'channels.refresh', true);
     await h.runtime.channelObjects.whenIdle();
-    assert.deepEqual(calls(h.client, 'getChannels').at(-1).args, ['fastscan-fixture', 0, 100, 'video']);
-    const entries = JSON.parse(h.adapter.states.get('channels.entries').val);
-    assert.equal(entries.length, 1);
-    assert.equal(entries[0].itemClass, 'video');
-    assert.equal(h.adapter.states.get('channels.totalNumber').val, 2);
-    assert.equal(h.adapter.states.get('channels.returnedNumber').val, 2);
-    assert.equal(h.adapter.states.get('channels.nextStart').val, -1);
-    assert.match(h.adapter.states.get('channels.items').val, /Legacy Radio/);
+    assert.deepEqual(calls(h.client, 'getChannels').at(-1).args, ['fastscan-fixture', 0, 500, 'video']);
+    assert.equal(h.adapter.states.get('channels.refreshCount').val, 1);
+    assert.equal(h.adapter.states.has('channels.items'), false);
+    assert.equal(h.adapter.states.has('channels.entries'), false);
     assert.ok(h.adapter.objects.has('channels.tv.Fixture_TV.select'));
     assert.ok([...h.adapter.objects.keys()].every(id => !id.startsWith('channels.radio.')));
 });
 
 test('TV selection sends exactly one direct zap and records acceptance without claiming playback confirmation', async t => {
     const h = await harness(t, { pollInterval: 0 });
-    await write(h, 'channels.getChannels', true);
+    await write(h, 'channels.refresh', true);
     await h.runtime.channelObjects.whenIdle();
     h.client.hooks.zap = () => response('ZapToMedia', { Result: '0' });
     const offset = h.client.calls.length;
@@ -588,7 +600,7 @@ test('TV selection sends exactly one direct zap and records acceptance without c
 
 test('a newer channel snapshot invalidates a queued TV selection before any zap', async t => {
     const h = await harness(t, { pollInterval: 0 });
-    await write(h, 'channels.getChannels', true);
+    await write(h, 'channels.refresh', true);
     await h.runtime.channelObjects.whenIdle();
     const page = parseChannelPage(await h.client.getChannels('fastscan-fixture', 0, 100, 'video'));
     const gate = deferred();
@@ -607,7 +619,7 @@ test('a newer channel snapshot invalidates a queued TV selection before any zap'
 
 test('named channel buttons use registered targets and track the real pending reset write', async t => {
     const h = await harness(t, { pollInterval: 0 });
-    await write(h, 'channels.getChannels', true);
+    await write(h, 'channels.refresh', true);
     await h.runtime.channelObjects.whenIdle();
     const button = 'channels.tv.Fixture_TV.select';
     const locator = 'channel://001:ch-fixture-service-1:sl-fixture';
@@ -645,44 +657,40 @@ test('named channel buttons use registered targets and track the real pending re
     assert.equal(calls(h.client, 'zap').length, 1);
 });
 
-test('list discovery uses its own offset and preserves an explicit favorite selection', async t => {
+test('Admin list discovery preserves an explicit favorite selection without paging data points', async t => {
     const h = await harness(t, { pollInterval: 0, channelListView: ' favlist-personal ' });
-    await write(h, 'channels.start', 100);
-    await write(h, 'channels.count', 25);
-    await write(h, 'channels.getLists', true);
-    assert.deepEqual(calls(h.client, 'getChannelLists').at(-1).args, [0, 25]);
+    const options = await h.runtime.handleMessage('getChannelLists', { channelListView: 'favlist-personal' });
+    assert.deepEqual(calls(h.client, 'getChannelLists').at(-1).args.slice(0, 2), [0, 500]);
+    assert.ok(options.some(option => option.value === 'favlist-personal'));
     assert.equal(h.adapter.states.get('channels.view').val, 'favlist-personal');
-    await write(h, 'channels.listStart', 2);
-    await write(h, 'channels.getLists', true);
-    assert.deepEqual(calls(h.client, 'getChannelLists').at(-1).args, [2, 25]);
-    await write(h, 'channels.mediaType', 'audio');
-    await write(h, 'channels.getChannels', true);
-    assert.deepEqual(calls(h.client, 'getChannels').at(-1).args, ['favlist-personal', 100, 25, 'video']);
+    assert.equal(h.adapter.states.has('channels.availableLists'), false);
+    await write(h, 'channels.refresh', true);
+    assert.deepEqual(calls(h.client, 'getChannels').at(-1).args, ['favlist-personal', 0, 500, 'video']);
 });
 
-test('TV list synchronization remains visible without changing the configured list', async t => {
+test('TV list synchronization remains visible in Admin without changing the configured list', async t => {
     const h = await harness(t, { pollInterval: 0 }, (_adapter, client) => {
         client.hooks.getChannelLists = () => response('GetListOfChannelLists', { Result: 'SYNC' });
     });
-    await write(h, 'channels.getLists', true);
+    const options = await h.runtime.handleMessage('getChannelLists', { channelListView: 'fastscan-fixture' });
     assert.equal(calls(h.client, 'getChannels').length, 0);
-    assert.match(h.adapter.states.get('channels.lastError').val, /TV_SYNC.*synchronisiert/);
-    assert.equal(JSON.parse(h.adapter.states.get('channels.lists').val).Envelope.Body.GetListOfChannelListsResponse.Result, 'SYNC');
-    assert.equal(h.adapter.states.get('channels.lastUpdate').val, 0);
+    assert.match(options[0].label, /TV_SYNC.*synchronisiert/u);
+    assert.equal(h.adapter.states.has('channels.lists'), false);
     assert.equal(h.adapter.states.get('channels.view').val, 'fastscan-fixture');
 });
 
-test('a malformed channel reply retains raw evidence and the last successful channel page', async t => {
+test('a malformed channel reply preserves the last complete catalogue without recreating raw data points', async t => {
     const h = await harness(t, { pollInterval: 0 });
-    await write(h, 'channels.getChannels', true);
-    const entries = h.adapter.states.get('channels.entries').val;
-    const lastUpdate = h.adapter.states.get('channels.lastUpdate').val;
+    await write(h, 'channels.refresh', true);
+    await h.runtime.channelObjects.whenIdle();
+    const catalog = h.adapter.states.get('channels.catalog').val;
+    const lastUpdate = h.adapter.states.get('channels.refreshLastUpdate').val;
     h.client.hooks.getChannels = () => response('GetChannelList', { UnexpectedShape: 'fixture' });
-    await write(h, 'channels.getChannels', true);
-    assert.match(h.adapter.states.get('channels.lastError').val, /INVALID_RESPONSE/);
-    assert.equal(h.adapter.states.get('channels.entries').val, entries);
-    assert.equal(h.adapter.states.get('channels.lastUpdate').val, lastUpdate);
-    assert.equal(JSON.parse(h.adapter.states.get('channels.items').val).Envelope.Body.GetChannelListResponse.UnexpectedShape, 'fixture');
+    await write(h, 'channels.refresh', true);
+    assert.match(h.adapter.states.get('channels.refreshError').val, /INVALID_RESPONSE/u);
+    assert.equal(h.adapter.states.get('channels.catalog').val, catalog);
+    assert.equal(h.adapter.states.get('channels.refreshLastUpdate').val, lastUpdate);
+    assert.equal(h.adapter.states.has('channels.items'), false);
 });
 
 test('Admin selection enumerates all pages, keeps empty and unfamiliar lists, and distinguishes equal names', async t => {
@@ -703,7 +711,7 @@ test('Admin selection enumerates all pages, keeps empty and unfamiliar lists, an
     const requests = calls(h.client, 'getChannelLists');
     assert.deepEqual(requests.map(call => call.args.slice(0, 2)), [[0, 500], [2, 500], [4, 500]]);
     assert.ok(requests.every(call => call.args[2].deadline === requests[0].args[2].deadline));
-    assert.equal(JSON.parse(h.adapter.states.get('channels.availableLists').val).length, 5, 'Only identical view references are deduplicated.');
+    assert.equal(h.adapter.states.has('channels.availableLists'), false, 'Choices are returned directly to Admin.');
     assert.equal(h.adapter.states.get('channels.view').val, 'fastscan-fixture');
     assert.equal(h.runtime.config.channelListView, 'fastscan-fixture');
     assert.equal(calls(h.client, 'getChannels').length, 0, 'Opening the configuration must not materialize or switch a channel.');
@@ -745,8 +753,6 @@ test('concurrent Admin list discovery coalesces while remote commands run betwee
 for (const failure of ['different-offset', 'changed-total', 'repeated-page', 'too-many-lists', 'too-many-pages', 'synchronizing', 'transport']) {
     test(`Admin discovery returns a usable error array and never publishes partial choices on ${failure}`, async t => {
         const h = await harness(t, { pollInterval: 0 });
-        const previous = JSON.stringify([{ view: 'previous-complete-list', name: 'Previous' }]);
-        h.adapter.states.set('channels.availableLists', { val: previous, ack: true });
         h.client.hooks.getChannelLists = start => {
             if (failure === 'synchronizing') return response('GetListOfChannelLists', { Result: 'SYNC' });
             if (failure === 'transport') throw codedError('NETWORK', 'TV is offline');
@@ -761,7 +767,7 @@ for (const failure of ['different-offset', 'changed-total', 'repeated-page', 'to
         assert.ok(Array.isArray(options));
         assert.deepEqual(options.map(option => option.value), ['', 'ui-selected']);
         assert.ok(options.every(option => /nicht verfügbar/u.test(option.label)));
-        assert.equal(h.adapter.states.get('channels.availableLists').val, previous);
+        assert.equal(h.adapter.states.has('channels.availableLists'), false);
         assert.equal(h.adapter.states.get('channels.view').val, 'fastscan-fixture');
         assert.equal(calls(h.client, 'getChannels').length, 0);
         assert.ok(calls(h.client, 'getChannelLists').length <= 20);
@@ -828,13 +834,12 @@ test('shutdown releases a pending Admin discovery callback and prevents its queu
     assert.equal(h.client.closed, true);
 });
 
-test('different, missing and radio list replies cannot replace the configured manual TV page', async t => {
+test('different, missing and radio list replies cannot replace the configured complete TV catalogue', async t => {
     const h = await harness(t, { pollInterval: 0 });
-    await write(h, 'channels.getChannels', true);
+    await write(h, 'channels.refresh', true);
     await h.runtime.channelObjects.whenIdle();
-    const entries = h.adapter.states.get('channels.entries').val;
     const catalog = h.adapter.states.get('channels.catalog').val;
-    const lastUpdate = h.adapter.states.get('channels.lastUpdate').val;
+    const lastUpdate = h.adapter.states.get('channels.refreshLastUpdate').val;
     const good = await h.client.getChannels('fastscan-fixture');
     for (const mode of ['other', 'missing', 'audio']) {
         const wrong = structuredClone(good);
@@ -843,16 +848,16 @@ test('different, missing and radio list replies cannot replace the configured ma
         else if (mode === 'other') node.ChannelListView = 'another-list';
         else node.ItemClass = 'audio';
         h.client.hooks.getChannels = () => wrong;
-        await write(h, 'channels.getChannels', true);
+        await write(h, 'channels.refresh', true);
         await h.runtime.channelObjects.whenIdle();
-        assert.match(h.adapter.states.get('channels.lastError').val, /CHANNEL_LIST_MISMATCH/u);
-        assert.equal(h.adapter.states.get('channels.entries').val, entries);
+        assert.match(h.adapter.states.get('channels.refreshError').val, /CHANNEL_REFRESH_INVALID/u);
+        assert.equal(h.adapter.states.has('channels.entries'), false);
         assert.equal(h.adapter.states.get('channels.catalog').val, catalog);
-        assert.equal(h.adapter.states.get('channels.lastUpdate').val, lastUpdate);
+        assert.equal(h.adapter.states.get('channels.refreshLastUpdate').val, lastUpdate);
     }
 });
 
-test('a saved page from a different list is cleared before the new configured view is shown', async t => {
+test('saved raw pages and stale selection counts are cleared when the configured list changes', async t => {
     const h = await harness(t, { pollInterval: 0, channelListView: 'configured-new-list' }, adapter => {
         adapter.states.set('channels.view', { val: 'previous-list', ack: true });
         adapter.states.set('channels.items', { val: '{"old":"raw page"}', ack: true });
@@ -862,10 +867,10 @@ test('a saved page from a different list is cleared before the new configured vi
         adapter.states.set('channels.refreshCount', { val: 300, ack: true });
     });
     assert.equal(h.adapter.states.get('channels.view').val, 'configured-new-list');
-    assert.equal(h.adapter.states.get('channels.entries').val, '[]');
-    assert.equal(h.adapter.states.get('channels.items').val, '{}');
+    assert.equal(h.adapter.states.has('channels.entries'), false);
+    assert.equal(h.adapter.states.has('channels.items'), false);
     assert.equal(h.adapter.states.get('channels.lastSelection').val, '{}');
-    assert.equal(h.adapter.states.get('channels.totalNumber').val, -1);
+    assert.equal(h.adapter.states.has('channels.totalNumber'), false);
     assert.equal(h.adapter.states.get('channels.refreshCount').val, 0);
     assert.deepEqual(h.client.calls, []);
 });
@@ -937,7 +942,7 @@ test('WOL setting flags preserve unknown values until valid TV settings are read
     assert.equal(h.adapter.states.get('device.wolInteractive').val, null);
 });
 
-test('obsolete radio, media and API state events stay inert even with a saved enableAdvanced flag and stale definitions', async t => {
+test('obsolete data point events stay inert even with saved legacy flags and stale definitions', async t => {
     const h = await harness(t, { pollInterval: 0, enableAdvanced: true });
     assert.equal(Object.hasOwn(h.runtime.config, 'enableAdvanced'), false);
     const obsolete = [
@@ -950,6 +955,7 @@ test('obsolete radio, media and API state events stay inert even with a saved en
         ['media.text', 'old text input'],
         ['media.backspace', true],
         ['media.locator', 'channel://999:old'],
+        ...RETIRED_STATIC_STATES.map(id => [id, true]),
     ];
     assert.ok(obsolete.every(([id]) => !h.adapter.objects.has(id)));
     const writeOffset = h.adapter.writes.length;
@@ -965,21 +971,19 @@ test('obsolete radio, media and API state events stay inert even with a saved en
     assert.equal(h.runtime._pendingCount, 0);
 });
 
-test('a queued channel query keeps the parameters captured at its send event', async t => {
+test('a queued complete refresh stays on the configured list despite writes to retired paging states', async t => {
     const h = await harness(t, { pollInterval: 0, channelListView: 'first-list' });
-    await write(h, 'channels.start', 100);
-    await write(h, 'channels.count', 25);
     const gate = deferred();
     t.after(() => gate.resolve());
     h.runtime._tail = gate.promise;
-    const query = write(h, 'channels.getChannels', true);
+    const query = write(h, 'channels.refresh', true);
     await write(h, 'channels.view', 'later-list');
-    await write(h, 'channels.start', 0);
-    await write(h, 'channels.count', 50);
+    await write(h, 'channels.start', 100);
+    await write(h, 'channels.count', 25);
     gate.resolve();
     await query;
     assert.deepEqual(calls(h.client, 'getChannels').map(call => call.args), [
-        ['first-list', 100, 25, 'video'],
+        ['first-list', 0, 500, 'video'],
     ]);
     assert.equal(h.adapter.states.get('channels.view').val, 'first-list');
 });
@@ -1094,7 +1098,7 @@ test('a reply whose database processing was pending at shutdown cannot update la
     const setState = h.adapter.setStateAsync.bind(h.adapter);
     let pauseResponse = true;
     h.adapter.setStateAsync = async (id, state) => {
-        if (h.adapter.localId(id) === 'info.lastResponse' && pauseResponse) {
+        if (h.adapter.localId(id) === 'info.lastSeen' && pauseResponse) {
             pauseResponse = false;
             entered.resolve();
             await gate.promise;
@@ -1136,7 +1140,7 @@ test('a cleanup database failure stops startup before subscriptions, transport o
     assert.deepEqual(adapter.deletions, [{ id: 'channels.radio', recursive: true }]);
 });
 
-for (const id of ['api.Locked.send', 'media.Locked', 'channels.radio.Locked.select', 'remote.radio_mode_on', 'channels.mediaType']) {
+for (const id of ['api.Locked.send', 'media.Locked', 'channels.radio.Locked.select', 'remote.radio_mode_on', 'channels.mediaType', 'channels.items', 'info.lastResponse']) {
     test(`cleanup detects a silently retained protected object at ${id} without overriding protection`, async t => {
         const adapter = new FakeAdapter({ pollInterval: 0 });
         adapter.objects.set(id, { type: 'state', common: { dontDelete: true }, native: {} });
@@ -1149,7 +1153,7 @@ for (const id of ['api.Locked.send', 'media.Locked', 'channels.radio.Locked.sele
             && error.message.includes(`${adapter.namespace}.${id}`) && /noch vorhanden/u.test(error.message));
         assert.equal(adapter.objects.get(id).common.dontDelete, true);
         assert.equal(adapter.objects.size, 1, 'No recovery object or force-delete workaround may be introduced.');
-        assert.equal(adapter.deletions.length, 5, 'A failed verification does not retry or widen deletion.');
+        assert.equal(adapter.deletions.length, 5 + RETIRED_STATIC_STATES.length, 'A failed verification does not retry or widen deletion.');
         assert.equal(clients, 0);
         assert.equal(restores, 0);
         assert.deepEqual(adapter.subscriptions, []);
@@ -1168,7 +1172,7 @@ test('cleanup rejects a successful-looking deletion that leaves both obsolete tr
         && error.message.includes('loewe-tv.0.api.SetVolume.send')
         && error.message.includes('loewe-tv.0.channels.radio.Legacy.select'));
     assert.equal(adapter.objects.size, 2);
-    assert.equal(adapter.deletions.length, 5);
+    assert.equal(adapter.deletions.length, 5 + RETIRED_STATIC_STATES.length);
     assert.deepEqual(adapter.subscriptions, []);
 });
 
@@ -1212,7 +1216,7 @@ test('inventory verification retains the individual two-second DB deadline', asy
     await entered.promise;
     t.mock.timers.tick(2000);
     await rejected;
-    assert.equal(adapter.deletions.length, 5);
+    assert.equal(adapter.deletions.length, 5 + RETIRED_STATIC_STATES.length);
     assert.equal(adapter.objects.size, 0);
 });
 
@@ -1231,7 +1235,7 @@ test('unload during inventory verification prevents startup after a late invento
         release.resolve({ rows: [] });
         await starting;
     }
-    assert.equal(adapter.deletions.length, 5);
+    assert.equal(adapter.deletions.length, 5 + RETIRED_STATIC_STATES.length);
     assert.equal(adapter.objects.size, 0);
     assert.deepEqual(adapter.subscriptions, []);
 });

@@ -93,7 +93,7 @@ class FakeAdapter {
             .filter(row => row.id >= options.startkey && row.id <= options.endkey) };
     }
     async delObjectAsync(id, options) {
-        assert.ok(['api', 'media', 'channels.radio', 'remote.radio_mode_on', 'channels.mediaType'].includes(id));
+        assert.ok(typeof id === 'string' && !id.startsWith('loewe-tv.'), 'Cleanup uses own-instance relative IDs.');
         assert.equal(options.recursive, ['api', 'media', 'channels.radio'].includes(id));
         for (const store of [this.objects, this.states]) {
             for (const child of store.keys()) if (child === id || (options.recursive && child.startsWith(`${id}.`))) store.delete(child);
@@ -153,7 +153,7 @@ test('channel refresh configuration defaults to five minutes and accepts only ze
     for (const value of [-1, 1, 59, 60.5, 86401, 'invalid']) assert.throws(() => normalizeConfig({ channelRefreshInterval: value }), { code: 'VALIDATION' });
 });
 
-test('startup and interval request video and filter ignored radio without changing manual page parameters', async t => {
+test('startup and interval request video and remove obsolete manual page parameters', async t => {
     const h = await harness(t, {}, adapter => {
         for (const [id, val] of [['channels.start', 25], ['channels.count', 12], ['channels.listStart', 4]]) {
             adapter.states.set(id, { val, ack: true });
@@ -167,10 +167,10 @@ test('startup and interval request video and filter ignored radio without changi
     assert.ok(calls(h, 'getChannels')[0].args[4].deadline > Date.now());
     assert.deepEqual(h.channelObjects.accepted[0].page.items.map(value => value.itemClass), ['video', 'audio']);
     assert.equal(h.channelObjects.accepted[0].type, 'video');
-    assert.deepEqual(JSON.parse(state(h, 'channels.entries')), [{ itemClass: 'video', name: 'Last manual page',
-        thumbnailUrl: 'http://tv.example.invalid/manual' }]);
-    for (const [id, val] of [['channels.start', 25], ['channels.count', 12], ['channels.listStart', 4]]) {
-        assert.equal(state(h, id), val);
+    assert.equal(h.adapter.states.has('channels.entries'), false);
+    for (const id of ['channels.start', 'channels.count', 'channels.listStart']) {
+        assert.equal(h.adapter.states.has(id), false, id);
+        assert.equal(h.adapter.objects.has(id), false, id);
     }
     assert.equal(state(h, 'channels.refreshStatus'), 'ready');
     assert.equal(state(h, 'channels.refreshCount'), 1);
@@ -446,8 +446,9 @@ test('a configuration change while reading discards the old snapshot before any 
     assert.equal(h.channelObjects.accepted[0].page.view, 'favlist-changed');
 });
 
-test('a newer manual channel query cannot be overwritten by an older automatic snapshot', async t => {
+test('retired manual query events cannot interfere with a complete multi-page refresh', async t => {
     const gate = deferred();
+    t.after(() => gate.resolve());
     const h = await harness(t, { channelRefreshInterval: 0 }, (_adapter, client) => {
         client.entries = Array.from({ length: 501 }, (_, index) => entry(index + 1));
         client.hooks.getChannels = async (view, start, count) => {
@@ -457,14 +458,19 @@ test('a newer manual channel query cannot be overwritten by an older automatic s
     });
     const automatic = h.runtime.channelRefresh.refresh();
     await until(() => calls(h, 'getChannels').length === 1, 'Initial page did not start');
-    await write(h, 'channels.count', 1);
-    const manual = write(h, 'channels.getChannels', true);
+    for (const [id, val] of [['channels.count', 1], ['channels.start', 499],
+        ['channels.getChannels', true], ['channels.getLists', true]]) {
+        await write(h, id, val);
+    }
     gate.resolve();
-    await manual;
-    assert.equal(await automatic, false);
+    assert.equal(await automatic, true);
     assert.equal(h.channelObjects.accepted.length, 1);
-    assert.equal(h.channelObjects.accepted[0].page.items.length, 1);
-    assert.match(state(h, 'channels.refreshError'), /CHANNEL_REFRESH_CHANGED/u);
+    assert.equal(h.channelObjects.accepted[0].page.items.length, 501);
+    assert.deepEqual(calls(h, 'getChannels').map(call => call.args.slice(1, 4)), [
+        [0, 500, 'video'], [500, 500, 'video'], [0, 500, 'video'], [500, 500, 'video'],
+    ]);
+    assert.equal(calls(h, 'getChannelLists').length, 0);
+    assert.equal(state(h, 'channels.refreshStatus'), 'ready');
 });
 
 test('stopping while a page is pending prevents publication and removes all refresh timers', async t => {

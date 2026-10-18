@@ -2,13 +2,15 @@
 
 Stand: **17. Oktober 2026 (UTC)**. Build: **`0.1.7-epg-now-next.1`**.
 
+**Historischer Bericht zu Version 0.1.7.** Die hier beschriebene alternative EPG-Quelle wurde im Build `0.1.8-tv-epg-only.1` entfernt. Die aktuelle [EPG-Anleitung](EPG.md) und der [neue Prüfbericht](PRUEFBERICHT_0.1.8_TV_EPG.md) beschreiben den heutigen Umfang.
+
 ## Ergebnis und Gültigkeit
 
 Version 0.1.7 ergänzt die aktuelle und die nächste Sendung direkt unter den vorhandenen TV-Senderordnern. Die lokale Loewe-Tabelle ist die bevorzugte Quelle. Eine konfigurierte XMLTV-Datei, beispielsweise aus dem vom Nutzer vorgeschlagenen [iptv-org/epg](https://github.com/iptv-org/epg), kann fehlende Daten ersetzen. Die Senderlistenauswahl aus 0.1.6 bleibt verbindlich; der Import legt keine zusätzlichen Sender aus dem externen Guide an.
 
 **Die EPG-Funktion ist implementiert und automatisiert geprüft. Ein erfolgreicher EPG-Abruf am Loewe bild 7.55, Chassis SL420, Software V5.4.6.0 ist noch nicht bestätigt.** Die jüngste Rückmeldung des Nutzers bestätigt die vorherige Version mit Senderlistenauswahl, TV-Senderordnern und Steuerung. Sie ist kein Gerätetest dieser Erweiterung. Auch die erfolgreiche Bedienung von `remote.epg` und `remote.epg_alt` belegt nur das Öffnen der Anzeige am TV.
 
-Die [EPG-Anleitung](EPG.md) beschreibt Einrichtung, Datenpunkte und Statuswerte. Die [XMLTV-Anleitung](XMLTV.md) enthält die optionale Einrichtung des externen Guides. Quellen und Grenzen des lokalen Protokolls sind in [epg-protocol.md](epg-protocol.md) dokumentiert.
+Die [damalige EPG-Anleitung](https://github.com/SvenM74/ioBroker.loewe-tv/blob/99b074b58a5e365ce2f75760e976b8247a58f129/docs/EPG.md) beschreibt Einrichtung, Datenpunkte und Statuswerte des früheren Stands. Die [historische XMLTV-Anleitung](https://github.com/SvenM74/ioBroker.loewe-tv/blob/99b074b58a5e365ce2f75760e976b8247a58f129/docs/XMLTV.md) enthält die damalige optionale Einrichtung des externen Guides. Quellen und Grenzen des lokalen Protokolls sind in [epg-protocol.md](epg-protocol.md) dokumentiert.
 
 ## Implementierter Umfang
 
@@ -52,7 +54,7 @@ Die Tests prüfen nicht nur lesbare Beispieltitel, sondern die zeitliche und tec
 - Mehr als 64 Sender mit fortgesetztem Abgleich, ein geteilter Guide-Download, mehrfacher manueller Taster und Ausführung eines Fernbedienungsbefehls zwischen zwei EPG-Anfragen.
 - Verspätete TV-Antworten und echte verzögerte Datenbankschreibvorgänge bei Senderersetzung/-löschung, auch nach Ablauf des aufrufenden Datenbankzeitlimits. Nach Beginn des Beendens werden keine neuen EPG-Veröffentlichungen gestartet; bereits an die Datenbank übergebene Schreibvorgänge lassen sich dadurch nicht zurückholen.
 
-Der TV-Abruf bleibt auf vier Seiten mit je 64 Zeilen und 30 Sekunden je Sender begrenzt. Ein Bearbeitungsabschnitt hat höchstens 64 Sender und 90 Sekunden Abruffrist; danach wird bei Bedarf fortgesetzt. Abschließende Datenbankschreibvorgänge kommen hinzu. Die Programme werden auf höchstens 128 Ereignisse je Sender und höchstens 128 KiB je Einzelcache begrenzt. Das gemeinsame berechnete JSON-Budget der normalisierten Sendercaches beträgt 16 MiB; es ist kein Limit für den gesamten Node.js-Prozess. Die gesonderten XMLTV-Grenzen stehen in der [Importanleitung](XMLTV.md#betriebsgrenzen-des-imports).
+Der TV-Abruf bleibt auf vier Seiten mit je 64 Zeilen und 30 Sekunden je Sender begrenzt. Ein Bearbeitungsabschnitt hat höchstens 64 Sender und 90 Sekunden Abruffrist; danach wird bei Bedarf fortgesetzt. Abschließende Datenbankschreibvorgänge kommen hinzu. Die Programme werden auf höchstens 128 Ereignisse je Sender und höchstens 128 KiB je Einzelcache begrenzt. Das gemeinsame berechnete JSON-Budget der normalisierten Sendercaches beträgt 16 MiB; es ist kein Limit für den gesamten Node.js-Prozess. Die gesonderten XMLTV-Grenzen stehen in der [historischen Importanleitung](https://github.com/SvenM74/ioBroker.loewe-tv/blob/99b074b58a5e365ce2f75760e976b8247a58f129/docs/XMLTV.md#betriebsgrenzen-des-imports).
 
 Wenn ein notwendiger Mehrdeutigkeitsbeleg nicht sicher innerhalb der Grenzen erhalten werden kann, wird ein Fehler gemeldet. Der vorhandene Cache kann dann nach den normalen Aktualitätsregeln weiterverwendet werden. Ein vollständig gelesener leerer Plan darf dagegen als leer veröffentlicht werden, sofern nicht ein zusätzlicher Quellenfehler die Übernahme verhindert.
 
@@ -78,6 +80,6 @@ npm run check
 npm pack
 ```
 
-Die GitHub-Actions-Konfiguration führt dieselben Paketprüfungen und Tests unter Node.js 22 und 24 aus. Das Installationsarchiv heißt **`iobroker.loewe-tv-0.1.7.tgz`**. Die Updateanleitung steht in der [README](../README.md#update-auf-017).
+Die GitHub-Actions-Konfiguration führt dieselben Paketprüfungen und Tests unter Node.js 22 und 24 aus. Das Installationsarchiv heißt **`iobroker.loewe-tv-0.1.7.tgz`**. Die Updateanleitung steht in der [historischen README](https://github.com/SvenM74/ioBroker.loewe-tv/blob/99b074b58a5e365ce2f75760e976b8247a58f129/README.md).
 
 Die Tests verwenden simulierte Geräteantworten, eine kontrollierte Uhr, simulierte ioBroker-Datenbanken und lokale HTTP-/UDP-Verbindungen. Sie ersetzen keinen Start in der ioBroker-Installation des Nutzers und keinen Test am realen TV. Die nächsten Prüfschritte am Gerät sind: Build-Kennung kontrollieren, EPG-Abgleich bei eingeschaltetem Fernseher auslösen und die aktuelle/nächste Sendung sowie Quelle und Status an zwei bekannten Sendern vergleichen. Falls der lokale Abruf keine ausreichenden Daten liefert, kann der dokumentierte XMLTV-Guide konfiguriert werden.

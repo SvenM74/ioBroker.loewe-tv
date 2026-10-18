@@ -1,0 +1,497 @@
+# Installation und Bedienung
+
+Diese Anleitung gilt für **Version 0.1.8**, Build **`0.1.8-tv-epg-only.1`**. Sie beschreibt Installation, Update, Konfiguration, TV-Steuerung und den reduzierten Datenpunktbaum. Der Adapter liest Programminformationen ausschließlich direkt vom Fernseher. Die bestätigten Geräte stehen in der [README](../README.md#getestete-geräte).
+
+## Voraussetzungen
+
+- Node.js ab **22**.
+- ioBroker js-controller ab **6.0.11** und Admin ab **7.0.23**.
+- Ein Loewe-Fernseher, der die Tablet-Schnittstelle auf TCP-Port **905** anbietet.
+- Eine Netzwerkverbindung vom ioBroker-Rechner zum Fernseher. Zum Einrichten den Fernseher einschalten.
+- Für Einschalten aus dem Standby: eine passende TV-MAC-Adresse und Unterstützung für Wake-on-LAN im Fernseher und im Netzwerk.
+
+Der laufende Adapter arbeitet lokal. Für die Installation kann ioBroker benötigte Node.js-Abhängigkeiten aus dem Internet nachladen. Das lokale `.tgz`-Paket ist deshalb keine Zusage einer vollständig netzlosen Installation.
+
+## Installationspaket aus dem Quellcode erzeugen
+
+Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Du kannst das Paket mit den folgenden Schritten selbst erzeugen. Wenn du **`iobroker.loewe-tv-0.1.8-tv-epg-only.tgz`** bereits erhalten hast, verwende diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung.
+
+Zum Erzeugen des Pakets brauchst du Git und Node.js ab 22. Öffne ein Terminal in einem eigenen Arbeitsverzeichnis und führe aus:
+
+```bash
+git clone https://github.com/SvenM74/ioBroker.loewe-tv.git
+cd ioBroker.loewe-tv
+npm install
+npm test
+npm pack
+mv iobroker.loewe-tv-0.1.8.tgz iobroker.loewe-tv-0.1.8-tv-epg-only.tgz
+```
+
+`npm pack` erzeugt zunächst **`iobroker.loewe-tv-0.1.8.tgz`**, weil die Paketversion **0.1.8** bleibt. Der letzte Befehl benennt das neue Archiv zur Unterscheidung früherer 0.1.8-Pakete in **`iobroker.loewe-tv-0.1.8-tv-epg-only.tgz`** um. Prüfe vor dem Erzeugen in `lib/build-info.js`, dass die Build-Kennung **`0.1.8-tv-epg-only.1`** enthalten ist. Kopiere anschließend das neue Archiv auf den ioBroker-Rechner.
+
+## Update auf 0.1.8
+
+**Aktueller Stand: Version 0.1.8, Build `0.1.8-tv-epg-only.1` – ausschließlich direktes TV-EPG.** Die bisherigen Gerätebestätigungen beziehen sich auf den vorherigen Stand; für diesen Build steht ein eigener Gerätetest noch aus. Details stehen im [Prüfbericht](PRUEFBERICHT_0.1.8_TV_EPG.md).
+
+**Das neue Paket auch dann erneut installieren, wenn bereits Version 0.1.8 angezeigt wird. Ein Neustart allein übernimmt diesen Build nicht.** Die vorhandene Instanz weiterverwenden. Erzeuge das Paket aus dem aktuellen Quellcode wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende das bereitgestellte Archiv **`iobroker.loewe-tv-0.1.8-tv-epg-only.tgz`**. Kopiere es auf den ioBroker-Rechner, beispielsweise nach `/tmp`, und führe aus:
+
+```bash
+iobroker stop loewe-tv.0
+iobroker compact loewe-tv.0 disable
+iobroker url /tmp/iobroker.loewe-tv-0.1.8-tv-epg-only.tgz loewe-tv
+iobroker start loewe-tv.0
+```
+
+Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Ab Version 0.1.1 läuft der Adapter in einem eigenen Prozess; das gilt auch für 0.1.8. Die Umstellung erfolgt vor dem Paketupdate, damit sie auch bei einer vorhandenen Instanz wirksam wird. Die Syntax ist in der [offiziellen ioBroker-CLI-Dokumentation](https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/config/cli.md) beschrieben. Verbindungs- und Einschalteinstellungen bleiben erhalten. **Eine bereits in 0.1.6 gespeicherte Senderlistenauswahl bleibt erhalten.** Beim Update von einem älteren Stand muss die Liste einmal in der Konfiguration ausgewählt werden; ein früherer Wert in `channels.view` wird nicht automatisch übernommen.
+
+Beim Start werden **`loewe-tv.0.channels.radio`**, **`loewe-tv.0.api`** und **`loewe-tv.0.media`** einschließlich ihrer Unterobjekte sowie `remote.radio_mode_on` und `channels.mediaType` entfernt. Das gilt auch für verwaiste Kinder, deren oberster Ordner bereits fehlt. Alte Radioeinträge aus dem gespeicherten Katalog erzeugen keine neuen Radioordner. Schreibbefehle an entfernte Datenpunkte lösen keine Adapterfunktion mehr aus. `remote.tv_mode_on` und `remote.text` für Teletext bleiben verfügbar.
+
+Lade nach dem Update die Admin-Seite vollständig neu, beispielsweise mit **Strg+F5**, und öffne die Instanzeinstellungen erneut. Im Reiter **EPG** werden nur **Programminformationen aktivieren** und das **Abrufintervall** angezeigt. Eine vorhandene Senderlistenauswahl weiterverwenden; andernfalls bei eingeschaltetem TV die gewünschte Senderliste wählen und speichern. Die Anleitung steht unter [TV-Senderliste auswählen](#tv-senderliste-auswählen). Prüfe anschließend **`info.adapterBuild = 0.1.8-tv-epg-only.1`**. Fehlt dieser Wert oder steht dort eine ältere Kennung, prüfe Paketinstallation und Startprotokoll. Das Startprotokoll enthält die Build-Kennung bereits vor der Bereinigung. Bleiben entfernte globale Objekte wegen eines Datenbankfehlers oder Löschschutzes stehen, meldet der Adapter einen Bereinigungsfehler und setzt die Senderanlage nicht fort.
+
+**Beim Update von einem Stand mit Namens-IDs bleiben die TV-Senderpfade erhalten.** Nur beim Wechsel von älteren Hash- oder Nummernordnern ändern sich die IDs einmalig: Aus `channels.tv.service_<Hash>` aus 0.1.3 oder `channels.tv.1` aus dem ersten 0.1.4-Stand werden Ordner wie `channels.tv.Das_Erste_HD`. Passe vorhandene Skripte, Aliase und Visualisierungen an, wenn sie noch auf diese alten IDs verweisen. Anschließend bleibt der Pfad beim Umsortieren erhalten: Verschiebst du Das Erste HD am TV von Platz 1 auf Platz 7, verwendet `channels.tv.Das_Erste_HD.select` nach dem Abgleich dessen neuen Programmplatz. Eine tatsächliche Änderung des Sendernamens führt dagegen zu einer neuen Namens-ID.
+
+Wiederherstellung und Migration übernehmen ausschließlich Daten, die zur konfigurierten Listenkennung gehören. Dafür werden der gespeicherte Katalog und verwaltete TV-Senderordner verwendet. Mehrere Plätze desselben Dienstes werden in einem Senderordner zusammengefasst; der kleinste gültige Programmplatz ist die bevorzugte Position für Anzeige und Auswahl. Normale verwaltete Ordner anderer Listen werden beim Start entfernt, auch wenn der TV nicht erreichbar ist. Ohne gewählte Liste wird kein TV-Senderbestand aktiviert. Benutzerdefinierte Unterobjekte, `common.custom` und Löschschutz bleiben beim TV-Abgleich erhalten; betroffene Altordner bleiben deaktiviert bestehen.
+
+Schalte den TV ein, speichere die gewünschte Liste in der Konfiguration und schreibe bei Bedarf `channels.refresh=true` mit `ack:false`. Der Adapter fragt diese Liste mit dem festen Filter `video` ab und übernimmt ausschließlich TV-Sender. Sobald `channels.refreshStatus=ready` und `channels.catalogStatus=ready` stehen, kannst du beispielsweise `channels.tv.Das_Erste_HD.select` prüfen. Die Struktur und die Bedeutung der Statuswerte stehen unter [TV-Sender einzeln anwählen](#tv-sender-einzeln-anwählen). Eine Senderwahl setzt einen erreichbaren Fernseher voraus und startet keinen eigenen Einschaltablauf.
+
+Wenn du zugleich das bisher erfolglose Einschalten prüfen möchtest, beschreibt [Ein- und Ausschalten](#ein--und-ausschalten) den separaten Test mit `control.powerOn` und `info.powerOn`. Für eine Diagnose ohne automatische TV-Abfragen **alle drei Intervalle**, `pollInterval`, `channelRefreshInterval` und `epgRefreshInterval`, auf 0 setzen. `info.connection` bleibt dann nach dem Start zunächst `false`, bis eine erfolgreiche manuelle TV-Abfrage oder ein Befehl die Verbindung bestätigt.
+
+### Datenpunktbereinigung beim Update
+
+Der Adapter entfernt die folgenden bisherigen Datenpunkte. Passe Skripte, Aliase oder Visualisierungen an, wenn sie darauf zugreifen. Die Senderordner mit Namens-IDs und ihre `select`-Taster bleiben erhalten.
+
+| Bisherige Datenpunkte | Aktueller Zugriff |
+|---|---|
+| `info.lastResponse`, `status.volumeRaw` | `info.lastError`, `info.lastCommand`, die jeweiligen Geräte- und Wiedergabedaten sowie die TV-Lautstärke in `status.volume`. |
+| `channels.start`, `channels.listStart`, `channels.count`, `channels.getLists`, `channels.getChannels` | Die Liste in Admin auswählen und mit `channels.refresh` vollständig abgleichen. |
+| `channels.lists`, `channels.items`, `channels.entries`, `channels.availableLists` | Listenwahl in Admin; aufbereiteter Senderbestand in `channels.catalog` und unter `channels.tv`. |
+| `channels.totalNumber`, `channels.returnedNumber`, `channels.nextStart`, `channels.nextListStart`, `channels.lastUpdate`, `channels.lastError` | Ergebnis des vollständigen Abrufs in `channels.refreshCount`, `channels.refreshLastUpdate`, `channels.refreshStatus` und `channels.refreshError`. |
+| Je Sender: `numbers`, `locators`, `listView` | Zusammengehörende Programmplätze und Locators in `positions`; Listenkennung in `channels.view` oder im JSON-Feld `channel.listView` von `epg.data`. |
+| Je Sender: `epg.source`, `epg.sourceChannelId` | Programmdaten kommen direkt vom TV; der Senderbezug steht im JSON-Feld `channel` von `epg.data`. |
+| Je Sender: `epg.now.endEstimated`, `epg.next.endEstimated` | `end` enthält die gelieferte Endzeit. Fehlende Endzeiten werden nicht geschätzt. |
+
+Die sieben entfernten Kinddatenpunkte je Sender werden nur gelöscht, wenn sie als vom Adapter verwaltet erkennbar sind. Eigene oder geänderte Objekte, `common.custom`, `common.dontDelete` und geschützte Eltern werden berücksichtigt. Geschützte frühere Kinddatenpunkte können deshalb mit einer Warnung erhalten bleiben, werden aber nicht weiter aktualisiert. Die neue Oberfläche benötigt keine manuelle Bereinigung alter EPG-Konfigurationswerte. Zum übernommenen TV-Cache und den verworfenen alten Fremddaten siehe [Verhalten bei Standby, Neustart und Senderänderungen](EPG.md#verhalten-bei-standby-neustart-und-senderänderungen).
+
+## Erstinstallation aus der Paketdatei
+
+1. Erzeuge **`iobroker.loewe-tv-0.1.8-tv-epg-only.tgz`** wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Die Datei nicht entpacken.
+2. Kopiere sie auf den Rechner, auf dem ioBroker läuft, beispielsweise nach `/tmp/iobroker.loewe-tv-0.1.8-tv-epg-only.tgz`.
+3. Öffne dort ein Terminal oder eine SSH-Verbindung und führe aus:
+
+```bash
+iobroker url /tmp/iobroker.loewe-tv-0.1.8-tv-epg-only.tgz loewe-tv
+```
+
+4. Lege beim ersten Installieren eine Instanz an:
+
+```bash
+iobroker add loewe-tv
+```
+
+5. Öffne in ioBroker Admin **Instanzen → loewe-tv.0 → Einstellungen**. Trage die IP-Adresse des Fernsehers ein und speichere die Konfiguration.
+6. **Aktiviere die Instanz `loewe-tv.0`** in der Instanzübersicht. Neue Instanzen werden zunächst deaktiviert angelegt, damit vor dem Start die TV-Adresse eingetragen werden kann.
+7. Öffne die Einstellungen erneut und wähle die gewünschte **TV-Senderliste** wie unten beschrieben. Speichere die Konfiguration.
+8. Öffne **Objekte → loewe-tv.0**. Bei erreichbarem Fernseher und aktivierten automatischen Abfragen sollte `info.connection` auf `true` wechseln. Sind alle drei Abfrageintervalle auf 0 gesetzt, stattdessen `control.refresh = true` auslösen. Mit `remote.home = true` lässt sich anschließend der erste Tastendruck testen; `channels.refresh = true` lädt die vollständige konfigurierte Senderliste.
+
+Der Pfad hinter `iobroker url` muss auf dem ioBroker-Rechner existieren und für die Installation lesbar sein. Ein Downloadpfad auf deinem Handy oder PC genügt nicht. Bei Docker muss die Datei innerhalb des ioBroker-Containers erreichbar sein und der Befehl dort ausgeführt werden. Verwende auf anderen Systemen den entsprechenden absoluten Pfad.
+
+Für das Update einer bestehenden Installation die Anleitung oben verwenden. Eine zusätzliche Instanz ist dafür nicht erforderlich. Lade die Admin-Seite nach dem Update neu, falls noch die bisherige Konfigurationsmaske angezeigt wird.
+
+Diese Installation verwendet den ioBroker-Befehl für eine eigene Paketquelle. Der offizielle js-controller reicht die Paketdatei an seinen Paketinstaller weiter und übernimmt danach die Adapterdateien und Objektdefinitionen. Siehe [ioBroker-Installationscode](https://github.com/ioBroker/ioBroker.js-controller/blob/master/packages/cli/src/lib/setup/setupInstall.ts).
+
+## Konfiguration
+
+### Verbindung und Senderlisten
+
+| Einstellung | Standard | Bedeutung |
+|---|---:|---|
+| Adresse des Fernsehers | leer | IP-Adresse oder Hostname des TVs, ohne `http://`, Pfad oder Port. Eine feste DHCP-Zuordnung im Router ist hilfreich. |
+| TV-Senderliste (`channelListView`) | keine Auswahl | Verbindliche Senderliste für `channels.tv`. Die Auswahlliste wird vom laufenden Adapter am eingeschalteten TV abgefragt. Ohne Auswahl werden keine TV-Sender aktiviert. |
+| Statusintervall (`pollInterval`) | 30 Sekunden | 0 deaktiviert automatische Statusabfragen einschließlich der Statusabfrage beim Start. Andernfalls sind ganze Werte von 5 bis 3.600 Sekunden möglich. Die Senderaktualisierung hat ein eigenes Intervall. Manuelle Befehle und `control.refresh` bleiben verfügbar. |
+| Senderlistenintervall (`channelRefreshInterval`) | 300 Sekunden | Lädt die gewählte Senderliste automatisch beim Start beziehungsweise nach bestätigter Wiederverbindung und danach im eingestellten Abstand neu. 0 deaktiviert diese Automatik; sonst sind ganze Werte von 60 bis 86.400 Sekunden möglich. `channels.refresh` bleibt manuell verfügbar. |
+| Maximale Lautstärke bei direkten Befehlen | 99 | Obergrenze für `control.volume`. Für den Alltag kann hier beispielsweise 40 stehen. Fernbedienungstasten und Änderungen direkt am TV werden dadurch nicht begrenzt. |
+| Aktuelle Wiedergabe abfragen | aktiviert | Fragt bei Statusabfragen zusätzlich die aktuelle Wiedergabe ab, auch bei einem manuellen `control.refresh`. Bei einem Modell ohne Unterstützung für `GetCurrentPlayback` deaktivieren. |
+
+### TV-Senderliste auswählen
+
+1. Den Fernseher einschalten. Seine Adresse und den Steuerport in der Adapter-Konfiguration speichern und die Instanz aktivieren.
+2. **Instanzen → loewe-tv.0 → Einstellungen → Senderlisten** öffnen. Im Feld **TV-Senderliste** lädt der Adapter die verfügbaren Senderlisten vom TV. Mit **Senderlisten neu laden** kannst du den Abruf wiederholen.
+3. Die gewünschte Liste auswählen, beispielsweise **ASTRA LCN** oder eine eigene Favoritenliste, und **Speichern und schließen** wählen.
+4. Der nächste vollständige Abgleich bildet ausschließlich diese Liste unter **`loewe-tv.0.channels.tv`** ab. Bei deaktivierter Senderautomatik einmal `channels.refresh=true` auslösen.
+
+Die Auswahl verwendet die vom Fernseher gelieferte Listenkennung. Gleichnamige Listen lassen sich über ihre Kennung unterscheiden. Es werden auch weitere Antwortseiten und leere Senderlisten berücksichtigt. Reine `avlist`-Eingangslisten gehören nicht zu den Senderlisten. Die Listenabfrage verändert die gespeicherte Auswahl nicht; erst das Speichern der Konfiguration legt eine andere Liste fest.
+
+Bei einer Erstinstallation oder einem Update von einem Stand vor der Senderlistenkonfiguration ist die Auswahl leer. `channels.refreshStatus=notConfigured` fordert zur Auswahl auf. Ein alter Wert in `channels.view` überschreibt die Konfiguration nicht. **`channels.view` ist jetzt nur lesbar** und zeigt die konfigurierte Kennung an. Schreibbefehle an den früheren Parameter schalten nicht mehr auf eine andere Liste um.
+
+Bei ausgeschaltetem TV, laufender TV-Synchronisierung oder einem Abruffehler zeigt die Auswahl einen Hinweis. Eine bereits eingetragene Kennung bleibt bestehen; der Adapter wählt keinen Ersatz. Wenn du Adresse oder Port noch nicht gespeichert hast, zunächst speichern und die Einstellungen erneut öffnen. Wird die gewählte Liste später am Fernseher gelöscht, wähle bewusst eine andere Liste in der Konfiguration. Das bloße Öffnen der Einstellungen schaltet den Fernseher nicht auf einen anderen Sender um.
+
+### EPG
+
+Im Reiter **EPG** gibt es zwei Einstellungen: **Programminformationen aktivieren** ist standardmäßig eingeschaltet, das **Abrufintervall** steht auf **900 Sekunden**. Die Daten werden direkt vom TV gelesen. Bei vorhandenen TV-Senderordnern beginnt der Abruf nach dem Start automatisch. Ein Intervall von `0` deaktiviert auch diesen Erstabruf; **`channels.epgRefresh=true`** startet bei aktiviertem EPG weiterhin einen manuellen Abgleich. Zulässig sind `0` oder ganze Werte von 300 bis 86.400 Sekunden. Die [EPG-Anleitung](EPG.md) erklärt Datenfelder, Cache und Statuswerte.
+
+### Einschalten
+
+| Einstellung | Standard | Bedeutung |
+|---|---|---|
+| LAN-MAC-Adresse | leer | MAC-Adresse des kabelgebundenen TV-Netzwerkanschlusses. |
+| WLAN-MAC-Adresse | leer | MAC-Adresse des TV-WLAN-Anschlusses. Die Möglichkeit zum Aufwecken über WLAN hängt vom TV ab. |
+| Broadcastadresse | `255.255.255.255` | Beim Standardwert wird zusätzlich eine passende lokale Broadcastadresse versucht, wenn die konfigurierte TV-Adresse eine IPv4-Adresse im gemeinsamen lokalen Subnetz ist. Eine ausdrücklich eingetragene andere Adresse wird genau so verwendet. |
+| Zeitlimit für Einschalten | 60 Sekunden | Gesamtzeit für Wake-on-LAN und den anschließenden gezielten Einschaltbefehl. Einstellbar von 5 bis 120 Sekunden; nach Ablauf wird der Versuch beendet. |
+
+Der Adapter liest MAC-Adressen auch aus den Gerätedaten des erreichbaren Fernsehers, einschließlich des älteren Antwortfelds `MAC-Address`. Diese Geräteabfrage erfolgt vor den Abfragen von Lautstärke und Stummschaltung. Wenn der Fernseher bereits im Standby ist und noch keine MAC-Adresse bekannt ist, muss die passende TV-MAC-Adresse für den ersten Einschaltversuch manuell eingetragen werden. Bei Statusintervall `pollInterval=0` findet keine automatische MAC-Erkennung beim Start statt; die unabhängige Senderaktualisierung ersetzt die Geräteabfrage nicht.
+
+Die zusätzliche Broadcastadresse wird aus der tatsächlichen Netzmaske eines passenden lokalen Netzwerkanschlusses berechnet. Es wird keine feste `/24`-Netzmaske angenommen. Ist die TV-Adresse ein Hostname, liegt der TV in einem anderen Subnetz oder ist die Ermittlung im Container nicht möglich, kann eine passende Broadcastadresse manuell eingetragen werden. Bei Netzwerken mit VLANs, Subnetzen oder Containern muss das Wake-on-LAN-Paket den Fernseher erreichen können.
+
+### Erweitert
+
+| Einstellung | Standard | Bedeutung |
+|---|---:|---|
+| Port für die TV-Steuerung | 905 | TCP-Port der Loewe-Schnittstelle. |
+| Wartezeit auf Antworten | 5.000 Millisekunden | Zeitlimit je Anfrage, einstellbar von 1.000 bis 30.000 Millisekunden. |
+| Kompatibilitätsbyte anhängen (NUL) | aktiviert | Verwendet das abschließende Nullbyte der Original-App. Im Normalfall aktiviert lassen. |
+
+## Datenpunkte verwenden
+
+Die folgenden Namen stehen unter **`loewe-tv.0`**. Bei einer weiteren Instanz ersetzt du die `0` durch deren Instanznummer.
+
+Ein Steuerbefehl wird in ioBroker mit **`ack: false`** geschrieben. `ack: true` steht für einen vom Adapter bestätigten Zustand und löst keinen neuen Befehl aus. Im JavaScript-Adapter ist der dritte Parameter von `setState` dafür vorgesehen:
+
+```javascript
+setState('loewe-tv.0.control.volume', 20, false);
+```
+
+Bei einem Taster schreibst du `true`. Der Adapter setzt den Taster nach der Verarbeitung wieder auf `false`. Das gilt auch für `remote.home`, `control.refresh` und `channels.refresh`. Für einen weiteren Tastendruck erneut `true` schreiben. Gespeicherte Steuerwerte werden beim Adapterstart nicht erneut gesendet.
+
+Im Objektbaum von Admin beim Schreiben die Bestätigung nicht aktivieren. In Blockly den Block zum **Steuern** verwenden. Ein Aktualisieren mit gesetztem Bestätigungskennzeichen löst keinen Befehl aus. Die Bedeutung von `setState` und `ack` beschreibt die [Dokumentation des ioBroker-JavaScript-Adapters](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/javascript.md#setstate).
+
+### Hauptfunktionen
+
+| Datenpunkt | Typ | Verwendung |
+|---|---|---|
+| `control.volume` | Zahl, lesen/schreiben | Zum Setzen eine ganze TV-Stufe von 0 bis 99 schreiben. Die konfigurierte Obergrenze gilt zusätzlich. Der Lesewert stammt aus der TV-Rückmeldung. |
+| `control.mute` | Wahrheitswert, lesen/schreiben | `true` zum Stummschalten, `false` zum Aufheben. |
+| `control.powerOn` | Taster | Startet Wake-on-LAN sofort und sendet anschließend den gezielten Einschaltbefehl 22, sobald die Schnittstelle antwortet. Bekannte TV-MAC-Adresse erforderlich; begrenzte Gesamtdauer und Ablauf in `info.powerOn`. |
+| `control.powerOff` | Taster | Bricht einen laufenden Einschaltversuch ab und sendet den gezielten Ausschaltbefehl 25. |
+| `control.refresh` | Taster | `true` fragt den TV-Status sowie die Geräteinformationen und Einstellungen erneut ab. |
+
+`control.volume` und `control.mute` werden nach einer Änderung erneut am Fernseher abgefragt. Die bestätigten Werte stammen aus dieser Rückmeldung. Ein erfolgreich abgesendeter Befehl allein ersetzt diese Rückmeldung nicht.
+
+Beispiel für die Lautstärke:
+
+```javascript
+// TV-Stufe 20 einstellen.
+setState('loewe-tv.0.control.volume', 20, false);
+```
+
+Beispiel für Stummschalten und Aufheben, jeweils als eigener Aufruf:
+
+```javascript
+setState('loewe-tv.0.control.mute', true, false);
+```
+
+```javascript
+setState('loewe-tv.0.control.mute', false, false);
+```
+
+Es handelt sich bei `control.volume` um die Stufen der App. **Nicht mit 10.000 multiplizieren:** Diese Umrechnung erledigt der Adapter. `status.volume` zeigt die vom TV zurückgemeldete Lautstärke. Meldet der Fernseher selbst einen Wert oberhalb des Schreibbereichs zurück, bleibt diese Rückmeldung erhalten.
+
+### Fernbedienung
+
+Alle folgenden Datenpunkte sind Taster. Der normale Tastendruck enthält Drücken und Loslassen. Langes Halten oder automatische Tastenwiederholung ist in diesen Tastern nicht eingebaut.
+
+| Datenpunkt unter `remote` | Funktion | Code |
+|---|---|---:|
+| `home` | Startbildschirm | 49 |
+| `menu` | Menü | 11 |
+| `back` | Zurück | 63 |
+| `info` | Information | 79 |
+| `epg` | Programmübersicht | 15 |
+| `epg_alt` | Alternativer EPG-Code aus Löwenbändiger Remote 1.15 | 78 |
+| `pip` | Bild im Bild | 10 |
+| `text` | Teletext | 60 |
+| `up` | Hoch | 32 |
+| `down` | Runter | 33 |
+| `left` | Links | 17 |
+| `right` | Rechts | 16 |
+| `ok` | Bestätigen | 38 |
+| `volume_up` | Lauter | 21 |
+| `volume_down` | Leiser | 20 |
+| `channel_up` | Nächstes Programm | 24 |
+| `channel_down` | Vorheriges Programm | 23 |
+| `mute` | Stummschaltung umschalten | 13 |
+| `power_off` | Bisherige Ein-/Ausschalttaste; laut API ein Umschaltbefehl | 12 |
+| `power_on` | Erreichbaren TV gezielt einschalten, ohne Wake-on-LAN | 22 |
+| `tv_mode_on` | Gezielt in den TV-Modus wechseln | 72 |
+| `red` | Rot | 27 |
+| `green` | Grün | 26 |
+| `yellow` | Gelb | 43 |
+| `blue` | Blau | 40 |
+| `rewind` | Rücklauf | 50 |
+| `play` | Wiedergabe | 53 |
+| `fast_forward` | Vorlauf | 52 |
+| `record` | Aufnahme | 55 |
+| `pause` | Pause | 41 |
+| `stop` | Stopp | 54 |
+| `power_all_code` | Gezieltes Ausschalten; bisheriger Datenpunktname bleibt erhalten | 25 |
+| `digit_0` | Ziffer 0 | 0 |
+| `digit_1` | Ziffer 1 | 1 |
+| `digit_2` | Ziffer 2 | 2 |
+| `digit_3` | Ziffer 3 | 3 |
+| `digit_4` | Ziffer 4 | 4 |
+| `digit_5` | Ziffer 5 | 5 |
+| `digit_6` | Ziffer 6 | 6 |
+| `digit_7` | Ziffer 7 | 7 |
+| `digit_8` | Ziffer 8 | 8 |
+| `digit_9` | Ziffer 9 | 9 |
+
+**Alle 42 Fernbedienungstaster bleiben unverändert.** `remote.epg` und `remote.epg_alt` senden nur Tastenbefehle für die Anzeige am TV. Der Abruf der Programmdaten erfolgt unabhängig davon über die EPG-Schnittstelle.
+
+Die sechs Wiedergabetasten von `rewind` bis `stop` verwenden das Tastenalphabet `l2700-hdr`. Die übrigen Tasten verwenden `l2700`. Du musst das bei den Datenpunkten nicht selbst einstellen.
+
+`remote.tv_mode_on` folgt dem Befehl `TV_MODE_ON=72` im Alphabet `l2700` aus der [Loewe Remote API 1.0.47, Abschnitt 9.4.1.1, Seite 25](https://cdn.loewe.tv/manuals/en/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf). Der Taster sendet einen Tastendruck einschließlich Loslassen und wechselt gezielt in den TV-Modus. Für die Auswahl eines bestimmten TV-Senders gibt es dessen `select`-Taster.
+
+`remote.power_all_code` wird nur an den Fernseher dieser Instanz gesendet. Der Name stammt aus der App und bleibt für vorhandene Skripte erhalten. Die [Remote API 1.0.47](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf) unterscheidet den Umschaltbefehl 12 von `TV_ON` (22) und dem gezielten Ausschaltbefehl 25. **Ab 0.1.2 verwendet `control.powerOff` den Code 25.** `remote.power_off` behält den bisherigen Code 12. Zum Aufwecken aus dem Standby `control.powerOn` verwenden; `remote.power_on` sendet allein die Taste 22 über die bereits erreichbare Steuerschnittstelle.
+
+```javascript
+// Einen einzelnen Tastendruck senden.
+setState('loewe-tv.0.remote.home', true, false);
+```
+
+`remote.text` öffnet Teletext. Die frühere freie Texteingabe über `media.text` gehört zum entfernten `media`-Bereich und steht nicht mehr als Datenpunkt zur Verfügung.
+
+Die zehn Zifferntasten und `epg_alt` wurden in 0.1.1 anhand von Löwenbändiger Remote 1.15 ergänzt. Die bisherigen 29 Tastenbelegungen bleiben unverändert. Auf dem bild 7.55 / SL420 führten die EPG-Codes 15 und 78 laut Nutzer zur gleichen TV-Anzeige. Die Zifferntasten senden einzelne Tastendrücke; ob eine Ziffernfolge eine Senderwahl auslöst, hängt vom TV und vom gerade geöffneten Bildschirm ab.
+
+```javascript
+setState('loewe-tv.0.remote.digit_1', true, false);
+```
+
+### Senderlisten und Umschalten
+
+**Mit `channels.refresh = true` wird die in der Adapter-Konfiguration ausgewählte Senderliste vollständig abgeglichen.** Bei erreichbarem TV und dem standardmäßigen Senderlistenintervall von 300 Sekunden geschieht das auch automatisch. Die Auswahl erfolgt im Feld **TV-Senderliste** (`channelListView`); `channels.view` zeigt diese Kennung nur an. Ohne Auswahl startet kein automatischer Senderabruf. Eine nicht mehr gültige Kennung wird nicht durch eine andere Liste ersetzt.
+
+| Datenpunkt | Typ | Bedeutung |
+|---|---|---|
+| `channels.view` | Text, nur lesen | Kennung der in der Adapter-Konfiguration ausgewählten Liste. Leer bedeutet: noch keine Liste konfiguriert. |
+| `channels.refresh` | Taster | Lädt die vollständige gewählte TV-Senderliste. Der Adapter verarbeitet alle Seiten intern und verwendet immer den Filter `video`. |
+| `channels.lastSelection` | JSON-Text, lesen | Diagnose der letzten gestarteten TV-Senderauswahl mit Senderkennung, verwendetem Locator, Umschaltergebnis, TV-Antwort und gegebenenfalls Fehler. |
+
+Für eine andere Liste die Adapter-Konfiguration öffnen, bei Bedarf **Senderlisten neu laden**, eine Liste auswählen und speichern. Der Abruf der Auswahloptionen allein ändert den aktiven Senderbestand nicht. Falls der TV noch seine Listen synchronisiert, den Abruf später erneut starten.
+
+Das Anfrageformat folgt Kapitel 9.7 der [Loewe Remote API 1.0.47](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf). Falls der Fernseher gemischte Antworten liefert, übernimmt der Senderkatalog ausschließlich Einträge mit `itemClass=video`. Mehrere Programmplätze desselben Dienstes werden in einem Senderordner zusammengefasst.
+
+Beispiel für einen vollständigen Abruf der konfigurierten Liste:
+
+```javascript
+setState('loewe-tv.0.channels.refresh', true, false);
+```
+
+`channels.refreshStatus` und `channels.refreshError` zeigen das Abrufresultat; `channels.catalogStatus` zeigt die anschließende Objektaufbereitung. Die zugehörigen Ergebnis- und Katalogwerte sind unter [Gespeicherter Senderbestand und Aktualisierung](#gespeicherter-senderbestand-und-aktualisierung) aufgeführt.
+
+### TV-Sender einzeln anwählen
+
+Für jeden bekannten TV-Senderdienst **der konfigurierten Liste** legt der Adapter einen eigenen Ordner unter **`channels.tv`** an. **Die Ordner-ID wird aus dem Sendernamen gebildet. Der angezeigte Name ist die bevorzugte Speicherposition; die Beschreibung bleibt der Sendername.** Intern steht die Position als Text in `common.name`, der Sendername in `common.desc`. Jeder Sender hat einen `select`-Taster und einen eigenen `epg`-Unterordner.
+
+Beispiele aus der gemeldeten Senderbelegung:
+
+| Ordner-ID | Name (`common.name`) | Beschreibung (`common.desc`) |
+|---|---|---|
+| `channels.tv.Das_Erste_HD` | `1` | Das Erste HD |
+| `channels.tv.ZDF_HD` | `2` | ZDF HD |
+| `channels.tv.RTL_Television` | `3` | RTL Television |
+
+Leerzeichen und Sonderzeichen im Sendernamen werden für die ID zu Unterstrichen, Umlaute zu `ae`, `oe` beziehungsweise `ue` und `ß` zu `ss`. So kann beispielsweise aus „WDR HD Köln“ die ID `WDR_HD_Koeln` werden. Der vollständige Sendername bleibt als Beschreibung und im Datenpunkt `name` erhalten. Verschiedene Dienste mit demselben bereinigten Namen werden über einen stabilen Suffix aus der Dienstidentität unterschieden. Die Programmposition ist kein Bestandteil dieses Suffixes.
+
+**Zum Umschalten `select = true` mit `ack: false` schreiben.** In ioBroker Admin also die Bestätigung beim Schreiben nicht aktivieren; in Blockly den Block zum Steuern verwenden. Der Taster kehrt nach der Verarbeitung auf `false` zurück. Er ist ein Befehl zum Anwählen des Senders und kein dauerhafter Ein/Aus-Zustand. Der Fernseher muss erreichbar sein. Der Taster startet kein Wake-on-LAN; dafür gibt es weiterhin `control.powerOn`.
+
+```javascript
+// Das Erste HD auf seinem aktuellen bevorzugten Programmplatz anwählen.
+setState('loewe-tv.0.channels.tv.Das_Erste_HD.select', true, false);
+```
+
+Während eine neu empfangene Senderantwort in den Bestand übernommen wird, kann die Auswahl kurz mit `CHANNEL_UPDATING` abgewiesen werden. Das gilt auch für einen wartenden Tastendruck, wenn inzwischen eine weitere Senderliste empfangen wurde. Nach der Aktualisierung erneut auswählen; der Adapter sendet dadurch keinen veralteten Umschaltauftrag.
+
+| Datenpunkt im Senderobjekt | Inhalt |
+|---|---|
+| `select` | Taster zum Umschalten auf den Listen-Locator der bevorzugten TV-Position. |
+| `name` | Sendername. |
+| `number` | Kleinster gültiger Programmplatz dieses Dienstes; seine Textdarstellung ist der angezeigte Ordnername. |
+| `mediaItemUuid` | Dienstkennung aus der TV-Antwort. |
+| `locator` | Original-Locator der bevorzugten Position aus der TV-Senderliste. |
+| `positions` | JSON-Liste mit den zusammengehörenden Werten `caption` und `locator` aller bekannten Positionen. |
+| `available` | Ob der Sender im bekannten aktiven Bestand eindeutig zugeordnet und über einen verwendbaren Locator auswählbar ist; kein Empfangs-, Wiedergabe- oder Bildschirmstatus. |
+| `epg.status` | Tatsächlicher EPG-Zustand, beispielsweise `ready`, `partial`, `cached` oder `error`. |
+| `epg.now.*` / `epg.next.*` | Jeweils `available`, `title`, `subtitle`, `description`, `eventId`, `start` und `end` für die aktuelle beziehungsweise nächste Sendung. |
+| `epg.lastUpdate` / `epg.lastError` | Zeitpunkt des letzten erfolgreichen EPG-Abrufs und letzter Fehler für diesen Sender. |
+| `epg.data` | Zusammenhängender JSON-Wert mit `schemaVersion: 2`, Senderbezug, Status, `now`, `next` und dem Befund des letzten TV-Versuchs (`tvDiagnostic`). |
+| `epg.cache` | Interner Speicher für die Wiederherstellung nach einem Neustart; als Expertenobjekt gekennzeichnet. |
+
+Ein Sender kann mehrfach in der TV-Liste stehen. Das Erste HD auf 1, 100 und 1000 ergibt **einen Ordner**: `channels.tv.Das_Erste_HD`. `positions` enthält alle drei Belegungen mit ihrer jeweiligen Beschriftung und ihrem Locator. `number`, der angezeigte Ordnername und die direkte TV-Auswahl verwenden die kleinste gültige Position, in diesem Beispiel 1. Entfernst du diesen Platz und bleiben 100 und 1000 erhalten, wird nach dem vollständigen Abgleich Platz 100 bevorzugt. Der Ordnerpfad bleibt gleich.
+
+Die Programmposition wird aus der gültigen numerischen Beschriftung des Eintrags bestimmt; führende Nullen entfallen in `number` und im angezeigten Ordnernamen. Fehlt eine brauchbare Beschriftung, kann die Nummer aus einem passenden `channel://`-Locator übernommen werden. Originalbeschriftung und Original-Locator bleiben in den Positionsdaten erhalten. Eine widersprüchliche oder nicht eindeutig zuordenbare Position wird nicht als Umschaltziel verwendet.
+
+**Beim Umsortieren bleibt die Sender-ID erhalten.** Verschiebst du Das Erste HD von Platz 1 auf Platz 7, bleibt `channels.tv.Das_Erste_HD` bestehen. Nach dem vollständigen Abgleich zeigen `number` und der Ordnername den Wert 7; `locator` und der Taster verwenden die neue Position. Das vorhandene Skript mit `channels.tv.Das_Erste_HD.select` steuert weiterhin Das Erste HD. Voraussetzung ist, dass Platz 7 dann die kleinste noch vorhandene Position dieses Dienstes ist. Eine echte Umbenennung am TV ändert dagegen die aus dem Namen gebildete ID. EPG- und Aufnahmeregeln müssen zusätzlich `mediaItemUuid`, Medienart und Listenbezug erhalten, damit gleichnamige Dienste eindeutig zugeordnet bleiben.
+
+#### Rückmeldung der TV-Senderauswahl
+
+`channels.lastSelection` enthält die zuletzt gestartete Auswahl mit Senderziel, verwendetem Locator, `ZapToMedia`-Antwort, Ergebnis und Zeitstempeln. `status=accepted` bedeutet `Result=0`; `unconfirmed` steht für eine Antwort ohne auswertbares Ergebnis, `error` für einen Ablauf- oder Befehlsfehler. Ein ausdrücklich von null abweichendes `Result` wird als Fehler gemeldet. Die Annahme des Befehls und das Rücksetzen des Tasters sind noch kein Nachweis des sichtbaren Programms am Fernseher.
+
+Für einen Fehlerbericht genügt zunächst dieser Diagnosewert nach dem betreffenden Versuch. Bleibt `startedAt` unverändert, zusätzlich `info.lastError` lesen, da die Auswahl bereits vor ihrem Start abgewiesen worden sein kann. Die gesamte Senderliste muss nicht erneut kopiert werden.
+
+#### Gespeicherter Senderbestand und Aktualisierung
+
+**Ja, die Senderobjekte werden an die Konfiguration des Fernsehers angepasst.** Bei aktivem `channelRefreshInterval` erfolgt der Abgleich automatisch beim Start, nach einer tatsächlich erkannten Wiederverbindung und anschließend im eingestellten Abstand. Standard sind 300 Sekunden. Ist der TV bei aktiviertem Statuspolling bereits als nicht erreichbar bekannt, wartet der Senderabruf auf die Wiederverbindung. Bei deaktiviertem Statuspolling versucht die Senderaktualisierung den Abruf selbst. Ein laufender Abgleich wird nicht parallel gestartet und weckt den TV nicht auf.
+
+Mit `channels.refresh=true` kannst du jederzeit einen vollständigen Abgleich anfordern, auch wenn das Senderlistenintervall 0 ist. Die Statusabfragen über `pollInterval` und `control.refresh` bleiben davon unabhängig. Für einen rein manuellen Betrieb `pollInterval`, `channelRefreshInterval` und `epgRefreshInterval` auf 0 setzen.
+
+Der Komplettabruf liest ab Startindex 0 mit höchstens 500 Einträgen je Seite. Eine Liste mit mehreren Seiten wird zweimal vollständig gelesen und nur bei übereinstimmendem Inhalt übernommen. Dadurch werden während des Abrufs geänderte Listen nicht als sicherer Gesamtbestand behandelt. Ein Lauf ist auf 2.000 Programmplätze, 20 Seiten je Durchlauf und ein Zeitlimit von 120 Sekunden für den Abruf begrenzt. Für den gespeicherten Katalog gelten weiterhin 480 KiB. Bei überschrittenen Grenzen oder einer nicht eindeutig auswertbaren Antwort bleibt der bisherige Bestand erhalten.
+
+Nach einem erfolgreichen vollständigen Abgleich werden neue Senderordner angelegt und die Positionen vorhandener Sender aktualisiert. Ordner für nicht mehr vorhandene, vom Adapter verwaltete Sender werden entfernt. **Fehler, Standby und unvollständige Antworten lösen keine Entfernung fehlender Sender aus.** Der bisherige vollständige Bestand bleibt in diesen Fällen erhalten.
+
+Beim laufenden TV-Senderabgleich werden benutzerdefinierte Kinder, Objekte mit `common.custom` und Objekte mit `common.dontDelete` geschützt. Benötigte alte Ordner bleiben dann als deaktivierte Reste mit `available=false` und gesperrter Auswahl bestehen. Das betrifft auch geschützte Hash-Ordner aus 0.1.3 und Nummernordner aus dem ersten 0.1.4-Stand. Normale verwaltete Altobjekte ohne solche Ergänzungen werden entfernt. **Nach dem Speichern einer anderen Senderliste werden die verwalteten Ordner der bisherigen Liste beim Start aussortiert, auch ohne erreichbaren TV.** Der nächste Abruf baut ausschließlich den Bestand der neuen Liste auf. Bei leerer Konfiguration wird kein Bestand aktiviert. Diese ausdrücklich konfigurierte Listenänderung ist von einem vorübergehenden Abruffehler bei derselben Liste zu unterscheiden.
+
+Die Zuordnung bleibt bei unveränderter Listenwahl über einen Adapterneustart hinweg erhalten. Wiederherstellung und Migration verwenden passende Daten aus dem gespeicherten Katalog und verwalteten Senderobjekten. Daten anderer Listen sowie Radiosender werden nicht aktiviert. Gespeicherte Tasterwerte werden zurückgesetzt und führen keinen Umschaltbefehl aus. Die Objektaufbereitung läuft in begrenzten Abschnitten im Hintergrund und belegt die TV-Befehlswarteschlange nicht. Bei größeren Listen können Ordner deshalb nach und nach erscheinen.
+
+| Datenpunkt | Bedeutung |
+|---|---|
+| `channels.refreshStatus` | `notConfigured`: zuerst eine TV-Senderliste in der Konfiguration wählen; `disabled`: Automatik aus; `waiting`: Warten auf einen wieder erreichbaren TV; `updating`: Komplettabruf läuft; `ready`: vollständiger Bestand an die Objektaufbereitung übergeben; `error`: Abruf fehlgeschlagen. |
+| `channels.refreshError` | Fehler des letzten Komplettabrufs. |
+| `channels.refreshLastUpdate` | Zeitpunkt der letzten erfolgreichen Übergabe einer vollständig geprüften Liste, Unixzeit in Millisekunden. |
+| `channels.refreshCount` | Anzahl der TV-Einträge im letzten vollständigen Abruf, einschließlich mehrfach belegter TV-Programme; herausgefilterte Radioeinträge werden nicht mitgezählt. |
+| `channels.catalog` | Versionierter JSON-Katalog für Wiederherstellung und Zusammenführung der eingelesenen Senderdaten. |
+| `channels.catalogStatus` | `empty`: noch kein Bestand aufgebaut; `updating`: Aufbereitung läuft; `ready`: Aufbereitung abgeschlossen; `error`: Aufbereitung fehlgeschlagen. |
+| `channels.catalogError` | Fehler beim Wiederherstellen oder Aufbereiten des Senderbestands. |
+| `channels.catalogLastUpdate` | Letzte erfolgreiche Objektaufbereitung als Unixzeit in Millisekunden. Eine Wiederherstellung kann diesen Wert aktualisieren; er belegt weder einen frischen TV-Abruf noch TV-Erreichbarkeit. |
+
+`channels.refreshStatus=ready` bestätigt die Übergabe des vollständigen Abrufs. **Erst `channels.catalogStatus=ready` bestätigt die abgeschlossene Objektaufbereitung.** Ein alter erfolgreicher Statuswert ist kein aktueller Empfangs- oder Bildschirmstatus.
+
+**EPG-Inhalte werden ab 0.1.7 direkt am TV-Sender bereitgestellt**, beispielsweise unter `channels.tv.Das_Erste_HD.epg.now.title` und `channels.tv.Das_Erste_HD.epg.next.title`. Dazu kommen `available`, Start-/Endzeiten, Beschreibungen, Ereigniskennung und Abrufstatus. Mehrere Programmplätze desselben Dienstes teilen sich einen EPG-Ordner. Eine Positionsänderung erhält die Daten; ein anderer Senderdienst unter derselben ID bekommt eine neue Zuordnung. Zeitlich abgelaufene Programme verschwinden auch im Standby aus der Anzeige. Alle Einzelheiten stehen in der [EPG-Anleitung](EPG.md).
+
+### Status und Gerätedaten
+
+| Datenpunkt | Bedeutung |
+|---|---|
+| `info.connection` | Ob der Fernseher zuletzt über die Steuerschnittstelle erreichbar war. |
+| `info.adapterBuild` | Eindeutiger Programmstand; für diese Fassung `0.1.8-tv-epg-only.1`. |
+| `info.lastSeen` | Zeitpunkt der letzten erfolgreichen Kommunikation als Unix-Zeit in Millisekunden. |
+| `info.lastError` | Letzter gemeldeter Fehler. Wird nach einem erfolgreichen Vorgang wieder geleert. |
+| `info.lastCommand` | Zuletzt verarbeiteter Steuerbefehl. |
+| `info.lastCommandAt` | Zeitpunkt dieses Steuerbefehls als Unix-Zeit in Millisekunden. |
+| `info.commandPending` | Ob gerade ein Steuerbefehl oder eine Statusabfrage bearbeitet wird beziehungsweise weitere Vorgänge warten. |
+| `info.wakeReady` | `true`, wenn eine formal gültige TV-MAC-Adresse zum Paketversand bekannt ist. Dies ist keine Bestätigung der Wake-on-LAN-Fähigkeit des TVs. |
+| `info.lastWakeOnLan` | Letzter erfolgreicher Wake-on-LAN-Paketversand als JSON mit `macs`, `broadcast`, `targets`, `port`, `repeats` und `sentAt`. `sentAt` ist der Auslösezeitpunkt als Unix-Zeit in Millisekunden. |
+| `info.powerOn` | Einschaltablauf als JSON, unter anderem mit `phase`, `startedAt`, `updatedAt`, `deadline`, `attempts` und `wakeBursts`. Die Phase `powerKeySent` bestätigt keinen sichtbaren Bildschirminhalt. |
+| `status.volume` | Zuletzt vom Fernseher gelesene Lautstärke in App-Stufen. |
+| `status.mute` | Zuletzt vom Fernseher gelesene Stummschaltung. |
+| `status.playback` | Zuletzt gelesene Wiedergabeantwort als JSON-Text. |
+| `device.data` | Gerätedaten als JSON-Text. |
+| `device.settings` | Zuletzt gelesene TV-Einstellungen als JSON-Text. |
+| `device.macLan` | Ermittelte LAN-MAC-Adresse. |
+| `device.macWlan` | Ermittelte WLAN-MAC-Adresse. |
+| `device.mac` | MAC-Adresse aus dem älteren TV-Antwortfeld `MAC-Address`, als zusätzliche Quelle für Wake-on-LAN. |
+| `device.wolEnabled` | Gültig vom TV gemeldete Wake-on-LAN-Einstellung. Bleibt bis zur ersten gültigen Antwort unbekannt. |
+| `device.wolInteractive` | Gültig vom TV gemeldete Einstellung `WolInteractive`. Bleibt bis zur ersten gültigen Antwort unbekannt. |
+
+**`info.connection` ist kein verlässlicher Bildschirm-Ein/Aus-Zustand.** Ein Fernseher kann im Standby noch auf Netzwerkbefehle antworten. Umgekehrt kann ein eingeschalteter Fernseher bei einem Netzwerkfehler unerreichbar sein. `control.powerOn` und `control.powerOff` sind deshalb bewusst Befehls-Taster.
+
+Bei Verbindungsproblemen sind vorhandene Statuswerte die zuletzt bekannten Werte. `info.connection`, `info.lastSeen` und `info.lastError` helfen dabei, ihre Aktualität einzuordnen.
+
+Bei einem Intervall größer als 0 werden Lautstärke und Stummschaltung regelmäßig abgefragt, die Wiedergabe bei aktivierter Option ebenfalls. Mit Intervall 0 finden keine automatischen Statusabfragen statt. Gerätedaten werden vor Lautstärke und Stummschaltung gelesen, damit fehlende Unterstützung einer Statusfunktion die MAC-Erkennung nicht verhindert. `control.refresh` fordert die Status-, Geräte- und Einstellungsdaten manuell neu an. Nicht unterstützte Abfragen werden im Adapterprotokoll gemeldet.
+
+SOAP-Anfragen werden nacheinander ausgeführt. Die Warteschlange ist auf 20 laufende oder wartende Vorgänge begrenzt. Ein Vorgang, der beim Erreichen seines Platzes mehr als 30 Sekunden gewartet hat, wird verworfen. **Wake-on-LAN läuft unabhängig von dieser Warteschlange**, damit ein nicht antwortender Fernseher seinen eigenen Einschaltversuch nicht verzögert.
+
+Gewöhnliche SOAP-Steuerbefehle werden nach einem Fehler nicht automatisch wiederholt, weil der Fernseher sie vor einem Verbindungsabbruch bereits ausgeführt haben könnte. Nach einem solchen Fehler stellt der nächste Versuch die Anmeldung bei Bedarf neu her. Eine gezielte Ausnahme ist der zeitlich begrenzte Einschaltablauf: Er darf den dokumentierten Befehl `TV_ON` bei vorübergehenden Verbindungsproblemen wiederholen. Er verwendet dabei keinen Umschaltbefehl. Die Wartephasen zwischen diesen Versuchen belegen die SOAP-Warteschlange nicht.
+
+Geräte-, Wiedergabe- und Befehlsantworten werden bis 512 KiB in einem Datenpunkt gespeichert. Größere Antworten werden durch einen JSON-Hinweis mit `omitted`, `bytes`, `limit` und `reason` ersetzt. Der Senderkatalog und die EPG-Caches haben eigene Größenbegrenzungen; diese stehen beim Senderabgleich und in der [EPG-Anleitung](EPG.md#umfang-und-belastung).
+
+## Ein- und Ausschalten
+
+Die [Loewe Remote API 1.0.47, Kapitel 9.4.3](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf), unterscheidet das Aufwecken des Netzwerkdiensts vom interaktiven Einschalten. Abhängig von `WolInteractive` kann ein Magic Packet allein den Bildschirm ausgeschaltet lassen. Deshalb verwendet der Adapter ab 0.1.2 den anschließenden gezielten `TV_ON`-Befehl 22. Diese dokumentierte Unterscheidung erklärt einen möglichen Fehler im bisherigen Ansatz; ob sie Svens konkretes Einschaltproblem vollständig behebt, ist erst nach dem Gerätetest bekannt.
+
+Zum Einschalten:
+
+```javascript
+setState('loewe-tv.0.control.powerOn', true, false);
+```
+
+Der Ablauf ist zeitlich begrenzt:
+
+1. Sofort drei Wake-on-LAN-Senderunden per UDP an Port 9, mit 150 Millisekunden Abstand. Der Versand wartet nicht auf offene SOAP-Abfragen.
+2. Nach dem ersten Versand und einer Wartezeit von einer Sekunde beginnt der Versuch, den gezielten Einschaltbefehl 22 zu senden. Ein einzelner Versuch einschließlich Warteschlange und Anmeldung hat höchstens drei Sekunden Zeit.
+3. Bei vorübergehenden Netzwerk- oder Anmeldeproblemen folgt nach zwei Sekunden ein weiterer Versuch. Wenn der Ablauf noch läuft, wird frühestens nach 35 Sekunden einmal ein weiterer WOL-Burst gesendet.
+4. Nach der eingestellten Gesamtfrist endet der Vorgang. Standard sind 60 Sekunden, einstellbar sind 5 bis 120 Sekunden. Ein Ausschaltbefehl oder das Beenden des Adapters bricht die Sequenz ab, damit wartende Versuche den TV nicht später wieder einschalten.
+
+Die Wartezeiten laufen asynchron. Bereits gesendete Netzwerkpakete lassen sich beim Abbruch nicht zurückholen; noch wartende Einschaltversuche werden vor ihrem Versand erneut auf Abbruch und Zeitlimit geprüft.
+
+Zum gezielten Ausschalten:
+
+```javascript
+setState('loewe-tv.0.control.powerOff', true, false);
+```
+
+Ab 0.1.2 verwendet dieser Datenpunkt den dokumentierten Code 25. Der bisherige Datenpunkt `remote.power_off` bleibt beim Umschaltcode 12, `remote.power_all_code` bleibt beim gezielten Ausschaltcode 25. `remote.power_on` sendet nur Code 22 und führt keinen WOL-Ablauf aus.
+
+### Den Einschaltversuch prüfen
+
+1. Den Fernseher zum Einrichten einschalten. Die passende LAN- oder WLAN-MAC-Adresse manuell konfigurieren oder mit `control.refresh` aus den Gerätedaten lernen. Das Einschalten über LAN muss am TV aktiviert sein.
+2. `info.wakeReady` prüfen. `true` bedeutet, dass eine MAC-Adresse bekannt ist. Nach einer gültigen Geräteabfrage zeigen außerdem `device.wolEnabled` und `device.wolInteractive` die vom TV gemeldeten Einstellungen. Ein unbekannter Wert bedeutet keine bestätigte Deaktivierung.
+3. Den TV in Standby versetzen und **mindestens 30 Sekunden warten**. Diesen Mindestabstand nennt das [Loewe-Benutzerhandbuch für bild-Geräte mit SL3xx/SL4xx](https://cdn.loewe.tv/manuals_new/TV_BA/SL3xx_SL4xx/universelles%20Benutzerhandbuch%20f%C3%BCr%20alle%20bild%20Ger%C3%A4te/36960000_UH_bild_universal_3l_DE_180813.pdf) für das erneute Einschalten über LAN/WLAN.
+4. `control.powerOn` mit `true` und `ack: false` auslösen. In `info.lastWakeOnLan` müssen `sentAt`, `targets` und `macs` zum aktuellen Versuch passen. `info.powerOn` zeigt den anschließenden Ablauf und gegebenenfalls einen Fehler.
+
+| Phase in `info.powerOn` | Bedeutung |
+|---|---|
+| `waking` | Wake-on-LAN wird gesendet. |
+| `waiting` | Warten vor dem ersten oder einem weiteren TV_ON-Versuch. |
+| `powerKeySent` | Die Steuerschnittstelle hat den gezielten Einschaltbefehl erfolgreich beantwortet. **Kein Nachweis, dass ein Bild sichtbar ist.** |
+| `failed` | Fehler oder Gesamtzeitlimit erreicht; den gemeldeten Fehler lesen. |
+| `cancelled` | Der Einschaltablauf wurde abgebrochen. |
+
+Ein erfolgreicher UDP-Versand bestätigt nicht den Empfang am TV. Auch eine erfolgreiche SOAP-Antwort ist kein verlässlicher Bildschirmstatus. `info.connection` zeigt die Erreichbarkeit der Schnittstelle. Bleiben die Diagnosen unverändert, `info.lastError` auf einen vor Beginn erkannten Fehler wie eine fehlende MAC-Adresse prüfen.
+
+Die zweite App Löwenbändiger Remote 1.15 lieferte keinen nachgewiesenen WOL-Ablauf. Der neue zweistufige Einschaltweg stützt sich auf die Hersteller-API. Eine lesbare [Textfassung der Remote-API-Spezifikation](https://github.com/gadgetbazza/hass-loewetv-remoteapi/blob/main/supporting_files/remote_api_1.0.47_Loewe.txt) wird im unabhängigen Home-Assistant-Projekt bereitgestellt.
+
+## Fehler eingrenzen
+
+| Beobachtung | Nächster sinnvoller Schritt |
+|---|---|
+| `info.connection` bleibt `false` | Sind alle drei Abfrageintervalle 0, zunächst `control.refresh` auslösen. Sonst Fernseher einschalten, IP-Adresse und Port 905 prüfen und `info.lastError` lesen. Router-, Gastnetz- oder VLAN-Trennung prüfen. |
+| Verbindung bricht nach einem TV-Neustart ab | Einen weiteren Statuszyklus abwarten oder `control.refresh` auslösen. Die Anmeldung wird vom Adapter verwaltet. |
+| Einzelne Anfrage meldet einen SOAP-Fehler | Die Schnittstelle ist erreichbar, diese Aktion oder ihre Parameter werden aber möglicherweise vom TV nicht unterstützt. Bei Wiedergabeproblemen `pollPlayback` deaktivieren. |
+| Schreiben eines Datenpunkts bewirkt nichts | Mit `ack: false` schreiben. Taster erwarten `true`. Die Senderliste wird in der Adapter-Konfiguration gewählt. |
+| Lautstärke lässt sich nicht hoch genug setzen | Den Wert und die konfigurierte maximale Lautstärke prüfen. `control.volume` erwartet eine ganze App-Stufe, keinen Protokollrohwert. |
+| `info.wakeReady` ist `false` | Die passende TV-MAC-Adresse manuell konfigurieren oder bei eingeschaltetem TV `control.refresh` auslösen. Bei `pollInterval=0` wird die MAC-Adresse beim Start nicht automatisch abgefragt. |
+| `info.wakeReady` ist `true`, aber der TV startet nicht | Den aktuellen Eintrag in `info.lastWakeOnLan` und den Ablauf in `info.powerOn` prüfen. Nach dem Ausschalten mindestens 30 Sekunden warten. `powerKeySent` bestätigt nur die Antwort auf den Einschaltbefehl, kein Bild. |
+| Ein Einschaltversuch aktualisiert `info.lastWakeOnLan` nicht | `info.lastError` lesen und prüfen, ob `control.powerOn` mit `true` und `ack: false` geschrieben wurde. Eine frühere Versandmeldung ist kein Nachweis für den aktuellen Versuch. |
+| ioBroker wird nach dem Aktivieren der bisherigen Version träge | `loewe-tv.0` stoppen und die Updateanleitung auf 0.1.8 einschließlich der instanzbezogenen Compact-Umstellung ausführen. Für die anschließende Prüfung `pollInterval`, `channelRefreshInterval` und `epgRefreshInterval` auf 0 setzen. |
+| Speichern-Tasten sind blockiert oder die alte EPG-Maske wird angezeigt | Das neue Paket erneut installieren, `info.adapterBuild = 0.1.8-tv-epg-only.1` prüfen, Admin vollständig neu laden und die Konfiguration erneut öffnen. Im EPG-Reiter stehen nur Aktivieren und Abrufintervall. |
+| Senderabfrage scheitert | In der Adapter-Konfiguration eine verfügbare TV-Senderliste auswählen und speichern. `channels.view` zeigt die gespeicherte Kennung. `channels.refreshStatus`, `channels.refreshError` und `channels.catalogError` prüfen. Bei TV-Synchronisierung später wiederholen. |
+| In der Konfiguration fehlen Senderlisten | TV einschalten, Adresse und Port speichern, Instanz aktivieren und Einstellungen erneut öffnen. **Senderlisten neu laden** betätigen und den angezeigten Hinweis beachten. |
+| Entfernte globale Datenpunkte sind weiterhin vorhanden | `info.adapterBuild` muss `0.1.8-tv-epg-only.1` zeigen. Sonst das neue Paket erneut installieren. Bei passender Build-Kennung das Startprotokoll auf Bereinigungsfehler und Löschschutz prüfen; die Objektansicht anschließend neu laden. |
+| Sender wurden empfangen, unter `channels.tv` fehlen noch Objekte | `channels.catalogStatus` prüfen und bei `updating` die Hintergrundaufbereitung abwarten. Bei `error` steht die Ursache in `channels.catalogError`; danach die passende Senderliste erneut abfragen. |
+| Ein Sendertaster meldet `CHANNEL_UNAVAILABLE` | Die Liste dieses Senders erneut abfragen. Bei `available=false` gehört er nicht zum aktiven Bestand oder es fehlt ein verwendbarer Locator. Nach Änderungen während der Wartezeit den Sender erneut auswählen. |
+| Der Sendertaster ist wieder `false`, aber der Sender läuft nicht | Das Rücksetzen bestätigt nur die Verarbeitung des Tasters. `channels.lastSelection` auf TV-Ergebnis und Fehler prüfen. Die Annahme des Befehls allein bestätigt noch keine Wiedergabe. |
+| Eine JSON-Antwort enthält `omitted: true` | Der Hinweis beschreibt die ausgelassene Speicherung einer zu großen Antwort. Für einen Fehlerbericht den betroffenen Datenpunkt und die Angaben `bytes`, `limit` und `reason` angeben. |
+| Ein Befehl meldet eine volle Warteschlange oder zu lange Wartezeit | Befehle langsamer senden, laufende TV-Zeitüberschreitungen prüfen und für die Diagnose `pollInterval`, `channelRefreshInterval` und `epgRefreshInterval` auf 0 setzen. |
+
+Für einen Fehlerbericht sind TV-Modell, Firmware, Adapterversion und der konkrete Fehlertext hilfreich. Bei Einschaltproblemen zusätzlich die verwendete LAN-/WLAN-Verbindung, `info.wakeReady`, `info.lastWakeOnLan` und `info.powerOn` angeben. Bei Fehlern der Senderauswahl zunächst `channels.lastSelection` direkt nach dem Versuch sowie das vorherige und das gewünschte TV-Programm angeben. Bei Fehlern des Senderabrufs helfen `channels.refreshStatus`, `channels.refreshError`, `channels.refreshCount`, `channels.catalogStatus` und `channels.catalogError`. Persönliche Senderlisten, Gerätekennungen oder MAC-Adressen können darin enthalten sein.
+
+Bei EPG-Problemen helfen `channels.epgStatus`, `channels.epgProgress`, `channels.epgLastError` und `epg.data` des betroffenen TV-Senders. Prüfe zunächst am eingeschalteten Fernseher und löse `channels.epgRefresh=true` mit `ack: false` aus. Ab 0.1.8 enthält `epg.data.tvDiagnostic` den letzten TV-Versuch: `received` bedeutet eine auswertbare Antwort, `error` einen fehlgeschlagenen Versuch und `skipped` eine übersprungene TV-Abfrage. Auch eine leere Antwort kann `received` ergeben; die Programmverfügbarkeit zeigen weiterhin `epg.now.available` und `epg.next.available`. Nach einem vorübergehenden Cache-/Datenbankfehler wird die EPG-Initialisierung erneut versucht, bei automatischem Betrieb nach 30 Sekunden. Die [EPG-Anleitung](EPG.md) erklärt die Diagnosefelder. Programmzeiten werden in Millisekunden gespeichert.
+
+## Protokoll und Grenzen dieser Version
+
+Die Netzwerkschnittstelle verwendet `POST /loewe_tablet_0001` mit dem SOAP-Namensraum `urn:loewe.de:RemoteTV:Tablet`. Die Anmeldung erfolgt mit `RequestAccess`; die Antwort liefert die `ClientId` für Folgeanfragen. Die Original-App hängt ein NUL-Byte an den XML-Body an. Der Adapter übernimmt dieses Verhalten standardmäßig.
+
+Die ursprünglichen Tastencodes, Requestvorlagen und die Lautstärkeskalierung stammen aus Loewe App 1.4.7. Die Zifferntasten und der alternative EPG-Code stammen aus Löwenbändiger Remote 1.15. TV_ON (22), TV_MODE_ON (72) und die ergänzte Bedeutung der Ein-/Ausschaltcodes folgen der Remote API 1.0.47. Die App-Stufe 20 entspricht im Protokoll dem Wert 200000. `SetMute` mit `Value=1` ist im App-Sendepfad nachgewiesen. Das Aufheben mit `Value=0` ist aus dem Antwortparser und der Gegenoperation abgeleitet; die Toggle-Taste `remote.mute` ist separat nachgewiesen.
+
+Die extrahierten SOAP-Vorlagen bleiben in [protocol-templates.json](protocol-templates.json) und [remote115-protocol.json](remote115-protocol.json) als Entwicklungsunterlagen erhalten. Der Adapter verwendet den internen SOAP-Transport weiterhin für seine dokumentierten Funktionen.
+
+Der lokale EPG-Abruf über `CreateIterator` und `de.loewe.sl2.epg` ist in 0.1.7 implementiert. Die Grundfelder stammen aus Kapitel 9.22 der Hersteller-API; ergänzende veröffentlichte Feldkennungen werden mit begrenztem Rückfall auf das Grundschema verwendet. Die [EPG-Protokolldokumentation](epg-protocol.md) trennt Herstellerangaben, zusätzliche Quellen und noch ausstehende Gerätetests. Dieser direkte TV-Abruf ist der einzige EPG-Weg dieses Builds.
+
+Die universellen API-Datenpunkte, die Radiosteuerung und der gesamte `media`-Datenpunktbaum sind aus dem aktuellen Funktionsumfang entfernt. Komplexe Aufnahme- und Favoritenverwaltung, UPnP/DLNA-Mediensteuerung, WS-Eventing, automatische Gerätesuche und lange Fernbedienungstastendrücke sind ebenfalls nicht als Bedienfunktionen umgesetzt.
+
+## Weiterführende Dokumentation
+
+- [EPG: laufende und nächste Sendung](EPG.md)
+- [Gerätekompatibilität und bestätigte Tests](COMPATIBILITY.md)
+- [Prüfbericht zum aktuellen TV-EPG-Build](PRUEFBERICHT_0.1.8_TV_EPG.md)
+- [Roadmap für EPG-Regeln und Aufnahmen](ROADMAP.md)
+- [Projektübersicht](../README.md)

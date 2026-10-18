@@ -1,7 +1,7 @@
 {
   "name": "iobroker.loewe-tv",
   "version": "0.1.8",
-  "description": "Local Loewe TV control with per-channel current and next programme information",
+  "description": "Local Loewe TV control with current and next programmes per channel directly from the TV",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SvenM74/ioBroker.loewe-tv.git"
@@ -43,7 +43,6 @@
     "tv",
     "remote",
     "epg",
-    "xmltv",
     "soap",
     "smart-home"
   ],

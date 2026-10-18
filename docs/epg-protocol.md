@@ -160,8 +160,8 @@ Ein erlaubtes Teilergebnis nach Erreichen der Seiten- oder Zeilengrenze trägt
 `diagnostic.limited=true` und `diagnostic.complete=false`. Ein erreichtes
 Tabellenende mit wenigen oder keinen Sendungen ist ein erfolgreiches,
 gegebenenfalls leeres Ergebnis, kein Beweis für eine Störung. Die übergeordnete
-EPG-Verarbeitung entscheidet anhand der tatsächlich verfügbaren Daten über
-aktuelle/nächste Sendung und eine externe Ersatzquelle.
+EPG-Verarbeitung entscheidet anhand der tatsächlich verfügbaren TV-Daten über
+aktuelle und nächste Sendung. Eine externe Ersatzquelle wird nicht verwendet.
 
 `diagnostic.complete` bedeutet, dass der angefragte begrenzte Ausschnitt bis
 zur Zukunftsgrenze oder bis zum gemeldeten Tabellenende gelesen wurde.
@@ -176,7 +176,7 @@ const { LoeweEpgSource } = require('./lib/epg-loewe');
 const source = new LoeweEpgSource({ request });
 const result = await source.read(service, { now: Date.now(), deadline, signal });
 // result: { source: 'tv', events, diagnostic }
-// event: { eventId, title, subtitle, description, start, end, endEstimated: false }
+// event: { eventId, title, subtitle, description, start, end }
 ```
 
 `request(action, parametersXml, { deadline })` muss den vorhandenen
@@ -212,7 +212,8 @@ Beschreibungen. Der EPG-Manager veröffentlicht sie als `tvDiagnostic.details`
 innerhalb von `channels.tv.<Sender>.epg.data`. Er begrenzt die serialisierten
 Details auf 8 KiB; größere oder nicht serialisierbare Details werden durch
 einen festen Hinweis ersetzt. Der umgebende Status unterscheidet einen
-verarbeiteten TV-Befund, einen Fehler und eine übersprungene Anfrage. Eine
-erfolgreiche XMLTV-Ersatzquelle lässt den Befund des TV-Versuchs sichtbar.
+verarbeiteten TV-Befund, einen Fehler und eine übersprungene Anfrage. Auch wenn
+nach einem fehlgeschlagenen Abruf noch gültige zwischengespeicherte TV-Daten
+angezeigt werden, bleibt der Befund dieses Abrufversuchs sichtbar.
 Die [EPG-Anleitung](EPG.md#tv-abruf-diagnostizieren) beschreibt die genaue
 Verwendung in ioBroker.

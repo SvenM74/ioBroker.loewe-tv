@@ -4,7 +4,7 @@
 
 Die folgenden Ergebnisse stammen aus den Gerätetests des Nutzers. Sie gelten für die genannten Kombinationen aus Modell, Chassis und Software.
 
-| Modell | Chassis | TV-Software | Gemeldeter Stand am 18.10.2026 |
+| Modell | Chassis | TV-Software | Status |
 |---|---|---|---|
 | **Loewe bild 7.55** | **SL420** | **V5.4.6.0** | Direkter TV-EPG-Abruf; Fernbedienung, Senderlisten und TV-Auswahl. |
 | **Loewe bild 5.32** | **SL310F** | **V5.4.6.0** | Direkter TV-EPG-Abruf; Fernbedienung, Senderlisten und TV-Auswahl. |

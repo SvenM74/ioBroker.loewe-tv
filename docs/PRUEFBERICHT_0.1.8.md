@@ -2,7 +2,20 @@
 
 Stand: **18. Oktober 2026 (UTC)**. Build: **`0.1.8-epg-config-fix.1`**.
 
-## Ergebnis
+## Nachtrag vom 18. Oktober 2026: TV-EPG bestätigt
+
+Nach Bereitstellung von **0.1.8** hat der Nutzer den erfolgreichen direkten EPG-Abruf vom Fernseher für folgende Geräte bestätigt:
+
+| TV-Modell | Chassis | Software | Nutzerrückmeldung |
+|---|---|---|---|
+| Loewe bild 7.55 | SL420 | V5.4.6.0 | Direkter TV-EPG-Abruf erfolgreich |
+| Loewe bild 5.32 | SL310F | V5.4.6.0 | Direkter TV-EPG-Abruf erfolgreich |
+
+Diese Rückmeldung ergänzt den ursprünglichen Prüfstand um die Gerätebestätigung. Sie enthält keine EPG-Rohantwort und erlaubt keine Zuordnung des Erfolgs zu einer einzelnen Korrektur. Die vollständige Abdeckung aller Sender, Zeiträume und EPG-Felder sowie Einschaltablauf, Aufnahmetimer und tatsächliche Aufnahmen sind damit nicht nachgewiesen. Die [Kompatibilitätsübersicht](COMPATIBILITY.md) dokumentiert den aktuellen Stand.
+
+**Die folgenden Abschnitte geben den ursprünglichen Veröffentlichungsstand vor dieser Nutzerrückmeldung wieder.** Aussagen zur damals noch fehlenden EPG-Bestätigung und die Ergebnisse des ursprünglichen automatisierten Testlaufs bleiben als historische Dokumentation erhalten.
+
+## Ergebnis (ursprünglicher Veröffentlichungsstand)
 
 Der Nutzer meldet seit 0.1.7 gesperrte Speichern-Tasten in der Adapter-Konfiguration und ausbleibende TV-EPG-Daten. Der Formularfehler wurde mit der tatsächlichen Auswertungsweise von ioBroker Admin reproduziert und korrigiert. Zusätzlich wurden eine dauerhaft blockierende EPG-Initialisierung nach einem Datenbankfehler und Abweichungen vom dokumentierten TV-Iteratorablauf bearbeitet.
 

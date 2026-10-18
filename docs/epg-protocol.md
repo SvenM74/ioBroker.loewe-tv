@@ -18,9 +18,17 @@ Die zusätzliche [veröffentlichte EPG-Modellbeschreibung](https://github.com/to
 enthält aus `values-epg.h` generierte Feldkonstanten für dieselbe Tabelle
 `de.loewe.sl2.epg`. Diese Quelle stammt aus einem Hisense-Testprojekt. Sie liefert
 zusätzliche Belege für Feldnamen, jedoch keinen Nachweis, dass jedes Feld auf
-einem Loewe SL420 mit V5.4.6.0 verfügbar ist. Deshalb gibt es ein begrenztes
-Basisschema als Rückfall. Die Implementierung wurde mit Protokollantworten
-geprüft; der direkte EPG-Abruf auf dieser Hardware muss noch bestätigt werden.
+einem Loewe SL420 oder SL310F mit V5.4.6.0 verfügbar ist. Deshalb gibt es ein
+begrenztes Basisschema als Rückfall. Die Implementierung wurde mit
+Protokollantworten automatisiert geprüft.
+
+Nach Bereitstellung von **0.1.8** hat der Nutzer am **18. Oktober 2026** den
+erfolgreichen direkten EPG-Abruf auf **Loewe bild 7.55 /
+SL420 / V5.4.6.0** und **Loewe bild 5.32 / SL310F / V5.4.6.0** bestätigt.
+Diese Rückmeldung enthält keine EPG-Rohantwort. Sie bestätigt den Abruf auf
+diesen beiden Gerätekonfigurationen, aber nicht die vollständige Feld-,
+Sender- oder Zeitraumabdeckung. Weitere Angaben stehen in der
+[Kompatibilitätsübersicht](COMPATIBILITY.md).
 
 ## Senderzuordnung
 
@@ -105,9 +113,11 @@ zeigt eine EPG-Antwort mit `totalResults="864"`, `returnedResults="1"` und
 41.** Sie belegt deshalb nicht unmittelbar den Ablauf „Anfrage 0 mit Seek,
 Antwort 41“; dieser Ablauf ist ein gezielt simulierter Regressionstest. Die
 Umstellung korrigiert unsere Verwendung der dokumentierten Seek-Struktur und
-die Verarbeitung absoluter Offsets. Ob diese Änderungen den gemeldeten
-EPG-Ausfall auf dem bild 7.55 / SL420 / V5.4.6.0 beheben, muss eine echte
-Geräteantwort bestätigen.
+die Verarbeitung absoluter Offsets. Der erfolgreiche direkte Abruf mit
+Version 0.1.8 ist inzwischen durch die oben genannte Nutzerrückmeldung
+bestätigt. Ohne eine protokollierte EPG-Antwort belegt diese Rückmeldung weder
+den konkreten Antwortindex noch, welche einzelne Änderung für den jetzt
+erfolgreichen Abruf ausschlaggebend war.
 
 Der Abruf beginnt 24 Stunden vor `now` und liest aufsteigend bis 24 Stunden
 danach. Alle Zeilen einer bereits empfangenen Seite werden ausgewertet, auch

@@ -4,7 +4,9 @@ Seit Version **0.1.7** stehen unter jedem vorhandenen TV-Sender die aktuelle und
 
 Version **0.1.8** korrigiert die XMLTV-URLprüfung in der Adapter-Konfiguration: Eine fehlerhaft verschachtelte `return`-Anweisung konnte die Speichern-Schaltflächen blockieren. Bestehende Instanzen ohne die neuen EPG-Einstellungen werden ebenfalls akzeptiert. Beim TV-Abruf wurden die dokumentierte Zeitpositionierung und die Verarbeitung der Seitenindizes überarbeitet; ein zusätzlicher Diagnosewert macht das Ergebnis je Sender nachvollziehbar.
 
-Die EPG-Abfrage ist implementiert und mit simulierten Protokollantworten geprüft. Eine erfolgreiche EPG-Antwort des Nutzergeräts **bild 7.55 / SL420 / V5.4.6.0** liegt für diese Version noch nicht vor. Der zuvor bestätigte Test der Senderlisten und TV-Auswahl ist kein EPG-Gerätetest.
+Nach Bereitstellung von **0.1.8** hat der Nutzer am **18. Oktober 2026** den erfolgreichen direkten EPG-Abruf vom Fernseher bestätigt: sowohl auf dem **Loewe bild 7.55 / SL420 / V5.4.6.0** als auch auf dem **Loewe bild 5.32 / SL310F / V5.4.6.0**. Die [Kompatibilitätsübersicht](COMPATIBILITY.md) hält diese Gerätekonfigurationen und den Umfang der Bestätigung fest.
+
+Die Rückmeldung bestätigt den funktionierenden TV-EPG-Abruf auf diesen beiden Geräten. Eine EPG-Rohantwort wurde dabei nicht übermittelt; die Verfügbarkeit jedes einzelnen Feldes und die Abdeckung sämtlicher Sender und Zeiträume sind damit nicht einzeln nachgewiesen. Die automatisierten Prüfungen mit simulierten Protokollantworten ergänzen diesen Gerätetest.
 
 ## Am Fernseher beginnen
 
@@ -106,7 +108,7 @@ Die `details` zeigen unter anderem `schema` (`extended` oder `basic`), `dvb`, `r
 
 Die Diagnosedetails enthalten keine Rohantworten, Client-IDs, URLs, Sendungstitel oder Beschreibungen. Sie sind auf 8 KiB begrenzt; bei Überschreitung steht dort `{omitted: true, reason: "size"}`, bei nicht serialisierbaren Details `{omitted: true, reason: "format"}`. Die normalen `now`-/`next`-Felder enthalten weiterhin die Programminformationen.
 
-Wenn keine TV-Daten erscheinen, zunächst `channels.epgRefresh=true` auslösen und anschließend `tvDiagnostic` und `epg.lastError` eines betroffenen Senders prüfen. Bei `previousFailure` ist die Diagnose unter `blockedByChannel` maßgeblich. Ein manueller neuer Abgleich prüft die TV-Feldunterstützung erneut. Die [Protokolldokumentation](epg-protocol.md) erklärt die geprüften Antwortformen und die noch offene Bestätigung am SL420.
+Wenn keine TV-Daten erscheinen, zunächst `channels.epgRefresh=true` auslösen und anschließend `tvDiagnostic` und `epg.lastError` eines betroffenen Senders prüfen. Bei `previousFailure` ist die Diagnose unter `blockedByChannel` maßgeblich. Ein manueller neuer Abgleich prüft die TV-Feldunterstützung erneut. Die [Protokolldokumentation](epg-protocol.md) erklärt die geprüften Antwortformen und die Grenzen der bisherigen Gerätebestätigung.
 
 ## XMLTV als Ersatzquelle
 

@@ -1,12 +1,4 @@
-# Loewe TV für ioBroker
-
-Version **0.1.8** behebt die seit 0.1.7 blockierten **Speichern-Tasten in der Adapter-Konfiguration**. Außerdem korrigiert sie die zeitliche Positionierung des TV-EPG-Abrufs, verarbeitet absolute Antwortindizes und wiederholt eine fehlgeschlagene EPG-Initialisierung. Jeder TV-Sender bietet die aktuelle und die nächste Sendung; `epg.data.tvDiagnostic` unterstützt die Diagnose des TV-Abrufs. **Der Nutzer hat den direkten EPG-Abruf vom bild 7.55 (SL420) und bild 5.32 (SL310F), jeweils mit V5.4.6.0, am 18.10.2026 bestätigt.** Die Build-Kennung lautet **`info.adapterBuild = 0.1.8-epg-config-fix.1`**. Details stehen im [Prüfbericht](docs/PRUEFBERICHT_0.1.8.md), in der [EPG-Anleitung](docs/EPG.md) und in der [Gerätekompatibilität](docs/COMPATIBILITY.md).
-
-Der Adapter liest bevorzugt das lokale Loewe-EPG. Eine konfigurierte XMLTV-Quelle, beispielsweise aus [iptv-org/epg](https://github.com/iptv-org/epg), kann fehlende Programmdaten ersetzen. Unter `channels.tv` wird ausschließlich die in der Konfiguration ausgewählte TV-Liste abgebildet.
-
-Die Senderordner verwenden weiterhin den Sendernamen als ID, beispielsweise `channels.tv.Das_Erste_HD`. Ihr angezeigter Name ist der aktuelle Programmplatz, ihre Beschreibung der Sendername. Beim Umsortieren bleiben die Senderpfade gleich.
-
-Die Grundlage ist die aus der Android-App **Loewe App 1.4.7** extrahierte Netzwerkschnittstelle. Die zusätzliche Analyse von **Löwenbändiger Remote 1.15** ergänzt Zifferntasten und einen weiteren EPG-Code. Beim erneuten Prüfen der ursprünglichen Loewe-App wurde außerdem ein älteres MAC-Adressformat nachgewiesen, das der Adapter jetzt ebenfalls auswertet. Jede Instanz steuert genau einen Fernseher. Für einen zweiten Fernseher wird eine zweite Instanz angelegt.
+# Loewe TV Adapter für ioBroker
 
 ## Getestete Geräte
 
@@ -17,21 +9,6 @@ Die folgenden Ergebnisse stammen aus den Gerätetests des Nutzers. Sie gelten f�
 | **Loewe bild 7.55** | **SL420** | **V5.4.6.0** | Direkter TV-EPG-Abruf; Fernbedienung, Senderlisten und TV-Auswahl. |
 | **Loewe bild 5.32** | **SL310F** | **V5.4.6.0** | Direkter TV-EPG-Abruf; Fernbedienung, Senderlisten und TV-Auswahl. |
 | **Loewe Connect 26 SL** | **MB180** | alle | NICHT kompatibel. |
-
-Der **Connect 26 SL** verwendet eine andere Geräteplattform. Sein Namenszusatz „SL“ bedeutet keine Zugehörigkeit zu den Chassis SL2xx/SL3xx/SL4xx. Netzwerk-Medienwiedergabe ist dokumentiert; eine Unterstützung der hier verwendeten Tablet-Schnittstelle ist für MB180 nicht nachgewiesen. Quellen und mögliche alternative Steuerwege stehen in [Gerätekompatibilität](docs/COMPATIBILITY.md#loewe-connect-26-sl).
-
-### Bisherige Rückmeldungen zum bild 7.55
-
-| Merkmal | Gemeldeter Stand bis 18.10.2026 |
-|---|---|
-| Fernbedienung | Nach Rückmeldung des Nutzers scheinen sämtliche bereits vorhandenen Datenpunkte unter `remote` zu funktionieren. |
-| EPG-Tasten | `remote.epg` (15) und `remote.epg_alt` (78) öffnen dieselbe Anzeige am TV. Das ist noch kein Abruf von EPG-Daten. |
-| Senderabfrage | Eine echte `GetChannelListResponse` für **ASTRA LCN** liegt vor. Der TV meldet 372 Listeneinträge mit TV- und Radiosendern. Die ersten drei TV-Programme stimmen nach Prüfung des Nutzers mit seiner Konfiguration überein. |
-| Senderordner und TV-Auswahl | Der Nutzer hat die Anlage der Senderordner, den ersten 0.1.4-Stand mit numerischen IDs und anschließend die TV-Auswahl des überarbeiteten 0.1.4-Stands mit Namens-IDs bestätigt. Nach einem kurzen Test funktionieren die TV-Channels fehlerfrei. |
-| Radio-Auswahl | Auch der erste Stand von 0.1.6 schaltet laut Nutzer weiterhin nicht auf Radio um. Die Radiounterstützung wurde deshalb auf seinen Wunsch aus der aktualisierten 0.1.6 entfernt und für später zurückgestellt. |
-| Konfigurierte Senderliste | Die überarbeitete 0.1.6 mit Auswahl der Senderliste und Bereinigung der entfernten Bereiche funktioniert laut jüngster Nutzerrückmeldung. |
-| Konfiguration und EPG ab 0.1.7 | Nach den gemeldeten Problemen mit Speichern und TV-EPG behebt 0.1.8 den reproduzierten Formularfehler und ergänzt Korrekturen sowie Diagnose für den EPG-Abruf. Der direkte TV-EPG-Abruf ist mit der Rückmeldung vom 18.10.2026 bestätigt. |
-| Einschalten | Im bisher installierten Stand nicht erfolgreich, obwohl das Einschalten über LAN am TV aktiviert ist. |
 
 **Senderabruf, Senderordner, die TV-Auswahl mit Namens-IDs und der direkte EPG-Abruf sind am SL420 durch Nutzerrückmeldungen bestätigt. Der EPG-Abruf ist zusätzlich am SL310F bestätigt.** Die Zahl 372 stammt aus der früheren gemischten Antwort und umfasst TV, Radio sowie Mehrfachbelegungen; sie ist keine erwartete Anzahl der aktuellen TV-Senderordner. Die Rückmeldungen enthalten keine vollständige Prüfung aller Sender, EPG-Felder, des Umsortierens oder sämtlicher Migrationsfälle. Für den Einschaltablauf aus Wake-on-LAN plus gezieltem `TV_ON`-Befehl fehlt weiterhin eine Erfolgsmeldung. Die frühere Rückmeldung zu den Fernbedienungstasten schließt `remote.power_on` aus 0.1.2 und `remote.tv_mode_on` aus 0.1.6 nicht ein. Sie ist auch keine Zusage für andere Modelle oder Firmwarestände.
 

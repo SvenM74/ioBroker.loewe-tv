@@ -21,7 +21,7 @@ assert.equal(pkg.name, `iobroker.${io.common.name}`);
 assert.equal(pkg.version, '0.1.8');
 assert.equal(pkg.version, io.common.version);
 assert.ok(BUILD_ID.startsWith(`${pkg.version}-`), 'Build identifier must match package version');
-assert.equal(BUILD_ID, '0.1.8-tv-epg-only.1');
+assert.equal(BUILD_ID, '0.1.8-tv-epg-only.2');
 assert.ok(!pkg.keywords.includes('xmltv'), 'Package keywords must describe the supported TV-only EPG');
 assert.equal(io.common.mode, 'daemon');
 assert.equal(io.common.messagebox, true, 'Admin list selection requires adapter messaging');

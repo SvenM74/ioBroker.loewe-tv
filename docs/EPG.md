@@ -1,14 +1,14 @@
 # Laufende und nächste Sendung je TV-Sender
 
-Version **0.1.8**, Build **`0.1.8-tv-epg-only.1`**, liest die aktuelle und die nächste Sendung ausschließlich direkt vom Loewe-TV. Sender werden dafür nicht umgeschaltet; der Adapter liest die Programmtabelle im Hintergrund. Im EPG-Reiter gibt es nur **Aktivieren** und **Abrufintervall**.
+Version **0.1.8**, Build **`0.1.8-tv-epg-only.2`**, liest die aktuelle und die nächste Sendung ausschließlich direkt vom Loewe-TV. Sender werden dafür nicht umgeschaltet; der Adapter liest die Programmtabelle im Hintergrund. Im EPG-Reiter gibt es nur **Aktivieren** und **Abrufintervall**.
 
-Der Nutzer hat am **18. Oktober 2026** den erfolgreichen direkten EPG-Abruf vom Fernseher bestätigt: auf dem **Loewe bild 7.55 / SL420 / V5.4.6.0** und auf dem **Loewe bild 5.32 / SL310F / V5.4.6.0**. Diese Rückmeldungen betreffen den zuvor bereitgestellten 0.1.8-Stand. **Für den neuen Build `0.1.8-tv-epg-only.1` liegt noch kein eigener Gerätetest vor.** Die [Kompatibilitätsübersicht](COMPATIBILITY.md) hält den bestätigten Umfang fest; die automatisierten Prüfungen dieses Builds stehen im [Prüfbericht](PRUEFBERICHT_0.1.8_TV_EPG.md).
+Der Nutzer hat am **18. Oktober 2026** den erfolgreichen direkten EPG-Abruf vom Fernseher bestätigt: auf dem **Loewe bild 7.55 / SL420 / V5.4.6.0** und auf dem **Loewe bild 5.32 / SL310F / V5.4.6.0**. Diese Rückmeldungen betreffen den zuvor bereitgestellten 0.1.8-Stand. **Für den neuen Build `0.1.8-tv-epg-only.2` liegt noch kein eigener Gerätetest vor.** Die [Kompatibilitätsübersicht](COMPATIBILITY.md) hält den bestätigten Umfang fest. Der [Prüfbericht zum zugrunde liegenden Funktionsstand `.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die TV-EPG-Bereinigung. Build `.2` ergänzt die Hinweise zum Schnellstart des Fernsehers.
 
 Die bisherigen Rückmeldungen bestätigen den funktionierenden TV-Abruf auf diesen Geräten. Eine EPG-Rohantwort wurde dabei nicht übermittelt; die Verfügbarkeit jedes einzelnen Feldes und die Abdeckung sämtlicher Sender und Zeiträume sind damit nicht einzeln nachgewiesen. Aufnahmeaufträge und TV-Timer bleiben geplant.
 
 ## Am Fernseher beginnen
 
-1. Das neue Archiv **`iobroker.loewe-tv-0.1.8-tv-epg-only.tgz`** nach der [Updateanleitung](INSTALLATION.md#update-auf-018) installieren und die bestehende Instanz starten. Das gilt auch bei bereits installierter Version 0.1.8; ein Neustart allein reicht nicht. `info.adapterBuild` muss **`0.1.8-tv-epg-only.1`** anzeigen. Admin vollständig neu laden und die Adapter-Konfiguration neu öffnen.
+1. Das neue Archiv **`iobroker.loewe-tv-0.1.8-tv-epg-only.2.tgz`** nach der [Updateanleitung](INSTALLATION.md#update-auf-018) installieren und die bestehende Instanz starten. Das gilt auch bei bereits installierter Version 0.1.8; ein Neustart allein reicht nicht. `info.adapterBuild` muss **`0.1.8-tv-epg-only.2`** anzeigen. Admin vollständig neu laden und die Adapter-Konfiguration neu öffnen.
 2. Fernseher einschalten und prüfen, dass die gewünschte Senderliste in der Adapter-Konfiguration ausgewählt ist. Die zugehörigen Sender müssen unter `channels.tv` vorhanden sein.
 3. Im Reiter **EPG** die Voreinstellungen verwenden: **Programminformationen aktivieren** eingeschaltet, Abrufintervall **900 Sekunden**.
 4. Nach dem Start und der Senderanlage beginnt der erste EPG-Abgleich automatisch. Über **`channels.epgRefresh=true`** kann er jederzeit manuell ausgelöst werden. Wie bei anderen Tastern mit `ack:false` schreiben.
@@ -118,6 +118,8 @@ Wenn keine TV-Daten erscheinen, zunächst `channels.epgRefresh=true` auslösen u
 ## Verhalten bei Standby, Neustart und Senderänderungen
 
 Der Adapter berechnet die Anzeige aus den gespeicherten Start-/Endzeiten neu, spätestens jede Minute und zusätzlich an bekannten Sendungsgrenzen. Dafür fragt er den Fernseher nicht erneut ab. Nach dem Ende verschwindet eine alte Sendung aus `now`; eine vorhandene Folgesendung rückt entsprechend nach. Das funktioniert auch im Standby, solange der gespeicherte Plan noch passende Daten enthält.
+
+Laut [Nutzerrückmeldung zum Einschalten](COMPATIBILITY.md) schaltet der getestete TV ohne Schnellstart seine Netzwerkfunktionen im Standby ab. Dann können keine frischen EPG-Daten gelesen werden, bis der Fernseher wieder erreichbar ist. Der Schnellstart muss direkt am TV aktiviert werden; das Einschalten über den Datenpunkt funktioniert bei diesem Gerät nur mit aktivierter Einstellung.
 
 Ein fehlgeschlagener TV-Abruf löscht einen noch brauchbaren Plan nicht sofort. Die Sendungszeiten und zusätzlich eine maximale Cache-Altersgrenze von **24 Stunden** begrenzen seine Verwendung. Ein erfolgreich gelesener leerer Plan ersetzt den bisherigen Bestand. Eine falsche Systemzeit auf dem ioBroker-Rechner führt zu einer falschen zeitlichen Auswahl; der Adapter stellt diese Uhr nicht um.
 

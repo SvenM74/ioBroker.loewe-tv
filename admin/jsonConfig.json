@@ -158,7 +158,7 @@
       "items": {
         "_wakeHelp": {
           "type": "staticText",
-          "text": "Wake-on-LAN wakes the TV's network service. The adapter then sends the dedicated TV-on command. Enable network wake-up on the TV and enter its MAC address for the first test. Wait at least 30 seconds after switching to standby before testing.",
+          "text": "Enable Quick Start and network wake-up on the TV. Without Quick Start, the TV may shut down its network functions in standby and then require the remote control to turn on. Enter the TV's MAC address for the first test and wait at least 30 seconds after switching to standby. The adapter sends Wake-on-LAN, then the TV-on command.",
           "xs": 12
         },
         "macLan": {

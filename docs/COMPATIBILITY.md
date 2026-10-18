@@ -1,10 +1,10 @@
 # Gerätekompatibilität und bestätigte Tests
 
-Stand: **18. Oktober 2026**. Aktueller Adapter: **0.1.8**, Build **`0.1.8-tv-epg-only.1`**.
+Stand: **18. Oktober 2026**. Aktueller Adapter: **0.1.8**, Build **`0.1.8-tv-epg-only.2`**.
 
-Der aktuelle Build ruft Programminformationen ausschließlich direkt vom Fernseher ab. Er entfernt die externe EPG-Quelle, deren Einstellungen und überflüssige Datenpunkte. **Das neue Paket muss auch dann installiert werden, wenn bereits Version 0.1.8 angezeigt wird.** Der Build-Bezeichner unterscheidet die Paketstände. Die [EPG-Anleitung](EPG.md) beschreibt den aktuellen Funktionsumfang; der [Prüfbericht zum TV-EPG-Build](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die Überarbeitung.
+Der aktuelle Build ruft Programminformationen ausschließlich direkt vom Fernseher ab. Die externe EPG-Quelle, deren Einstellungen und überflüssige Datenpunkte sind entfernt. Build `.2` ergänzt die Hinweise zum Schnellstart; die Steuerlogik bleibt gegenüber `.1` unverändert. **Um die ergänzten Hinweise zu übernehmen, das neue Paket auch bei bereits angezeigter Version 0.1.8 erneut installieren.** Der Build-Bezeichner unterscheidet die Paketstände. Die [EPG-Anleitung](EPG.md) beschreibt den aktuellen Funktionsumfang; der [Prüfbericht zum zugrunde liegenden Funktionsstand `.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die vorherige Überarbeitung.
 
-**Der neue Build `0.1.8-tv-epg-only.1` selbst wurde noch nicht am Gerät getestet.** Die folgenden EPG-Bestätigungen stammen vom früher bereitgestellten 0.1.8-Stand und bleiben als historische Geräteergebnisse erhalten.
+**Für den neuen Build `0.1.8-tv-epg-only.2` liegt noch kein eigener Gerätetest vor.** Die folgenden EPG-Bestätigungen stammen vom früher bereitgestellten 0.1.8-Stand und bleiben als historische Geräteergebnisse erhalten.
 
 ## Rückmeldungen aus Gerätetests
 
@@ -14,7 +14,15 @@ Der aktuelle Build ruft Programminformationen ausschließlich direkt vom Fernseh
 | **Loewe bild 5.32** | **SL310F** | **V5.4.6.0** | Direkter EPG-Abruf vom Fernseher mit dem damaligen 0.1.8-Stand am 18.10.2026 bestätigt. Die vom Nutzer ergänzte Gerätetabelle bestätigt außerdem Fernbedienung, Senderlisten und TV-Auswahl. |
 | **Loewe Connect 26 SL** | **MB180** laut Loewe-Serviceanleitung | Nicht mitgeteilt | Der Nutzer meldet, dass das Gerät mit dieser Steuerung nicht kompatibel ist. Für die verwendete Tablet-Schnittstelle liegt kein positiver Kompatibilitätsnachweis vor. |
 
-Die Modell-, Chassis- und Firmwareangaben der beiden bild-Geräte sowie ihre EPG-Ergebnisse stammen vom Nutzer. Seine Rückmeldung bestätigt den Abruf **vom Fernseher**. Die tatsächliche Verfügbarkeit aller Sender, Zeiträume und einzelnen EPG-Felder wurde dabei nicht vollständig dokumentiert. Automatische Aufnahmeprogrammierung ist weiterhin geplant. Die bisher fehlende Bestätigung des Einschaltens und die zurückgestellte Radiosteuerung werden durch den EPG-Test nicht geändert. Die vom Nutzer aktualisierte [Gerätetabelle in der README](../README.md#getestete-geräte) führt für beide bild-Geräte auch Fernbedienung, Senderlisten und TV-Auswahl auf.
+Die Modell-, Chassis- und Firmwareangaben der beiden bild-Geräte sowie ihre EPG-Ergebnisse stammen vom Nutzer. Seine Rückmeldung bestätigt den Abruf **vom Fernseher**. Die tatsächliche Verfügbarkeit aller Sender, Zeiträume und einzelnen EPG-Felder wurde dabei nicht vollständig dokumentiert. Automatische Aufnahmeprogrammierung ist weiterhin geplant, die Radiosteuerung bleibt zurückgestellt. Die vom Nutzer aktualisierte [Gerätetabelle in der README](../README.md#getestete-geräte) führt für beide bild-Geräte auch Fernbedienung, Senderlisten und TV-Auswahl auf.
+
+## Einschalten aus dem Standby
+
+**Am 18. Oktober 2026 hat der Nutzer das Einschalten über den Adapter-Datenpunkt bestätigt, sofern am Fernseher der Schnellstart-Modus aktiviert ist.** Ohne Schnellstart schaltet der TV laut seiner Beobachtung die Netzwerkfunktionen im Standby ab und lässt sich dann nur mit der normalen Fernbedienung einschalten. Die Rückmeldung nennt dafür weder ein bestimmtes Modell noch einen Build. Sie wird deshalb nicht pauschal beiden Geräten in der Tabelle oder allen Loewe-Chassis zugeschrieben.
+
+Schnellstart muss direkt am eingeschalteten Fernseher aktiviert werden. Ist der TV bereits über das Netzwerk unerreichbar, kann der Adapter diese Einstellung nicht ändern. Eine bekannte MAC-Adresse oder ein erfolgreich versendetes Wake-on-LAN-Paket hebt diese Voraussetzung nicht auf. Die Einstellung für Einschalten über LAN und die passenden Netzwerkparameter bleiben zusätzlich erforderlich. Die [Bedienungsanleitung](INSTALLATION.md#ein--und-ausschalten) beschreibt `control.powerOn` und seine Diagnosewerte.
+
+Für eine spätere Aufnahmeautomatik müssen neue Timer übertragen werden, solange der TV erreichbar ist, oder nach einem erfolgreichen Einschalten mit aktiviertem Schnellstart. Wie bereits im Fernseher gespeicherte Aufnahmetimer bei deaktiviertem Schnellstart ausgeführt werden, ist damit nicht geprüft und muss gesondert getestet werden.
 
 ## Loewe Connect 26 SL
 

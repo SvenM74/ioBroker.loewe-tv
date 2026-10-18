@@ -1,6 +1,6 @@
 # Installation und Bedienung
 
-Diese Anleitung gilt für **Version 0.1.8**, Build **`0.1.8-tv-epg-only.1`**. Sie beschreibt Installation, Update, Konfiguration, TV-Steuerung und den reduzierten Datenpunktbaum. Der Adapter liest Programminformationen ausschließlich direkt vom Fernseher. Die bestätigten Geräte stehen in der [README](../README.md#getestete-geräte).
+Diese Anleitung gilt für **Version 0.1.8**, Build **`0.1.8-tv-epg-only.2`**. Sie beschreibt Installation, Update, Konfiguration, TV-Steuerung und den reduzierten Datenpunktbaum. Der Adapter liest Programminformationen ausschließlich direkt vom Fernseher. Die bestätigten Geräte stehen in der [README](../README.md#getestete-geräte).
 
 ## Voraussetzungen
 
@@ -8,13 +8,13 @@ Diese Anleitung gilt für **Version 0.1.8**, Build **`0.1.8-tv-epg-only.1`**. Si
 - ioBroker js-controller ab **6.0.11** und Admin ab **7.0.23**.
 - Ein Loewe-Fernseher, der die Tablet-Schnittstelle auf TCP-Port **905** anbietet.
 - Eine Netzwerkverbindung vom ioBroker-Rechner zum Fernseher. Zum Einrichten den Fernseher einschalten.
-- Für Einschalten aus dem Standby: eine passende TV-MAC-Adresse und Unterstützung für Wake-on-LAN im Fernseher und im Netzwerk.
+- Für Einschalten aus dem Standby: **Schnellstart am Fernseher aktivieren**, eine passende TV-MAC-Adresse und Unterstützung für Wake-on-LAN im Fernseher und im Netzwerk. Ohne Schnellstart ist das Einschalten per Datenpunkt laut [Gerätetest](COMPATIBILITY.md#einschalten-aus-dem-standby) nicht möglich.
 
 Der laufende Adapter arbeitet lokal. Für die Installation kann ioBroker benötigte Node.js-Abhängigkeiten aus dem Internet nachladen. Das lokale `.tgz`-Paket ist deshalb keine Zusage einer vollständig netzlosen Installation.
 
 ## Installationspaket aus dem Quellcode erzeugen
 
-Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Du kannst das Paket mit den folgenden Schritten selbst erzeugen. Wenn du **`iobroker.loewe-tv-0.1.8-tv-epg-only.tgz`** bereits erhalten hast, verwende diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung.
+Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Du kannst das Paket mit den folgenden Schritten selbst erzeugen. Wenn du **`iobroker.loewe-tv-0.1.8-tv-epg-only.2.tgz`** bereits erhalten hast, verwende diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung.
 
 Zum Erzeugen des Pakets brauchst du Git und Node.js ab 22. Öffne ein Terminal in einem eigenen Arbeitsverzeichnis und führe aus:
 
@@ -24,21 +24,21 @@ cd ioBroker.loewe-tv
 npm install
 npm test
 npm pack
-mv iobroker.loewe-tv-0.1.8.tgz iobroker.loewe-tv-0.1.8-tv-epg-only.tgz
+mv iobroker.loewe-tv-0.1.8.tgz iobroker.loewe-tv-0.1.8-tv-epg-only.2.tgz
 ```
 
-`npm pack` erzeugt zunächst **`iobroker.loewe-tv-0.1.8.tgz`**, weil die Paketversion **0.1.8** bleibt. Der letzte Befehl benennt das neue Archiv zur Unterscheidung früherer 0.1.8-Pakete in **`iobroker.loewe-tv-0.1.8-tv-epg-only.tgz`** um. Prüfe vor dem Erzeugen in `lib/build-info.js`, dass die Build-Kennung **`0.1.8-tv-epg-only.1`** enthalten ist. Kopiere anschließend das neue Archiv auf den ioBroker-Rechner.
+`npm pack` erzeugt zunächst **`iobroker.loewe-tv-0.1.8.tgz`**, weil die Paketversion **0.1.8** bleibt. Der letzte Befehl benennt das neue Archiv zur Unterscheidung früherer 0.1.8-Pakete in **`iobroker.loewe-tv-0.1.8-tv-epg-only.2.tgz`** um. Prüfe vor dem Erzeugen in `lib/build-info.js`, dass die Build-Kennung **`0.1.8-tv-epg-only.2`** enthalten ist. Kopiere anschließend das neue Archiv auf den ioBroker-Rechner.
 
 ## Update auf 0.1.8
 
-**Aktueller Stand: Version 0.1.8, Build `0.1.8-tv-epg-only.1` – ausschließlich direktes TV-EPG.** Die bisherigen Gerätebestätigungen beziehen sich auf den vorherigen Stand; für diesen Build steht ein eigener Gerätetest noch aus. Details stehen im [Prüfbericht](PRUEFBERICHT_0.1.8_TV_EPG.md).
+**Aktueller Stand: Version 0.1.8, Build `0.1.8-tv-epg-only.2`, ausschließlich direktes TV-EPG.** Build `.2` ergänzt die Hinweise zum erforderlichen Schnellstart am Fernseher; die Steuerlogik bleibt gegenüber `.1` unverändert. Für diesen Build steht ein eigener Gerätetest noch aus. Der [Prüfbericht zum zugrunde liegenden Funktionsstand `.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die vorherige Überarbeitung.
 
-**Das neue Paket auch dann erneut installieren, wenn bereits Version 0.1.8 angezeigt wird. Ein Neustart allein übernimmt diesen Build nicht.** Die vorhandene Instanz weiterverwenden. Erzeuge das Paket aus dem aktuellen Quellcode wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende das bereitgestellte Archiv **`iobroker.loewe-tv-0.1.8-tv-epg-only.tgz`**. Kopiere es auf den ioBroker-Rechner, beispielsweise nach `/tmp`, und führe aus:
+**Um diesen Build zu übernehmen, das neue Paket auch bei bereits angezeigter Version 0.1.8 erneut installieren. Ein Neustart allein übernimmt ihn nicht.** Die vorhandene Instanz weiterverwenden. Erzeuge das Paket aus dem aktuellen Quellcode wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende das bereitgestellte Archiv **`iobroker.loewe-tv-0.1.8-tv-epg-only.2.tgz`**. Kopiere es auf den ioBroker-Rechner, beispielsweise nach `/tmp`, und führe aus:
 
 ```bash
 iobroker stop loewe-tv.0
 iobroker compact loewe-tv.0 disable
-iobroker url /tmp/iobroker.loewe-tv-0.1.8-tv-epg-only.tgz loewe-tv
+iobroker url /tmp/iobroker.loewe-tv-0.1.8-tv-epg-only.2.tgz loewe-tv
 iobroker start loewe-tv.0
 ```
 
@@ -46,7 +46,7 @@ Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Ab Version 0.1.1 läuft de
 
 Beim Start werden **`loewe-tv.0.channels.radio`**, **`loewe-tv.0.api`** und **`loewe-tv.0.media`** einschließlich ihrer Unterobjekte sowie `remote.radio_mode_on` und `channels.mediaType` entfernt. Das gilt auch für verwaiste Kinder, deren oberster Ordner bereits fehlt. Alte Radioeinträge aus dem gespeicherten Katalog erzeugen keine neuen Radioordner. Schreibbefehle an entfernte Datenpunkte lösen keine Adapterfunktion mehr aus. `remote.tv_mode_on` und `remote.text` für Teletext bleiben verfügbar.
 
-Lade nach dem Update die Admin-Seite vollständig neu, beispielsweise mit **Strg+F5**, und öffne die Instanzeinstellungen erneut. Im Reiter **EPG** werden nur **Programminformationen aktivieren** und das **Abrufintervall** angezeigt. Eine vorhandene Senderlistenauswahl weiterverwenden; andernfalls bei eingeschaltetem TV die gewünschte Senderliste wählen und speichern. Die Anleitung steht unter [TV-Senderliste auswählen](#tv-senderliste-auswählen). Prüfe anschließend **`info.adapterBuild = 0.1.8-tv-epg-only.1`**. Fehlt dieser Wert oder steht dort eine ältere Kennung, prüfe Paketinstallation und Startprotokoll. Das Startprotokoll enthält die Build-Kennung bereits vor der Bereinigung. Bleiben entfernte globale Objekte wegen eines Datenbankfehlers oder Löschschutzes stehen, meldet der Adapter einen Bereinigungsfehler und setzt die Senderanlage nicht fort.
+Lade nach dem Update die Admin-Seite vollständig neu, beispielsweise mit **Strg+F5**, und öffne die Instanzeinstellungen erneut. Im Reiter **EPG** werden nur **Programminformationen aktivieren** und das **Abrufintervall** angezeigt. Eine vorhandene Senderlistenauswahl weiterverwenden; andernfalls bei eingeschaltetem TV die gewünschte Senderliste wählen und speichern. Die Anleitung steht unter [TV-Senderliste auswählen](#tv-senderliste-auswählen). Prüfe anschließend **`info.adapterBuild = 0.1.8-tv-epg-only.2`**. Fehlt dieser Wert oder steht dort eine ältere Kennung, prüfe Paketinstallation und Startprotokoll. Das Startprotokoll enthält die Build-Kennung bereits vor der Bereinigung. Bleiben entfernte globale Objekte wegen eines Datenbankfehlers oder Löschschutzes stehen, meldet der Adapter einen Bereinigungsfehler und setzt die Senderanlage nicht fort.
 
 **Beim Update von einem Stand mit Namens-IDs bleiben die TV-Senderpfade erhalten.** Nur beim Wechsel von älteren Hash- oder Nummernordnern ändern sich die IDs einmalig: Aus `channels.tv.service_<Hash>` aus 0.1.3 oder `channels.tv.1` aus dem ersten 0.1.4-Stand werden Ordner wie `channels.tv.Das_Erste_HD`. Passe vorhandene Skripte, Aliase und Visualisierungen an, wenn sie noch auf diese alten IDs verweisen. Anschließend bleibt der Pfad beim Umsortieren erhalten: Verschiebst du Das Erste HD am TV von Platz 1 auf Platz 7, verwendet `channels.tv.Das_Erste_HD.select` nach dem Abgleich dessen neuen Programmplatz. Eine tatsächliche Änderung des Sendernamens führt dagegen zu einer neuen Namens-ID.
 
@@ -54,7 +54,7 @@ Wiederherstellung und Migration übernehmen ausschließlich Daten, die zur konfi
 
 Schalte den TV ein, speichere die gewünschte Liste in der Konfiguration und schreibe bei Bedarf `channels.refresh=true` mit `ack:false`. Der Adapter fragt diese Liste mit dem festen Filter `video` ab und übernimmt ausschließlich TV-Sender. Sobald `channels.refreshStatus=ready` und `channels.catalogStatus=ready` stehen, kannst du beispielsweise `channels.tv.Das_Erste_HD.select` prüfen. Die Struktur und die Bedeutung der Statuswerte stehen unter [TV-Sender einzeln anwählen](#tv-sender-einzeln-anwählen). Eine Senderwahl setzt einen erreichbaren Fernseher voraus und startet keinen eigenen Einschaltablauf.
 
-Wenn du zugleich das bisher erfolglose Einschalten prüfen möchtest, beschreibt [Ein- und Ausschalten](#ein--und-ausschalten) den separaten Test mit `control.powerOn` und `info.powerOn`. Für eine Diagnose ohne automatische TV-Abfragen **alle drei Intervalle**, `pollInterval`, `channelRefreshInterval` und `epgRefreshInterval`, auf 0 setzen. `info.connection` bleibt dann nach dem Start zunächst `false`, bis eine erfolgreiche manuelle TV-Abfrage oder ein Befehl die Verbindung bestätigt.
+Das Einschalten per Datenpunkt ist laut [Nutzerrückmeldung vom 18. Oktober 2026](COMPATIBILITY.md#einschalten-aus-dem-standby) bei aktiviertem Schnellstart möglich. [Ein- und Ausschalten](#ein--und-ausschalten) beschreibt den Test mit `control.powerOn` und `info.powerOn`. Für eine Diagnose ohne automatische TV-Abfragen **alle drei Intervalle**, `pollInterval`, `channelRefreshInterval` und `epgRefreshInterval`, auf 0 setzen. `info.connection` bleibt dann nach dem Start zunächst `false`, bis eine erfolgreiche manuelle TV-Abfrage oder ein Befehl die Verbindung bestätigt.
 
 ### Datenpunktbereinigung beim Update
 
@@ -74,12 +74,12 @@ Die sieben entfernten Kinddatenpunkte je Sender werden nur gelöscht, wenn sie a
 
 ## Erstinstallation aus der Paketdatei
 
-1. Erzeuge **`iobroker.loewe-tv-0.1.8-tv-epg-only.tgz`** wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Die Datei nicht entpacken.
-2. Kopiere sie auf den Rechner, auf dem ioBroker läuft, beispielsweise nach `/tmp/iobroker.loewe-tv-0.1.8-tv-epg-only.tgz`.
+1. Erzeuge **`iobroker.loewe-tv-0.1.8-tv-epg-only.2.tgz`** wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Die Datei nicht entpacken.
+2. Kopiere sie auf den Rechner, auf dem ioBroker läuft, beispielsweise nach `/tmp/iobroker.loewe-tv-0.1.8-tv-epg-only.2.tgz`.
 3. Öffne dort ein Terminal oder eine SSH-Verbindung und führe aus:
 
 ```bash
-iobroker url /tmp/iobroker.loewe-tv-0.1.8-tv-epg-only.tgz loewe-tv
+iobroker url /tmp/iobroker.loewe-tv-0.1.8-tv-epg-only.2.tgz loewe-tv
 ```
 
 4. Lege beim ersten Installieren eine Instanz an:
@@ -131,6 +131,8 @@ Im Reiter **EPG** gibt es zwei Einstellungen: **Programminformationen aktivieren
 
 ### Einschalten
 
+**Schnellstart direkt am Fernseher aktivieren.** Ohne Schnellstart schaltet der TV nach der [Nutzerrückmeldung](COMPATIBILITY.md#einschalten-aus-dem-standby) seine Netzwerkfunktionen im Standby ab. Dann hilft nur das Einschalten mit der normalen Fernbedienung. Der Adapter kann Schnellstart am unerreichbaren TV nicht aktivieren; dafür gibt es keine Einstellung in der Adapter-Konfiguration. Auch Einschalten über LAN muss am TV erlaubt sein.
+
 | Einstellung | Standard | Bedeutung |
 |---|---|---|
 | LAN-MAC-Adresse | leer | MAC-Adresse des kabelgebundenen TV-Netzwerkanschlusses. |
@@ -170,7 +172,7 @@ Im Objektbaum von Admin beim Schreiben die Bestätigung nicht aktivieren. In Blo
 |---|---|---|
 | `control.volume` | Zahl, lesen/schreiben | Zum Setzen eine ganze TV-Stufe von 0 bis 99 schreiben. Die konfigurierte Obergrenze gilt zusätzlich. Der Lesewert stammt aus der TV-Rückmeldung. |
 | `control.mute` | Wahrheitswert, lesen/schreiben | `true` zum Stummschalten, `false` zum Aufheben. |
-| `control.powerOn` | Taster | Startet Wake-on-LAN sofort und sendet anschließend den gezielten Einschaltbefehl 22, sobald die Schnittstelle antwortet. Bekannte TV-MAC-Adresse erforderlich; begrenzte Gesamtdauer und Ablauf in `info.powerOn`. |
+| `control.powerOn` | Taster | Startet Wake-on-LAN sofort und sendet anschließend den gezielten Einschaltbefehl 22, sobald die Schnittstelle antwortet. Schnellstart und Einschalten über LAN müssen am TV aktiviert sein; eine bekannte TV-MAC-Adresse ist erforderlich. Begrenzte Gesamtdauer und Ablauf in `info.powerOn`. |
 | `control.powerOff` | Taster | Bricht einen laufenden Einschaltversuch ab und sendet den gezielten Ausschaltbefehl 25. |
 | `control.refresh` | Taster | `true` fragt den TV-Status sowie die Geräteinformationen und Einstellungen erneut ab. |
 
@@ -371,13 +373,13 @@ Die Zuordnung bleibt bei unveränderter Listenwahl über einen Adapterneustart h
 | Datenpunkt | Bedeutung |
 |---|---|
 | `info.connection` | Ob der Fernseher zuletzt über die Steuerschnittstelle erreichbar war. |
-| `info.adapterBuild` | Eindeutiger Programmstand; für diese Fassung `0.1.8-tv-epg-only.1`. |
+| `info.adapterBuild` | Eindeutiger Programmstand; für diese Fassung `0.1.8-tv-epg-only.2`. |
 | `info.lastSeen` | Zeitpunkt der letzten erfolgreichen Kommunikation als Unix-Zeit in Millisekunden. |
 | `info.lastError` | Letzter gemeldeter Fehler. Wird nach einem erfolgreichen Vorgang wieder geleert. |
 | `info.lastCommand` | Zuletzt verarbeiteter Steuerbefehl. |
 | `info.lastCommandAt` | Zeitpunkt dieses Steuerbefehls als Unix-Zeit in Millisekunden. |
 | `info.commandPending` | Ob gerade ein Steuerbefehl oder eine Statusabfrage bearbeitet wird beziehungsweise weitere Vorgänge warten. |
-| `info.wakeReady` | `true`, wenn eine formal gültige TV-MAC-Adresse zum Paketversand bekannt ist. Dies ist keine Bestätigung der Wake-on-LAN-Fähigkeit des TVs. |
+| `info.wakeReady` | `true`, wenn eine formal gültige TV-MAC-Adresse zum Paketversand bekannt ist. Bestätigt weder die Wake-on-LAN-Fähigkeit noch einen aktivierten Schnellstart am TV. |
 | `info.lastWakeOnLan` | Letzter erfolgreicher Wake-on-LAN-Paketversand als JSON mit `macs`, `broadcast`, `targets`, `port`, `repeats` und `sentAt`. `sentAt` ist der Auslösezeitpunkt als Unix-Zeit in Millisekunden. |
 | `info.powerOn` | Einschaltablauf als JSON, unter anderem mit `phase`, `startedAt`, `updatedAt`, `deadline`, `attempts` und `wakeBursts`. Die Phase `powerKeySent` bestätigt keinen sichtbaren Bildschirminhalt. |
 | `status.volume` | Zuletzt vom Fernseher gelesene Lautstärke in App-Stufen. |
@@ -405,7 +407,9 @@ Geräte-, Wiedergabe- und Befehlsantworten werden bis 512 KiB in einem Datenpunk
 
 ## Ein- und Ausschalten
 
-Die [Loewe Remote API 1.0.47, Kapitel 9.4.3](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf), unterscheidet das Aufwecken des Netzwerkdiensts vom interaktiven Einschalten. Abhängig von `WolInteractive` kann ein Magic Packet allein den Bildschirm ausgeschaltet lassen. Deshalb verwendet der Adapter ab 0.1.2 den anschließenden gezielten `TV_ON`-Befehl 22. Diese dokumentierte Unterscheidung erklärt einen möglichen Fehler im bisherigen Ansatz; ob sie Svens konkretes Einschaltproblem vollständig behebt, ist erst nach dem Gerätetest bekannt.
+**Das Einschalten über den Datenpunkt funktioniert laut Nutzerrückmeldung vom 18. Oktober 2026 nur mit aktiviertem Schnellstart am Fernseher.** Ohne Schnellstart sind dessen Netzwerkfunktionen im Standby abgeschaltet; der Nutzer kann ihn dann nur mit der normalen Fernbedienung einschalten. Aktiviere Schnellstart deshalb direkt am eingeschalteten TV. Der Adapter kann diese Einstellung nicht nachträglich über eine bereits abgeschaltete Netzwerkverbindung ändern. Ein längeres Zeitlimit oder wiederholter Paketversand behebt das nicht. Die Rückmeldung nennt kein bestimmtes TV-Modell und keinen Build; ihr Umfang ist in [COMPATIBILITY.md](COMPATIBILITY.md#einschalten-aus-dem-standby) festgehalten.
+
+Die [Loewe Remote API 1.0.47, Kapitel 9.4.3](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf), unterscheidet das Aufwecken des Netzwerkdiensts vom interaktiven Einschalten. Abhängig von `WolInteractive` kann ein Magic Packet allein den Bildschirm ausgeschaltet lassen. Deshalb verwendet der Adapter ab 0.1.2 den anschließenden gezielten `TV_ON`-Befehl 22. Dieser Ablauf bleibt unverändert; Schnellstart ist die am Gerät ermittelte Voraussetzung dafür.
 
 Zum Einschalten:
 
@@ -432,8 +436,8 @@ Ab 0.1.2 verwendet dieser Datenpunkt den dokumentierten Code 25. Der bisherige D
 
 ### Den Einschaltversuch prüfen
 
-1. Den Fernseher zum Einrichten einschalten. Die passende LAN- oder WLAN-MAC-Adresse manuell konfigurieren oder mit `control.refresh` aus den Gerätedaten lernen. Das Einschalten über LAN muss am TV aktiviert sein.
-2. `info.wakeReady` prüfen. `true` bedeutet, dass eine MAC-Adresse bekannt ist. Nach einer gültigen Geräteabfrage zeigen außerdem `device.wolEnabled` und `device.wolInteractive` die vom TV gemeldeten Einstellungen. Ein unbekannter Wert bedeutet keine bestätigte Deaktivierung.
+1. Den Fernseher mit der normalen Fernbedienung einschalten. **Schnellstart und Einschalten über LAN direkt am TV aktivieren.** Die passende LAN- oder WLAN-MAC-Adresse manuell konfigurieren oder mit `control.refresh` aus den Gerätedaten lernen.
+2. `info.wakeReady` prüfen. `true` bedeutet, dass eine MAC-Adresse bekannt ist, und bestätigt keinen aktivierten Schnellstart. Nach einer gültigen Geräteabfrage zeigen außerdem `device.wolEnabled` und `device.wolInteractive` die vom TV gemeldeten Einstellungen. Diese Werte ersetzen die Prüfung des Schnellstarts am TV nicht. Ein unbekannter Wert bedeutet keine bestätigte Deaktivierung.
 3. Den TV in Standby versetzen und **mindestens 30 Sekunden warten**. Diesen Mindestabstand nennt das [Loewe-Benutzerhandbuch für bild-Geräte mit SL3xx/SL4xx](https://cdn.loewe.tv/manuals_new/TV_BA/SL3xx_SL4xx/universelles%20Benutzerhandbuch%20f%C3%BCr%20alle%20bild%20Ger%C3%A4te/36960000_UH_bild_universal_3l_DE_180813.pdf) für das erneute Einschalten über LAN/WLAN.
 4. `control.powerOn` mit `true` und `ack: false` auslösen. In `info.lastWakeOnLan` müssen `sentAt`, `targets` und `macs` zum aktuellen Versuch passen. `info.powerOn` zeigt den anschließenden Ablauf und gegebenenfalls einen Fehler.
 
@@ -459,20 +463,21 @@ Die zweite App Löwenbändiger Remote 1.15 lieferte keinen nachgewiesenen WOL-Ab
 | Schreiben eines Datenpunkts bewirkt nichts | Mit `ack: false` schreiben. Taster erwarten `true`. Die Senderliste wird in der Adapter-Konfiguration gewählt. |
 | Lautstärke lässt sich nicht hoch genug setzen | Den Wert und die konfigurierte maximale Lautstärke prüfen. `control.volume` erwartet eine ganze App-Stufe, keinen Protokollrohwert. |
 | `info.wakeReady` ist `false` | Die passende TV-MAC-Adresse manuell konfigurieren oder bei eingeschaltetem TV `control.refresh` auslösen. Bei `pollInterval=0` wird die MAC-Adresse beim Start nicht automatisch abgefragt. |
-| `info.wakeReady` ist `true`, aber der TV startet nicht | Den aktuellen Eintrag in `info.lastWakeOnLan` und den Ablauf in `info.powerOn` prüfen. Nach dem Ausschalten mindestens 30 Sekunden warten. `powerKeySent` bestätigt nur die Antwort auf den Einschaltbefehl, kein Bild. |
+| Schnellstart ist deaktiviert und der TV im Standby nicht erreichbar | Mit der normalen Fernbedienung einschalten und Schnellstart am TV aktivieren. Im gemeldeten Gerätetest werden ohne Schnellstart die Netzwerkfunktionen abgeschaltet; der Adapter kann diese Einstellung dann nicht ändern. |
+| `info.wakeReady` ist `true`, aber der TV startet nicht | Zuerst Schnellstart und Einschalten über LAN am TV prüfen. `info.wakeReady` belegt nur eine bekannte MAC-Adresse. Anschließend `info.lastWakeOnLan` und `info.powerOn` prüfen. Nach dem Ausschalten mindestens 30 Sekunden warten. `powerKeySent` bestätigt nur die Antwort auf den Einschaltbefehl, kein Bild. |
 | Ein Einschaltversuch aktualisiert `info.lastWakeOnLan` nicht | `info.lastError` lesen und prüfen, ob `control.powerOn` mit `true` und `ack: false` geschrieben wurde. Eine frühere Versandmeldung ist kein Nachweis für den aktuellen Versuch. |
 | ioBroker wird nach dem Aktivieren der bisherigen Version träge | `loewe-tv.0` stoppen und die Updateanleitung auf 0.1.8 einschließlich der instanzbezogenen Compact-Umstellung ausführen. Für die anschließende Prüfung `pollInterval`, `channelRefreshInterval` und `epgRefreshInterval` auf 0 setzen. |
-| Speichern-Tasten sind blockiert oder die alte EPG-Maske wird angezeigt | Das neue Paket erneut installieren, `info.adapterBuild = 0.1.8-tv-epg-only.1` prüfen, Admin vollständig neu laden und die Konfiguration erneut öffnen. Im EPG-Reiter stehen nur Aktivieren und Abrufintervall. |
+| Speichern-Tasten sind blockiert oder die alte EPG-Maske wird angezeigt | Das neue Paket erneut installieren, `info.adapterBuild = 0.1.8-tv-epg-only.2` prüfen, Admin vollständig neu laden und die Konfiguration erneut öffnen. Im EPG-Reiter stehen nur Aktivieren und Abrufintervall. |
 | Senderabfrage scheitert | In der Adapter-Konfiguration eine verfügbare TV-Senderliste auswählen und speichern. `channels.view` zeigt die gespeicherte Kennung. `channels.refreshStatus`, `channels.refreshError` und `channels.catalogError` prüfen. Bei TV-Synchronisierung später wiederholen. |
 | In der Konfiguration fehlen Senderlisten | TV einschalten, Adresse und Port speichern, Instanz aktivieren und Einstellungen erneut öffnen. **Senderlisten neu laden** betätigen und den angezeigten Hinweis beachten. |
-| Entfernte globale Datenpunkte sind weiterhin vorhanden | `info.adapterBuild` muss `0.1.8-tv-epg-only.1` zeigen. Sonst das neue Paket erneut installieren. Bei passender Build-Kennung das Startprotokoll auf Bereinigungsfehler und Löschschutz prüfen; die Objektansicht anschließend neu laden. |
+| Entfernte globale Datenpunkte sind weiterhin vorhanden | `info.adapterBuild` muss `0.1.8-tv-epg-only.2` zeigen. Sonst das neue Paket erneut installieren. Bei passender Build-Kennung das Startprotokoll auf Bereinigungsfehler und Löschschutz prüfen; die Objektansicht anschließend neu laden. |
 | Sender wurden empfangen, unter `channels.tv` fehlen noch Objekte | `channels.catalogStatus` prüfen und bei `updating` die Hintergrundaufbereitung abwarten. Bei `error` steht die Ursache in `channels.catalogError`; danach die passende Senderliste erneut abfragen. |
 | Ein Sendertaster meldet `CHANNEL_UNAVAILABLE` | Die Liste dieses Senders erneut abfragen. Bei `available=false` gehört er nicht zum aktiven Bestand oder es fehlt ein verwendbarer Locator. Nach Änderungen während der Wartezeit den Sender erneut auswählen. |
 | Der Sendertaster ist wieder `false`, aber der Sender läuft nicht | Das Rücksetzen bestätigt nur die Verarbeitung des Tasters. `channels.lastSelection` auf TV-Ergebnis und Fehler prüfen. Die Annahme des Befehls allein bestätigt noch keine Wiedergabe. |
 | Eine JSON-Antwort enthält `omitted: true` | Der Hinweis beschreibt die ausgelassene Speicherung einer zu großen Antwort. Für einen Fehlerbericht den betroffenen Datenpunkt und die Angaben `bytes`, `limit` und `reason` angeben. |
 | Ein Befehl meldet eine volle Warteschlange oder zu lange Wartezeit | Befehle langsamer senden, laufende TV-Zeitüberschreitungen prüfen und für die Diagnose `pollInterval`, `channelRefreshInterval` und `epgRefreshInterval` auf 0 setzen. |
 
-Für einen Fehlerbericht sind TV-Modell, Firmware, Adapterversion und der konkrete Fehlertext hilfreich. Bei Einschaltproblemen zusätzlich die verwendete LAN-/WLAN-Verbindung, `info.wakeReady`, `info.lastWakeOnLan` und `info.powerOn` angeben. Bei Fehlern der Senderauswahl zunächst `channels.lastSelection` direkt nach dem Versuch sowie das vorherige und das gewünschte TV-Programm angeben. Bei Fehlern des Senderabrufs helfen `channels.refreshStatus`, `channels.refreshError`, `channels.refreshCount`, `channels.catalogStatus` und `channels.catalogError`. Persönliche Senderlisten, Gerätekennungen oder MAC-Adressen können darin enthalten sein.
+Für einen Fehlerbericht sind TV-Modell, Firmware, Adapterversion und der konkrete Fehlertext hilfreich. Bei Einschaltproblemen zusätzlich angeben, ob Schnellstart und Einschalten über LAN am TV aktiviert sind, sowie die verwendete LAN-/WLAN-Verbindung, `info.wakeReady`, `info.lastWakeOnLan` und `info.powerOn`. Bei Fehlern der Senderauswahl zunächst `channels.lastSelection` direkt nach dem Versuch sowie das vorherige und das gewünschte TV-Programm angeben. Bei Fehlern des Senderabrufs helfen `channels.refreshStatus`, `channels.refreshError`, `channels.refreshCount`, `channels.catalogStatus` und `channels.catalogError`. Persönliche Senderlisten, Gerätekennungen oder MAC-Adressen können darin enthalten sein.
 
 Bei EPG-Problemen helfen `channels.epgStatus`, `channels.epgProgress`, `channels.epgLastError` und `epg.data` des betroffenen TV-Senders. Prüfe zunächst am eingeschalteten Fernseher und löse `channels.epgRefresh=true` mit `ack: false` aus. Ab 0.1.8 enthält `epg.data.tvDiagnostic` den letzten TV-Versuch: `received` bedeutet eine auswertbare Antwort, `error` einen fehlgeschlagenen Versuch und `skipped` eine übersprungene TV-Abfrage. Auch eine leere Antwort kann `received` ergeben; die Programmverfügbarkeit zeigen weiterhin `epg.now.available` und `epg.next.available`. Nach einem vorübergehenden Cache-/Datenbankfehler wird die EPG-Initialisierung erneut versucht, bei automatischem Betrieb nach 30 Sekunden. Die [EPG-Anleitung](EPG.md) erklärt die Diagnosefelder. Programmzeiten werden in Millisekunden gespeichert.
 
@@ -492,6 +497,6 @@ Die universellen API-Datenpunkte, die Radiosteuerung und der gesamte `media`-Dat
 
 - [EPG: laufende und nächste Sendung](EPG.md)
 - [Gerätekompatibilität und bestätigte Tests](COMPATIBILITY.md)
-- [Prüfbericht zum aktuellen TV-EPG-Build](PRUEFBERICHT_0.1.8_TV_EPG.md)
+- [Prüfbericht zum zugrunde liegenden TV-EPG-Funktionsstand `.1`](PRUEFBERICHT_0.1.8_TV_EPG.md)
 - [Roadmap für EPG-Regeln und Aufnahmen](ROADMAP.md)
 - [Projektübersicht](../README.md)

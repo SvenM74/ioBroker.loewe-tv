@@ -153,8 +153,8 @@
             }
           ],
           "default": "auto",
-          "disabled": "!data.epgEnabled",
-          "validator": "['auto', 'tv', 'xmltv'].includes(data.epgSource)",
+          "disabled": "data.epgEnabled === false",
+          "validator": "const value = data.epgSource === undefined ? 'auto' : data.epgSource; return ['auto', 'tv', 'xmltv'].includes(value);",
           "validatorNoSaveOnError": true,
           "validatorErrorText": "Select Automatic, TV only or XMLTV only.",
           "xs": 12,
@@ -168,8 +168,8 @@
           "max": 86400,
           "step": 1,
           "default": 900,
-          "disabled": "!data.epgEnabled",
-          "validator": "Number.isInteger(data.epgRefreshInterval) && (data.epgRefreshInterval === 0 || (data.epgRefreshInterval >= 300 && data.epgRefreshInterval <= 86400))",
+          "disabled": "data.epgEnabled === false",
+          "validator": "const value = data.epgRefreshInterval === undefined ? 900 : data.epgRefreshInterval; return Number.isInteger(value) && (value === 0 || (value >= 300 && value <= 86400));",
           "validatorNoSaveOnError": true,
           "validatorErrorText": "Enter 0 or a whole number from 300 to 86400.",
           "xs": 12,
@@ -185,8 +185,8 @@
           "label": "XMLTV guide URL (optional)",
           "placeholder": "http://192.168.178.10:8080/guide.xml",
           "default": "",
-          "disabled": "!data.epgEnabled || data.epgSource === 'tv'",
-          "validator": "typeof data.epgXmltvUrl === 'string' && (!data.epgXmltvUrl.trim() || (() => { const value = data.epgXmltvUrl.trim(); try { const url = new URL(value); return value.length <= 4096 && !/[\\u0000-\\u001f\\u007f]/u.test(value) && ['http:', 'https:'].includes(url.protocol) && !!url.hostname && !url.username && !url.password; } catch { return false; } })())",
+          "disabled": "data.epgEnabled === false || data.epgSource === 'tv'",
+          "validator": "const input = data.epgXmltvUrl === undefined ? '' : data.epgXmltvUrl; if (typeof input !== 'string') return false; const value = input.trim(); if (!value) return true; try { const url = new URL(value); return value.length <= 4096 && !/[\\u0000-\\u001f\\u007f]/u.test(value) && ['http:', 'https:'].includes(url.protocol) && !!url.hostname && !url.username && !url.password; } catch { return false; }",
           "validatorNoSaveOnError": true,
           "validatorErrorText": "Enter a valid HTTP or HTTPS guide URL (up to 4096 characters) without embedded login details, or leave the field empty.",
           "xs": 12
@@ -200,11 +200,11 @@
           "type": "table",
           "label": "XMLTV channel mapping",
           "default": [],
-          "disabled": "!data.epgEnabled || data.epgSource === 'tv'",
+          "disabled": "data.epgEnabled === false || data.epgSource === 'tv'",
           "uniqueColumns": [
             "channel"
           ],
-          "validator": "Array.isArray(data.epgXmltvMappings) && data.epgXmltvMappings.length <= 2000 && data.epgXmltvMappings.every(row => row && typeof row === 'object' && !Array.isArray(row) && typeof row.channel === 'string' && row.channel.trim().length > 0 && row.channel.trim().length <= 1024 && typeof row.xmltvId === 'string' && row.xmltvId.trim().length > 0 && row.xmltvId.trim().length <= 512 && !/[\\u0000-\\u001f\\u007f]/u.test(row.channel.trim() + row.xmltvId.trim())) && new Set(data.epgXmltvMappings.map(row => row.channel.trim())).size === data.epgXmltvMappings.length",
+          "validator": "const mappings = data.epgXmltvMappings === undefined ? [] : data.epgXmltvMappings; return Array.isArray(mappings) && mappings.length <= 2000 && mappings.every(row => row && typeof row === 'object' && !Array.isArray(row) && typeof row.channel === 'string' && row.channel.trim().length > 0 && row.channel.trim().length <= 1024 && typeof row.xmltvId === 'string' && row.xmltvId.trim().length > 0 && row.xmltvId.trim().length <= 512 && !/[\\u0000-\\u001f\\u007f]/u.test(row.channel.trim() + row.xmltvId.trim())) && new Set(mappings.map(row => row.channel.trim())).size === mappings.length;",
           "validatorNoSaveOnError": true,
           "validatorErrorText": "Use at most 2000 complete mappings, with each TV channel name or object ID assigned only once.",
           "items": [

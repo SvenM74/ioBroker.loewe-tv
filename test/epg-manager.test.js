@@ -226,6 +226,128 @@ test('complete TV programmes publish per-channel fields and a final consistent s
     assert.equal(h.value('channels.epgLastUpdate'), NOW);
 });
 
+test('a manual EPG refresh recovers from a single cache initialization failure without refreshing the channel list', async t => {
+    const h = await harness(t, { services: [] });
+    const getState = h.adapter.getStateAsync.bind(h.adapter);
+    let failed = false;
+    h.adapter.getStateAsync = async id => {
+        if (!failed && id.endsWith('.epg.cache')) {
+            failed = true;
+            throw error('DATABASE', 'One temporary cache read failed');
+        }
+        return getState(id);
+    };
+    await assert.rejects(h.catalog([service(1), service(2)]), { code: 'DATABASE' });
+    assert.equal(h.calls.tv.length, 0);
+    assert.equal(h.manager._fetchTimer, null, 'Manual-only configuration must stay manual after an initialization error');
+    await h.manager.refresh({ manual: true });
+    assert.equal(h.calls.tv.length, 2);
+    assert.equal(h.snapshot(service(1).id).now.title, 'TV current');
+    assert.equal(h.snapshot(service(2).id).next.title, 'TV next');
+    assert.equal(h.value('channels.epgStatus'), 'ready');
+    assert.equal(h.value('channels.epgLastError'), '');
+    assert.ok([...h.manager.entries.values()].every(entry => entry.initialized && entry.attempted));
+});
+
+test('automatic EPG initialization retries with a delay and recovers when the database returns', async t => {
+    const h = await harness(t, { services: [], config: { epgRefreshInterval: 900 } });
+    const getState = h.adapter.getStateAsync.bind(h.adapter);
+    let unavailable = true;
+    let reads = 0;
+    h.adapter.getStateAsync = async id => {
+        if (id.endsWith('.epg.cache')) {
+            reads++;
+            if (unavailable) throw error('DATABASE', 'Database temporarily unavailable');
+        }
+        return getState(id);
+    };
+    await assert.rejects(h.catalog([service()]), { code: 'DATABASE' });
+    await nextTurn();
+    assert.equal(h.adapter.timers.get(h.manager._fetchTimer).ms, 30000);
+    h.adapter.fire(h.manager._fetchTimer);
+    await h.manager._fetchPromise;
+    assert.equal(reads, 2, 'One retry per refresh, with no immediate retry loop');
+    assert.equal(h.calls.tv.length, 0);
+    assert.equal(h.value('channels.epgStatus'), 'error');
+    assert.equal(h.adapter.timers.get(h.manager._fetchTimer).ms, 30000);
+    unavailable = false;
+    h.adapter.fire(h.manager._fetchTimer);
+    await h.manager._fetchPromise;
+    assert.equal(reads, 3);
+    assert.equal(h.calls.tv.length, 1);
+    assert.equal(h.snapshot().now.title, 'TV current');
+    assert.equal(h.adapter.timers.get(h.manager._fetchTimer).ms, 900000);
+});
+
+test('EPG initialization retries after a temporary first publication failure', async t => {
+    const h = await harness(t, { services: [] });
+    let failed = false;
+    h.adapter.beforeWrite = async id => {
+        if (!failed && id.endsWith('.epg.data')) {
+            failed = true;
+            throw error('DATABASE', 'One snapshot write failed');
+        }
+    };
+    await assert.rejects(h.catalog([service(1), service(2)]), { code: 'DATABASE' });
+    await h.manager.refresh({ manual: true });
+    assert.equal(h.calls.tv.length, 2);
+    assert.equal(h.snapshot(service(1).id).next.title, 'TV next');
+    assert.equal(h.snapshot(service(2).id).next.title, 'TV next');
+});
+
+test('TV response metadata is retained in the snapshot even when the received EPG is empty', async t => {
+    const diagnostic = { schema: 'basic', rows: 0, totalResults: 0, pages: 1,
+        firstStartIndex: 0, dvb: { sid: 10301, tsid: 1019, onid: 1 } };
+    const h = await harness(t, { readTv: async () => ({ ...tvResult([]), diagnostic }) });
+    await h.manager.refresh({ manual: true });
+    assert.equal(h.snapshot().status, 'empty');
+    assert.deepEqual(h.snapshot().tvDiagnostic, { at: NOW, status: 'received', details: diagnostic });
+    diagnostic.rows = 99;
+    await h.manager.tick();
+    assert.equal(h.snapshot().tvDiagnostic.details.rows, 0, 'Metadata is a copy of the actual attempt');
+    assert.equal(JSON.parse(h.value(service().id, 'epg.cache')).tvDiagnostic, undefined, 'Attempt metadata is not a programme cache');
+});
+
+test('TV failure diagnostics identify the actual request and skipped channels separately', async t => {
+    const diagnostic = { schema: 'extended', phase: 'response', rows: { startIndex: 41 },
+        dvb: { sid: 10301, tsid: 1019, onid: 1 } };
+    const h = await harness(t, { services: [service(1), service(2)], readTv: async () => {
+        throw Object.assign(error('EPG_TV_SCHEMA', 'Unsupported fields'), { epgDiagnostic: diagnostic });
+    } });
+    await h.manager.refresh({ manual: true });
+    assert.equal(h.calls.tv.length, 1);
+    assert.deepEqual(h.snapshot(service(1).id).tvDiagnostic,
+        { at: NOW, status: 'error', code: 'EPG_TV_SCHEMA', details: diagnostic });
+    assert.deepEqual(h.snapshot(service(2).id).tvDiagnostic,
+        { at: NOW, status: 'skipped', reason: 'previousFailure', code: 'EPG_TV_SCHEMA', blockedByChannel: service(1).id });
+    assert.equal(h.snapshot(service(2).id).tvDiagnostic.details, undefined, 'Do not attribute another station response to this one');
+});
+
+test('successful XMLTV fallback retains the TV failure metadata for diagnosis', async t => {
+    const h = await harness(t, { config: { epgXmltvUrl: 'http://fixture.invalid/guide.xml' },
+        readTv: async () => { throw Object.assign(error('SOAP'), { epgDiagnostic: { schema: 'basic', requests: 1 } }); },
+        loadXmltv: async () => feed([{ id: 'one', names: ['Sender 1'], events: programmes('External') }]),
+    });
+    await h.manager.refresh({ manual: true });
+    assert.equal(h.snapshot().source, 'xmltv');
+    assert.equal(h.snapshot().status, 'ready');
+    assert.equal(h.snapshot().lastError, '');
+    assert.equal(h.snapshot().tvDiagnostic.code, 'SOAP');
+});
+
+test('TV attempt diagnostics are bounded and are reset when a channel service is replaced', async t => {
+    const h = await harness(t, { readTv: async () => ({ ...tvResult(), diagnostic: { large: 'x'.repeat(9000) } }) });
+    await h.manager.refresh({ manual: true });
+    assert.deepEqual(h.snapshot().tvDiagnostic.details, { omitted: true, reason: 'size' });
+    await h.catalog([service(1, { mediaItemUuid: 'different-service' })]);
+    assert.equal(h.snapshot().tvDiagnostic, null);
+    const external = await harness(t, { config: { epgSource: 'xmltv', epgXmltvUrl: 'http://fixture.invalid/guide.xml' },
+        loadXmltv: async () => feed([{ id: 'one', names: ['Sender 1'], events: programmes('External') }]),
+    });
+    await external.manager.refresh({ manual: true });
+    assert.equal(external.snapshot().tvDiagnostic, null, 'XMLTV-only has no TV attempt to report');
+});
+
 test('automatic fallback loads one feed and applies exact explicit IDs independently for each selected TV channel', async t => {
     const selected = [service(1), service(2)];
     const guide = feed([

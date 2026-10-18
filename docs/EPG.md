@@ -1,14 +1,16 @@
 # Laufende und nächste Sendung je TV-Sender
 
-Version **0.1.7** ergänzt unter jedem vorhandenen TV-Sender die aktuelle und die nächste Sendung. Der Standardweg liest die Programmdaten aus dem Loewe. Eine konfigurierte XMLTV-Datei kann fehlende Daten ersetzen. Sender werden dafür nicht umgeschaltet; der Adapter liest die Programmtabelle im Hintergrund.
+Seit Version **0.1.7** stehen unter jedem vorhandenen TV-Sender die aktuelle und die nächste Sendung zur Verfügung. Der Standardweg liest die Programmdaten aus dem Loewe. Eine konfigurierte XMLTV-Datei kann fehlende Daten ersetzen. Sender werden dafür nicht umgeschaltet; der Adapter liest die Programmtabelle im Hintergrund.
+
+Version **0.1.8** korrigiert die XMLTV-URLprüfung in der Adapter-Konfiguration: Eine fehlerhaft verschachtelte `return`-Anweisung konnte die Speichern-Schaltflächen blockieren. Bestehende Instanzen ohne die neuen EPG-Einstellungen werden ebenfalls akzeptiert. Beim TV-Abruf wurden die dokumentierte Zeitpositionierung und die Verarbeitung der Seitenindizes überarbeitet; ein zusätzlicher Diagnosewert macht das Ergebnis je Sender nachvollziehbar.
 
 Die EPG-Abfrage ist implementiert und mit simulierten Protokollantworten geprüft. Eine erfolgreiche EPG-Antwort des Nutzergeräts **bild 7.55 / SL420 / V5.4.6.0** liegt für diese Version noch nicht vor. Der zuvor bestätigte Test der Senderlisten und TV-Auswahl ist kein EPG-Gerätetest.
 
 ## Am Fernseher beginnen
 
-1. Version 0.1.7 installieren und die bestehende Instanz starten. `info.adapterBuild` muss **`0.1.7-epg-now-next.1`** anzeigen.
+1. Version 0.1.8 installieren und die bestehende Instanz starten. `info.adapterBuild` muss **`0.1.8-epg-config-fix.1`** anzeigen. Eine bereits geöffnete Adapter-Konfiguration anschließend neu öffnen, damit die korrigierte Oberfläche geladen wird.
 2. Fernseher einschalten und prüfen, dass die gewünschte Senderliste in der Adapter-Konfiguration ausgewählt ist. Die zugehörigen Sender müssen unter `channels.tv` vorhanden sein.
-3. Im neuen Reiter **EPG** die Voreinstellungen verwenden: EPG aktiviert, Quelle **Automatisch**, Abrufintervall **900 Sekunden**.
+3. Im Reiter **EPG** die Voreinstellungen verwenden: EPG aktiviert, Quelle **Automatisch**, Abrufintervall **900 Sekunden**.
 4. Nach dem Start und der Senderanlage beginnt der erste EPG-Abgleich automatisch. Über **`channels.epgRefresh=true`** kann er jederzeit manuell ausgelöst werden. Wie bei anderen Tastern mit `ack:false` schreiben.
 5. Beispielsweise **`channels.tv.Das_Erste_HD.epg.now.title`** und **`epg.next.title`** prüfen. Verwende den tatsächlichen Senderpfad deiner Instanz.
 
@@ -51,7 +53,7 @@ Alle Pfade in dieser Tabelle sind relativ zum Sender, beispielsweise **`loewe-tv
 | `epg.lastUpdate` | Zeitpunkt des letzten erfolgreichen Datenabrufs für diesen Sender, in Millisekunden. |
 | `epg.status` | Zustand dieses Senders, siehe unten. |
 | `epg.lastError` | Letzter Fehler oder Hinweis auf mehrdeutige Zeitdaten. |
-| `epg.data` | Zusammenhängender JSON-Wert mit Senderbezug, Quelle, Status, `now` und `next`. Für Skripte vorzugsweise diesen Wert verwenden. |
+| `epg.data` | Zusammenhängender JSON-Wert mit Senderbezug, Quelle, Status, `now`, `next` und seit 0.1.8 `tvDiagnostic`. Für Skripte vorzugsweise diesen Wert verwenden. |
 | `epg.cache` | Internes, als Expertenobjekt markiertes Format für den Neustart. Kein stabiler Vertrag für eigene Automationen. |
 
 Fehlende Programme haben `available=false`, leere Texte und Zeiten `0`. In `epg.data` sind sie `null`. Eine bekannte nächste Sendung darf ein unbekanntes Ende haben: Dann ist `next.available=true`, aber `next.end=0`; im JSON ist das Ende `null`. Aus einem bloßen Start ohne Ende wird keine sicher laufende Sendung abgeleitet.
@@ -88,6 +90,24 @@ Der Status beschreibt Datenverfügbarkeit, nicht den gerade am Bildschirm gewäh
 
 `channels.epgStatus=ready` bedeutet, dass alle Abrufe dieses Laufs verarbeitet wurden. Ob ein Sender für den aktuellen Zeitpunkt Sendungen geliefert hat, zeigen dessen `epg.status` und `available`-Felder. Eine erfolgreich gelesene leere Antwort ist kein Netzwerkfehler.
 
+### TV-Abruf diagnostizieren
+
+Seit 0.1.8 enthält **`channels.tv.<Sender>.epg.data`** zusätzlich `tvDiagnostic`. Dieser Wert hält den letzten TV-Versuch für diesen Sender seit der Initialisierung fest. Er bleibt auch dann sichtbar, wenn anschließend XMLTV erfolgreich Daten liefert und `epg.source=xmltv` ist. `at` ist der Zeitpunkt des Versuchs oder des Überspringens als Unix-Zeit in Millisekunden.
+
+| Form von `tvDiagnostic` | Bedeutung |
+|---|---|
+| `null` | Für diesen Sender wurde seit der Initialisierung noch kein TV-Versuch erfasst, beispielsweise bei ausschließlicher XMLTV-Nutzung. |
+| `{at, status: "received", details}` | Der TV-Abruf wurde erfolgreich verarbeitet. Die Antwort kann trotzdem leer sein oder nur unvollständige EPG-Felder enthalten. |
+| `{at, status: "error", code, details}` | Der TV-Versuch ist fehlgeschlagen. `code` bezeichnet die Fehlerklasse; `details` enthält die verfügbaren Protokollmetadaten und kann `null` sein. |
+| `{at, status: "skipped", reason: "previousFailure", code, blockedByChannel}` | In diesem Lauf wurde wegen eines vorherigen TV-Fehlers keine eigene Anfrage für diesen Sender gesendet. `blockedByChannel` benennt den Sender, bei dessen Versuch die Sperre entstand. |
+| `{at, status: "skipped", reason: "notConfigured", code: "EPG_TV_UNAVAILABLE"}` | Für die lokale Abfrage ist noch kein TV-Client konfiguriert. |
+
+Die `details` zeigen unter anderem `schema` (`extended` oder `basic`), `dvb`, `requests`, `pages`, `rows`, `fallbackUsed` sowie Metadaten zu `request` und `response`. Besonders hilfreich sind die angefragten Feldnummern, `request.startIndex`, `request.seek`, `response.startIndex`, `response.totalResults`, `response.returnedResults` und `response.columnCounts`. Bei erfolgreichem Abruf beschreibt `firstIndex` den tatsächlichen ersten Seitenindex. Eine ausgelassene Anfrage mit `previousFailure` ist kein Beleg dafür, dass genau dieser Sender fehlerhafte EPG-Daten liefert.
+
+Die Diagnosedetails enthalten keine Rohantworten, Client-IDs, URLs, Sendungstitel oder Beschreibungen. Sie sind auf 8 KiB begrenzt; bei Überschreitung steht dort `{omitted: true, reason: "size"}`, bei nicht serialisierbaren Details `{omitted: true, reason: "format"}`. Die normalen `now`-/`next`-Felder enthalten weiterhin die Programminformationen.
+
+Wenn keine TV-Daten erscheinen, zunächst `channels.epgRefresh=true` auslösen und anschließend `tvDiagnostic` und `epg.lastError` eines betroffenen Senders prüfen. Bei `previousFailure` ist die Diagnose unter `blockedByChannel` maßgeblich. Ein manueller neuer Abgleich prüft die TV-Feldunterstützung erneut. Die [Protokolldokumentation](epg-protocol.md) erklärt die geprüften Antwortformen und die noch offene Bestätigung am SL420.
+
 ## XMLTV als Ersatzquelle
 
 Das vorgeschlagene Projekt **[iptv-org/epg](https://github.com/iptv-org/epg)** erzeugt XMLTV-Dateien auf einem eigenen Rechner oder Server. Eine verlässlich nutzbare öffentliche deutsche Standardadresse wurde bei der Umsetzung nicht gefunden. Deshalb benötigt der Adapter eine konkrete Guide-URL; im ausgelieferten Standard bleibt das Feld leer.
@@ -106,6 +126,8 @@ Ein fehlgeschlagener Abruf löscht einen noch brauchbaren Plan nicht sofort. Die
 
 Beim Neustart wird der gespeicherte Plan nur übernommen, wenn Senderdienst, Senderliste und EPG-Konfiguration einschließlich Quelle, URL und Zuordnungen übereinstimmen. Eine Positionsänderung desselben Dienstes setzt die EPG-Daten nicht zurück. Ein anderer Dienst unter derselben Namens-ID erhält einen neuen Plan. Vor dem Ersetzen oder Entfernen eines Ordners werden alte Veröffentlichungen gesperrt und bereits begonnene Datenbankschreibvorgänge abgewartet. Geschützte Altordner bleiben mit `inactive` und geleerten Programmfeldern erhalten.
 
+Scheitert die lokale EPG-Initialisierung beim Lesen oder Veröffentlichen des Caches durch einen Datenbankfehler, kann ein manueller Abgleich die Initialisierung erneut versuchen. Bei aktiviertem EPG und einem Abrufintervall größer als `0` wird nach einem solchen Fehler automatisch nach 30 Sekunden ein weiterer Versuch eingeplant. Bei Intervall `0` bleibt dieser Wiederholungsversuch manuell. Das betrifft die lokale Initialisierung; das normale Intervall für erfolgreiche Abgleichläufe bleibt unverändert.
+
 Überlappende Sendungen oder mehrere unterschiedliche Sendungen mit demselben nächsten Beginn werden nicht willkürlich aufgelöst. Die betroffenen Angaben bleiben leer, der Status zeigt `partial`.
 
 ## Umfang und Belastung
@@ -122,6 +144,7 @@ Jede lokale SOAP-Anfrage steht einzeln in der vorhandenen TV-Warteschlange. Zwis
 | Gespeicherte Ereignisse je Sender | Höchstens 128, zusätzlich durch das Bytebudget begrenzt |
 | Persistenter Einzelcache | Höchstens 128 KiB; bei vielen Sendern entsprechend kleiner |
 | Gemeinsames Budget der normalisierten Sendercaches | 16 MiB berechnete JSON-Daten; kein Limit des gesamten Node.js-Prozesses |
+| `tvDiagnostic.details` | Höchstens 8 KiB serialisierte Metadaten je Sender; keine Rohantwort |
 
 Lange Beschreibungen oder weit entfernte zukünftige Sendungen können zur Einhaltung der Cachegrenzen gekürzt werden. Der Adapter erhält dafür die Informationen zur aktuellen und nächsten Sendung einschließlich möglicher Mehrdeutigkeiten. Bei nicht sicher kürzbaren Daten meldet er einen Fehler. Die gesonderten Download- und Speichergrenzen des XMLTV-Imports stehen in [XMLTV.md](XMLTV.md#betriebsgrenzen-des-imports).
 
@@ -138,4 +161,4 @@ on({ id: 'loewe-tv.0.channels.tv.Das_Erste_HD.epg.data', change: 'ne' }, event =
 });
 ```
 
-Dies zeigt nur Daten an. Version 0.1.7 legt noch keine Aufnahmeaufträge oder TV-Timer an. Dafür werden vollständige Sendungszeiten, die Zuordnung zum TV und ein am Gerät bestätigter Timerablauf benötigt. Der weitere Ausbau steht in der [Roadmap](ROADMAP.md).
+Dies zeigt nur Daten an. Auch Version 0.1.8 legt noch keine Aufnahmeaufträge oder TV-Timer an. Dafür werden vollständige Sendungszeiten, die Zuordnung zum TV und ein am Gerät bestätigter Timerablauf benötigt. Der weitere Ausbau steht in der [Roadmap](ROADMAP.md).

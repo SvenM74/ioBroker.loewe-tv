@@ -49,11 +49,13 @@ geprüft.
 ## Aktionen und Felder
 
 Jede Seite erzeugt einen Iterator mit `TableName=de.loewe.sl2.epg`, `Type=0`
-und `NotifyUpdate=NO`. Die drei DVB-Auswahlen verwenden `Condition=1`
-(Gleichheit). Der Beginn wird mit Feld 2007 und dem im Herstellerbeispiel
-verwendeten `Condition=5` (größer als) eingegrenzt. Eine um eine Sekunde
-verminderte Untergrenze schließt die erste volle Sekunde des Fensters ein.
-Sortiert wird nach Feld 2007 mit `Direction=1`.
+und `NotifyUpdate=NO`. Die äußeren `Selections` enthalten ausschließlich
+die drei DVB-Auswahlen mit `Condition=1` (Gleichheit). Seit Version 0.1.8
+steht die Zeitbedingung für Feld 2007 in den `Selections` unter
+`SeekToContentParameters`, entsprechend dem Herstellerbeispiel in Abschnitt
+9.22.1. Sie verwendet `Condition=5` (größer als), `Which=0`, `Offset=0` und
+`WindowSize=0`. Eine um eine Sekunde verminderte Untergrenze schließt die erste
+volle Sekunde des Fensters ein. Sortiert wird nach Feld 2007 mit `Direction=1`.
 
 | Feld | Bedeutung | Basisschema | Erweitertes Schema | Beleg |
 | --- | --- | --- | --- | --- |
@@ -89,6 +91,24 @@ automatisch freigegeben. Daher wird kein `CloseIterator` gesendet und kein
 Iterator über mehrere Anfragen gehalten. Jede Seite ist ein neuer
 `CreateIterator` mit `QueryParameters/Range`.
 
+Die erste Anfrage verwendet `Range startIndex="0" maxItems="64"` und die
+Zeitpositionierung durch `SeekToContentParameters`. Die Antwort darf einen
+anderen gültigen absoluten `Rows.startIndex` melden. Folgeseiten werden ab
+diesem tatsächlich gelieferten Index zuzüglich `returnedResults` angefragt,
+ohne erneut zu suchen. Beispielsweise führt eine erste Antwort mit Index 41
+und 64 Zeilen zur nächsten Anfrage ab Index 105. Auch eine kurze Seite wird
+anhand ihrer tatsächlichen Zeilenanzahl fortgesetzt.
+
+Die [Herstellerdokumentation, Abschnitt 9.22.1, Seiten 67–69](https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf)
+zeigt eine EPG-Antwort mit `totalResults="864"`, `returnedResults="1"` und
+`startIndex="41"`. **Bereits die zugehörige Beispielanfrage verwendet Index
+41.** Sie belegt deshalb nicht unmittelbar den Ablauf „Anfrage 0 mit Seek,
+Antwort 41“; dieser Ablauf ist ein gezielt simulierter Regressionstest. Die
+Umstellung korrigiert unsere Verwendung der dokumentierten Seek-Struktur und
+die Verarbeitung absoluter Offsets. Ob diese Änderungen den gemeldeten
+EPG-Ausfall auf dem bild 7.55 / SL420 / V5.4.6.0 beheben, muss eine echte
+Geräteantwort bestätigen.
+
 Der Abruf beginnt 24 Stunden vor `now` und liest aufsteigend bis 24 Stunden
 danach. Alle Zeilen einer bereits empfangenen Seite werden ausgewertet, auch
 wenn einzelne Starts hinter dieser Zukunftsgrenze liegen. Dadurch bleiben
@@ -106,13 +126,14 @@ dadurch Fernbedienungsbefehle bearbeiten. Eine kleinere vom Aufrufer gesetzte
 Deadline gilt sofort. AbortSignal und `reset()` beenden einen offenen Abruf;
 verspätete Antworten werden ignoriert.
 
-Der nächste Seitenindex ergibt sich aus der tatsächlich gelieferten
-Zeilenanzahl. Startindex, Rückgabeanzahl, Gesamtzahl, fortlaufende Sortierung,
-doppelte Zeilen und konstante Gesamtzahlen werden geprüft. Getrennte Iteratoren
-sind trotzdem kein nachweislich atomarer Schnappschuss: Ein TV kann seine
-EPG-Tabelle zwischen Anfragen ändern, ohne die Gesamtzahl zu ändern. Erkannte
-Widersprüche führen zu einem Fehler und veröffentlichen keinen Teilabruf als
-vollständiges Ergebnis.
+`Result`, Startindex, Rückgabeanzahl, Gesamtzahl, die Anzahl der `<Row>`- und
+`<V>`-Elemente, fortlaufende Sortierung, doppelte Zeilen und konstante
+Gesamtzahlen werden geprüft. Ein Iteratorbezeichner ist für die Verarbeitung
+mit `NotifyUpdate=NO` nicht erforderlich. Getrennte Iteratoren sind trotzdem
+kein nachweislich atomarer Schnappschuss: Ein TV kann seine EPG-Tabelle zwischen
+Anfragen ändern, ohne die Gesamtzahl zu ändern. Erkannte Widersprüche führen
+zu einem Fehler und veröffentlichen keinen Teilabruf als vollständiges
+Ergebnis.
 
 Wird vor dem gemeldeten Tabellenende wegen des Horizonts oder einer Abrufgrenze
 angehalten, könnte die letzte gelesene Startzeitgruppe auf der nächsten Seite
@@ -158,3 +179,30 @@ Die lokalen Protokollfehler heißen `EPG_TV_UNSUPPORTED`, `EPG_TV_SCHEMA`,
 `EPG_TV_INVALID`, `EPG_TV_LIMIT` und `CLOSED`. Fehler aus dem übergebenen
 Request werden unverändert weitergegeben, sofern kein ausdrücklich erlaubter
 Schema-Rückfall erfolgt.
+
+## Begrenzte Diagnose seit 0.1.8
+
+Ein erfolgreicher Abruf liefert `result.diagnostic`. Bei einem Fehler nach
+Beginn des TV-Versuchs wird der entsprechende Befund als
+`error.epgDiagnostic` angehängt. Fehler vor einer Protokollanfrage können ohne
+diese Details bleiben. Beide Formen verwenden dieselben Metadaten: gewähltes
+Schema, DVB-Kennungen, Anzahl der Anfragen, Seiten und Zeilen, einen möglichen
+Schema-Rückfall sowie die letzte Anfrage und die Struktur ihrer Antwort.
+
+Die Anfragebeschreibung enthält die angefragten Feldnummern, `startIndex`,
+`maxItems`, `seek` und gegebenenfalls `seekAfter`. Die Antwortbeschreibung
+enthält feste Kategorien für SOAP-Elemente, den numerischen Ergebniswert oder
+einen festen Typmarker, Bereichs- und Zeilenanzahlen, Spaltenzahlen und
+ausgewählte numerische Dienst-/Zeitfelder der ersten Zeile. Erfolgsbefunde
+ergänzen unter anderem `firstIndex`, Zeitfenster, Abbruchgrund und die oben
+beschriebenen Vollständigkeits- und Kürzungsmerkmale.
+
+Diese Diagnose enthält keine Rohantworten, Client-IDs, URLs, Titel oder
+Beschreibungen. Der EPG-Manager veröffentlicht sie als `tvDiagnostic.details`
+innerhalb von `channels.tv.<Sender>.epg.data`. Er begrenzt die serialisierten
+Details auf 8 KiB; größere oder nicht serialisierbare Details werden durch
+einen festen Hinweis ersetzt. Der umgebende Status unterscheidet einen
+verarbeiteten TV-Befund, einen Fehler und eine übersprungene Anfrage. Eine
+erfolgreiche XMLTV-Ersatzquelle lässt den Befund des TV-Versuchs sichtbar.
+Die [EPG-Anleitung](EPG.md#tv-abruf-diagnostizieren) beschreibt die genaue
+Verwendung in ioBroker.

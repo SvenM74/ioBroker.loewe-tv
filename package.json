@@ -1,6 +1,6 @@
 {
   "name": "iobroker.loewe-tv",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Local Loewe TV control with per-channel current and next programme information",
   "repository": {
     "type": "git",

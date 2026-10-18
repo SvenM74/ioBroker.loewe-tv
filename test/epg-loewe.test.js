@@ -2,14 +2,29 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { LoeweEpgSource, parseDvbServiceUuid, BASIC_FIELDS, EXTENDED_FIELDS } = require('../lib/epg-loewe');
-const { parseResponse } = require('../lib/loewe-client');
+const { LoeweEpgSource, parseDvbServiceUuid, parseIteratorPage, BASIC_FIELDS, EXTENDED_FIELDS } = require('../lib/epg-loewe');
+const { parseResponse, buildEnvelope } = require('../lib/loewe-client');
 const { normalizeEvents, selectNowNext } = require('../lib/epg-data');
 
 const NOW = Date.parse('2026-10-17T22:30:00Z');
 const DAY = 86400000;
 const SERVICE = { itemClass: 'video', mediaItemUuid: 'chl0:00-00080001ffff03fb283d', name: 'Das Erste HD' };
 const DVB = { sid: 10301, tsid: 1019, onid: 1 };
+
+// Literal data from Loewe Remote API 1.0.47, §9.22.1, printed page 69.
+// The namespace is declared by the enclosing SOAP envelope. These five fields
+// and absolute iterator counters are evidence from the manufacturer, not a
+// response generated from the implementation under test.
+// https://cdn.loewe.tv/manuals/de/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf
+const DOCUMENTED_REPLY = '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" '
+    + 'xmlns:m="urn:loewe.de:RemoteTV:Tablet"><SOAP-ENV:Body>'
+    + '<m:CreateIteratorResponse xmlns:ltv="urn:loewe.de:RemoteTV:Tablet">'
+    + '<m:fcid>?</m:fcid><m:ClientId>LRemoteClient-0-1509965273</m:ClientId>'
+    + '<m:Result>0</m:Result><m:Id>1509971157234</m:Id>'
+    + '<m:Rows totalResults="864" returnedResults="1" startIndex="41">'
+    + '<m:Row><m:V>10301</m:V><m:V>1019</m:V><m:V>1</m:V>'
+    + '<m:V>Rote Rosen (2539)</m:V><m:V>1509973800</m:V></m:Row>'
+    + '</m:Rows></m:CreateIteratorResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>';
 
 function escapeXml(value) {
     return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
@@ -64,6 +79,138 @@ function deferred() {
     const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
     return { promise, resolve, reject };
 }
+
+test('the manufacturer response is accepted with its absolute seek offset and exact five-column field mapping', () => {
+    const parsed = parseResponse(DOCUMENTED_REPLY);
+    const page = parseIteratorPage(parsed, BASIC_FIELDS, DVB);
+    assert.deepEqual(page, {
+        startIndex: 41, totalResults: 864, returnedResults: 1,
+        events: [{ eventId: '', title: 'Rote Rosen (2539)', subtitle: '', description: '',
+            start: 1509973800000, end: null, endEstimated: false }],
+    });
+    assert.throws(() => parseIteratorPage(parsed, BASIC_FIELDS, DVB, 42), { code: 'EPG_TV_INVALID' });
+});
+
+test('the initial request uses the documented time seek and keeps only the DVB triplet in table selections', async () => {
+    const { source, calls } = makeSource(() => response([event()]));
+    await source.read(SERVICE, { now: NOW });
+    const request = parseResponse(buildEnvelope('CreateIterator', calls[0][1], 'fixture-client'))
+        .data.Envelope.Body.CreateIterator;
+    assert.deepEqual(request.Selections.Selection, [
+        { Field: '2002', Condition: '1', Value: '1' },
+        { Field: '2000', Condition: '1', Value: '10301' },
+        { Field: '2001', Condition: '1', Value: '1019' },
+    ]);
+    assert.deepEqual(request.SeekToContentParameters, {
+        Selections: { Selection: { Field: '2007', Condition: '5', Value: String((NOW - DAY) / 1000 - 1) } },
+        Which: '0', Offset: '0', WindowSize: '0',
+    });
+    assert.deepEqual(request.QueryParameters.Range, { '@_startIndex': '0', '@_maxItems': '64' });
+    assert.equal(request.NotifyUpdate, 'NO');
+});
+
+test('a seek at index 41 continues at the absolute returned offset without seeking again', async () => {
+    const values = Array.from({ length: 66 }, (_, index) => event(NOW - 3600000 + index * 120000,
+        NOW - 3480000 + index * 120000, `Sendung ${index}`));
+    const { source, calls } = makeSource((action, xml, options, count) => count === 1
+        ? response(values.slice(0, 64), { start: 41, total: 107 })
+        : response(values.slice(64), { start: 105, total: 107 }));
+    const result = await source.read(SERVICE, { now: NOW });
+    assert.equal(result.events.length, 66);
+    assert.equal(result.diagnostic.firstIndex, 41);
+    assert.equal(result.diagnostic.totalResults, 107);
+    assert.equal(result.diagnostic.rows, 66);
+    assert.equal(result.diagnostic.tableComplete, true);
+    assert.match(calls[0][1], /<SeekToContentParameters>/u);
+    assert.match(calls[1][1], /<Range startIndex="105" maxItems="64"\/>/u);
+    assert.doesNotMatch(calls[1][1], /SeekToContentParameters|<Condition>5<\/Condition>/u);
+    assert.equal(calls[0][2].deadline, calls[1][2].deadline);
+});
+
+test('a short page at a nonzero seek offset advances by its real returned count', async () => {
+    const values = [event(), event(NOW + 600000, NOW + 1200000, 'Danach')];
+    const { source, calls } = makeSource((action, xml, options, count) => response([values[count - 1]],
+        { start: 41 + count - 1, total: 43 }));
+    const result = await source.read(SERVICE, { now: NOW });
+    assert.equal(result.events.length, 2);
+    assert.match(calls[1][1], /startIndex="42"/u);
+    assert.equal(result.diagnostic.tableComplete, true);
+});
+
+test('the documented base schema retains absolute seek offsets after an optional-field rejection', async () => {
+    const documentedNow = 1509973200000;
+    const { source, calls } = makeSource((action, xml, options, count) => {
+        if (count === 1) throw fault('Unsupported field 2008');
+        if (count === 2) return parseResponse(DOCUMENTED_REPLY);
+        return response([
+            event(documentedNow + 3600000, documentedNow + 7200000, 'Danach'),
+            event(documentedNow + DAY + 60000, documentedNow + DAY + 120000, 'Grenze'),
+            event(documentedNow + DAY + 120000, documentedNow + DAY + 180000, 'Grenze danach'),
+        ], { fields: BASIC_FIELDS, start: 42, total: 864 });
+    });
+    const result = await source.read(SERVICE, { now: documentedNow });
+    assert.equal(result.events[0].title, 'Rote Rosen (2539)');
+    assert.equal(result.events[0].start, 1509973800000);
+    assert.equal(result.diagnostic.schema, 'basic');
+    assert.equal(result.diagnostic.fallbackUsed, true);
+    assert.equal(result.diagnostic.firstIndex, 41);
+    assert.equal(result.diagnostic.pages, 2);
+    assert.equal(result.diagnostic.requests, 3);
+    assert.match(calls[1][1], /<SeekToContentParameters>/u);
+    assert.match(calls[2][1], /startIndex="42"/u);
+    assert.doesNotMatch(calls[2][1], /SeekToContentParameters/u);
+});
+
+test('a following page with a relative instead of absolute index is rejected with bounded diagnostics', async () => {
+    const { source, calls } = makeSource((action, xml, options, count) => count === 1
+        ? response([event()], { start: 41, total: 43 })
+        : response([event(NOW + 600000, NOW + 1200000, 'Danach')], { start: 1, total: 43 }));
+    await assert.rejects(source.read(SERVICE, { now: NOW }), error => {
+        assert.equal(error.code, 'EPG_TV_INVALID');
+        assert.equal(error.epgDiagnostic.request.startIndex, 42);
+        assert.equal(error.epgDiagnostic.request.seek, false);
+        assert.equal(error.epgDiagnostic.response.startIndex, 1);
+        assert.equal(error.epgDiagnostic.response.result, 0);
+        assert.deepEqual(error.epgDiagnostic.response.columnCounts, [9]);
+        assert.ok(JSON.stringify(error.epgDiagnostic).length < 2048);
+        return true;
+    });
+    assert.equal(calls.length, 2);
+});
+
+test('TV diagnostics carry counters and types, never raw SOAP fields or scalar contents', async () => {
+    const secrets = 'PRIVATE-client-or-programme-https://example.invalid/secret';
+    const replies = [response([event()]), response([], { result: secrets })];
+    replies[0].data.Envelope.Body[secrets] = secrets;
+    for (const reply of replies) {
+        resultNode(reply).ClientId = secrets;
+        resultNode(reply).Id = secrets;
+        const { source } = makeSource(() => reply);
+        await assert.rejects(source.read(SERVICE, { now: NOW }), error => {
+            assert.ok(error.epgDiagnostic);
+            const json = JSON.stringify(error.epgDiagnostic);
+            assert.doesNotMatch(json, /PRIVATE|https:|Laufende Sendung/u);
+            assert.ok(json.length < 2048);
+            assert.deepEqual(JSON.parse(json), error.epgDiagnostic);
+            return true;
+        });
+    }
+    const { source } = makeSource(() => response([event(NOW - 60000, NOW + 60000, secrets)]));
+    const result = await source.read(SERVICE, { now: NOW });
+    assert.doesNotMatch(JSON.stringify(result.diagnostic), /PRIVATE|https:/u);
+    assert.equal(result.events[0].title, secrets);
+    assert.equal(result.diagnostic.response.result, 0);
+    assert.equal(result.diagnostic.request.seek, true);
+});
+
+test('iterator IDs remain optional when NotifyUpdate NO already frees resources', async () => {
+    const reply = response([event()]);
+    delete resultNode(reply).Id;
+    const { source } = makeSource(() => reply);
+    const result = await source.read(SERVICE, { now: NOW });
+    assert.equal(result.events[0].title, 'Laufende Sendung');
+    assert.equal(result.diagnostic.response.iteratorIdPresent, false);
+});
 
 test('DVB identity decodes actual user channel UUIDs without using station names or locator UUIDs', () => {
     assert.deepEqual(parseDvbServiceUuid(SERVICE.mediaItemUuid), { frontend: 8, onid: 1, tsid: 1019, sid: 10301 });

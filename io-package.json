@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "news": {
+      "0.1.8": {
+        "en": "Fix blocked Admin save buttons caused by the EPG URL validator and accept missing EPG defaults in existing instances. Align TV EPG time positioning with the documented iterator seek, handle absolute page offsets, recover from EPG initialization failures and expose bounded per-channel TV diagnostics. SL420 EPG device verification remains open.",
+        "de": "Gesperrte Speichern-Tasten durch den EPG-URL-Prüfausdruck beheben und fehlende EPG-Standardwerte älterer Instanzen akzeptieren. Zeitliche Positionierung des TV-EPG an den dokumentierten Iterator-Seek anpassen, absolute Seitenindizes verarbeiten, EPG-Initialisierung nach Fehlern wiederholen und begrenzte TV-Diagnose je Sender bereitstellen. EPG-Gerätetest am SL420 steht noch aus."
+      },
       "0.1.7": {
         "en": "Add current and next programme information for each selected TV channel. Prefer TV EPG with optional XMLTV fallback, configurable guide URL and exact channel mapping. Add manual and scheduled refresh, per-channel status and cached programme data.",
         "de": "Aktuelle und nächste Sendung für jeden ausgewählten TV-Sender ergänzen. TV-EPG bevorzugen, mit optionalem XMLTV-Ersatz, konfigurierbarer Guide-URL und exakter Senderzuordnung. Manuellen und regelmäßigen Abruf, Status je Sender und zwischengespeicherte Programmdaten ergänzen."

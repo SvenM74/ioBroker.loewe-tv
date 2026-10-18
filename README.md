@@ -23,3 +23,5 @@ Der laufende Adapter arbeitet lokal. Für die Installation kann ioBroker benöti
 Deutsch und Englisch.
 
 [Installation, Update und Datenpunkte](docs/INSTALLATION.md)
+
+Ab Version **0.1.9** kannst du in der Instanz-Konfiguration nach Loewe-TVs im lokalen Netzwerk suchen und eine der gefundenen IP-Adressen auswählen: [Fernseher suchen und auswählen](docs/NETWORK_DISCOVERY.md).

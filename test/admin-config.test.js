@@ -414,3 +414,63 @@ test('fallback option bounds use UTF-8 bytes and reject control characters', asy
         assert.equal(replies[0].message.length, expectedLength);
     }
 });
+
+test('TV search and cached choice messages retain the original Admin reply routes', async () => {
+    for (const command of ['discoverTvs', 'getDiscoveredTvs']) {
+        const { adapter, replies, timers } = harness();
+        const response = command === 'discoverTvs'
+            ? { native: { _tvDiscoveryReload: 7, _discoveredTv: '' }, result: 'discoveryComplete', args: [2] }
+            : [{ value: '', label: 'Select' }, { value: '192.0.2.10', label: 'Wohnzimmer' }, { value: '192.0.2.20', label: 'Schlafzimmer' }];
+        adapter.runtime = { async handleMessage(received, message) {
+            assert.equal(received, command);
+            assert.equal(message.port, '1905');
+            return response;
+        } };
+        const message = { ...request(command), message: { port: '1905' } };
+        await adapter.onMessage(message);
+        assert.equal(replies.length, 1);
+        assert.equal(replies[0].message, response);
+        assert.equal(replies[0].callback, message.callback);
+        assert.equal(timers.size, 0);
+    }
+});
+
+test('TV discovery startup errors use the matching button or selector response format', async () => {
+    const { adapter, replies } = harness();
+    await adapter.onMessage(request('getDiscoveredTvs'));
+    assert.deepEqual(clone(replies[0].message).map(option => option.value), ['']);
+    assert.match(replies[0].message[0].label, /noch nicht bereit/u);
+    await adapter.onMessage(request('discoverTvs'));
+    assert.equal(Array.isArray(replies[1].message), false);
+    assert.match(replies[1].message.error, /noch nicht bereit/u);
+});
+
+test('TV search watchdog answers once within the Admin button timeout', async () => {
+    const { adapter, replies, timers } = harness();
+    const pending = deferred();
+    adapter.runtime = { handleMessage: () => pending.promise };
+    const running = adapter.onMessage(request('discoverTvs'));
+    const timer = [...timers.values()][0];
+    assert.equal(timer.ms, 10000);
+    timer.callback();
+    assert.equal(replies.length, 1);
+    assert.match(replies[0].message.error, /Zeitlimit/u);
+    pending.resolve({ result: 'discoveryComplete', args: [1] });
+    await running;
+    assert.equal(replies.length, 1);
+    assert.equal(timers.size, 0);
+});
+
+test('invalid cached TV choices cannot break the Admin selectSendTo widget', async () => {
+    for (const response of [undefined, { error: 'offline' }, new Error('failed')]) {
+        const { adapter, replies } = harness();
+        adapter.runtime = { async handleMessage() {
+            if (response instanceof Error) throw response;
+            return response;
+        } };
+        await adapter.onMessage(request('getDiscoveredTvs'));
+        assert.equal(replies.length, 1);
+        assert.ok(Array.isArray(replies[0].message));
+        assert.equal(replies[0].message[0].value, '');
+    }
+});

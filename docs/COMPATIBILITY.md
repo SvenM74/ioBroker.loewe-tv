@@ -1,10 +1,10 @@
 # Gerätekompatibilität und bestätigte Tests
 
-Stand: **18. Oktober 2026**. Aktueller Adapter: **0.1.8**, Build **`0.1.8-tv-epg-only.2`**.
+Stand: **18. Oktober 2026**. Aktueller Adapter: **0.1.9**, Build **`0.1.9-tv-discovery.1`**.
 
-Der aktuelle Build ruft Programminformationen ausschließlich direkt vom Fernseher ab. Die externe EPG-Quelle, deren Einstellungen und überflüssige Datenpunkte sind entfernt. Build `.2` ergänzt die Hinweise zum Schnellstart; die Steuerlogik bleibt gegenüber `.1` unverändert. **Um die ergänzten Hinweise zu übernehmen, das neue Paket auch bei bereits angezeigter Version 0.1.8 erneut installieren.** Der Build-Bezeichner unterscheidet die Paketstände. Die [EPG-Anleitung](EPG.md) beschreibt den aktuellen Funktionsumfang; der [Prüfbericht zum zugrunde liegenden Funktionsstand `.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die vorherige Überarbeitung.
+Version 0.1.9 ergänzt die [Netzwerksuche in der Instanz-Konfiguration](NETWORK_DISCOVERY.md). Sie bietet erkannte Loewe-TV-Adressen zur Auswahl an. Der Adapter ruft Programminformationen weiterhin ausschließlich direkt vom Fernseher ab; externe EPG-Einstellungen und die zuvor entfernten Datenpunkte bleiben entfernt. Die [Updateanleitung](INSTALLATION.md#update-auf-019) beschreibt die Installation des neuen Pakets. Die [EPG-Anleitung](EPG.md) beschreibt den aktuellen Funktionsumfang; der [Prüfbericht zu `0.1.8-tv-epg-only.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die vorherige TV-EPG-Überarbeitung.
 
-**Für den neuen Build `0.1.8-tv-epg-only.2` liegt noch kein eigener Gerätetest vor.** Die folgenden EPG-Bestätigungen stammen vom früher bereitgestellten 0.1.8-Stand und bleiben als historische Geräteergebnisse erhalten.
+**Für den neuen Build `0.1.9-tv-discovery.1` liegt noch kein eigener Gerätetest vor.** Die folgenden EPG-Bestätigungen stammen vom früher bereitgestellten 0.1.8-Stand und bleiben als historische Geräteergebnisse erhalten.
 
 ## Rückmeldungen aus Gerätetests
 
@@ -15,6 +15,12 @@ Der aktuelle Build ruft Programminformationen ausschließlich direkt vom Fernseh
 | **Loewe Connect 26 SL** | **MB180** laut Loewe-Serviceanleitung | Nicht mitgeteilt | Der Nutzer meldet, dass das Gerät mit dieser Steuerung nicht kompatibel ist. Für die verwendete Tablet-Schnittstelle liegt kein positiver Kompatibilitätsnachweis vor. |
 
 Die Modell-, Chassis- und Firmwareangaben der beiden bild-Geräte sowie ihre EPG-Ergebnisse stammen vom Nutzer. Seine Rückmeldung bestätigt den Abruf **vom Fernseher**. Die tatsächliche Verfügbarkeit aller Sender, Zeiträume und einzelnen EPG-Felder wurde dabei nicht vollständig dokumentiert. Automatische Aufnahmeprogrammierung ist weiterhin geplant, die Radiosteuerung bleibt zurückgestellt. Die vom Nutzer aktualisierte [Gerätetabelle in der README](../README.md#getestete-geräte) führt für beide bild-Geräte auch Fernbedienung, Senderlisten und TV-Auswahl auf.
+
+## Ein Suchtreffer ist noch kein Kompatibilitätsnachweis
+
+Die neue Suche wertet SSDP-Antworten und die zugehörige Gerätebeschreibung aus. Sie berücksichtigt Geräte mit Loewe-Herstellerangabe und schließt bekannte Audiomodelle aus. Geräte mit einem TV-Hinweis im Namen, Modell oder angebotenen Dienst erscheinen auch bei nicht erreichbarem Steuerport. Allgemein beschriebene Loewe-Geräte, etwa als `MediaRenderer`, werden zusätzlich angeboten, wenn der konfigurierte TCP-Steuerport erreichbar ist. Dabei führt der Adapter weder eine `RequestAccess`-Anmeldung noch einen Fernbedienungsbefehl aus. Die Einzelheiten stehen in [NETWORK_DISCOVERY.md](NETWORK_DISCOVERY.md#was-ein-treffer-aussagt).
+
+Ein gefundener Name und ein offener Port bestätigen daher noch keine erfolgreiche Tablet-API-Steuerung. Auch ein bisher nicht unterstütztes Loewe-Modell kann eine passende Netzwerkbeschreibung liefern. **Der Connect 26 SL / MB180 bleibt nicht unterstützt, selbst wenn er in der Suche erscheinen sollte.** Umgekehrt beweist ein fehlender Suchtreffer keine Inkompatibilität: SSDP muss im betreffenden Netz ankommen, und der Fernseher muss mit aktiver Netzwerkschnittstelle antworten. Für die neue Suche steht der Test an echten Fernsehern, einschließlich mehrerer gleichzeitig erreichbarer TVs, noch aus.
 
 ## Einschalten aus dem Standby
 

@@ -1,14 +1,14 @@
 # Laufende und nächste Sendung je TV-Sender
 
-Version **0.1.8**, Build **`0.1.8-tv-epg-only.2`**, liest die aktuelle und die nächste Sendung ausschließlich direkt vom Loewe-TV. Sender werden dafür nicht umgeschaltet; der Adapter liest die Programmtabelle im Hintergrund. Im EPG-Reiter gibt es nur **Aktivieren** und **Abrufintervall**.
+Version **0.1.9**, Build **`0.1.9-tv-discovery.1`**, liest die aktuelle und die nächste Sendung ausschließlich direkt vom Loewe-TV. Sender werden dafür nicht umgeschaltet; der Adapter liest die Programmtabelle im Hintergrund. Im EPG-Reiter gibt es nur **Aktivieren** und **Abrufintervall**. Die neue [Netzwerksuche](NETWORK_DISCOVERY.md) hilft bei der Auswahl der TV-Adresse in der Konfiguration; die EPG-Daten stehen weiterhin unter den Sendern der gewählten TV-Liste.
 
-Der Nutzer hat am **18. Oktober 2026** den erfolgreichen direkten EPG-Abruf vom Fernseher bestätigt: auf dem **Loewe bild 7.55 / SL420 / V5.4.6.0** und auf dem **Loewe bild 5.32 / SL310F / V5.4.6.0**. Diese Rückmeldungen betreffen den zuvor bereitgestellten 0.1.8-Stand. **Für den neuen Build `0.1.8-tv-epg-only.2` liegt noch kein eigener Gerätetest vor.** Die [Kompatibilitätsübersicht](COMPATIBILITY.md) hält den bestätigten Umfang fest. Der [Prüfbericht zum zugrunde liegenden Funktionsstand `.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die TV-EPG-Bereinigung. Build `.2` ergänzt die Hinweise zum Schnellstart des Fernsehers.
+Der Nutzer hat am **18. Oktober 2026** den erfolgreichen direkten EPG-Abruf vom Fernseher bestätigt: auf dem **Loewe bild 7.55 / SL420 / V5.4.6.0** und auf dem **Loewe bild 5.32 / SL310F / V5.4.6.0**. Diese Rückmeldungen betreffen den zuvor bereitgestellten 0.1.8-Stand. **Für den neuen Build `0.1.9-tv-discovery.1` liegt noch kein eigener Gerätetest vor.** Die [Kompatibilitätsübersicht](COMPATIBILITY.md) hält den bestätigten Umfang fest. Der [Prüfbericht zu `0.1.8-tv-epg-only.1`](PRUEFBERICHT_0.1.8_TV_EPG.md) dokumentiert die vorherige TV-EPG-Bereinigung.
 
 Die bisherigen Rückmeldungen bestätigen den funktionierenden TV-Abruf auf diesen Geräten. Eine EPG-Rohantwort wurde dabei nicht übermittelt; die Verfügbarkeit jedes einzelnen Feldes und die Abdeckung sämtlicher Sender und Zeiträume sind damit nicht einzeln nachgewiesen. Aufnahmeaufträge und TV-Timer bleiben geplant.
 
 ## Am Fernseher beginnen
 
-1. Das neue Archiv **`iobroker.loewe-tv-0.1.8-tv-epg-only.2.tgz`** nach der [Updateanleitung](INSTALLATION.md#update-auf-018) installieren und die bestehende Instanz starten. Das gilt auch bei bereits installierter Version 0.1.8; ein Neustart allein reicht nicht. `info.adapterBuild` muss **`0.1.8-tv-epg-only.2`** anzeigen. Admin vollständig neu laden und die Adapter-Konfiguration neu öffnen.
+1. Das neue Archiv **`iobroker.loewe-tv-0.1.9-tv-discovery.1.tgz`** nach der [Updateanleitung](INSTALLATION.md#update-auf-019) installieren und die bestehende Instanz starten. Ein Neustart allein übernimmt das Update nicht. `info.adapterBuild` muss **`0.1.9-tv-discovery.1`** anzeigen. Admin vollständig neu laden und die Adapter-Konfiguration neu öffnen.
 2. Fernseher einschalten und prüfen, dass die gewünschte Senderliste in der Adapter-Konfiguration ausgewählt ist. Die zugehörigen Sender müssen unter `channels.tv` vorhanden sein.
 3. Im Reiter **EPG** die Voreinstellungen verwenden: **Programminformationen aktivieren** eingeschaltet, Abrufintervall **900 Sekunden**.
 4. Nach dem Start und der Senderanlage beginnt der erste EPG-Abgleich automatisch. Über **`channels.epgRefresh=true`** kann er jederzeit manuell ausgelöst werden. Wie bei anderen Tastern mit `ack:false` schreiben.
@@ -162,4 +162,4 @@ on({ id: 'loewe-tv.0.channels.tv.Das_Erste_HD.epg.data', change: 'ne' }, event =
 });
 ```
 
-Dies zeigt nur Daten an. Auch Version 0.1.8 legt noch keine Aufnahmeaufträge oder TV-Timer an. Dafür werden vollständige Sendungszeiten, die Zuordnung zum TV und ein am Gerät bestätigter Timerablauf benötigt. Der weitere Ausbau steht in der [Roadmap](ROADMAP.md).
+Dies zeigt nur Daten an. Auch Version 0.1.9 legt noch keine Aufnahmeaufträge oder TV-Timer an. Dafür werden vollständige Sendungszeiten, die Zuordnung zum TV und ein am Gerät bestätigter Timerablauf benötigt. Der weitere Ausbau steht in der [Roadmap](ROADMAP.md).

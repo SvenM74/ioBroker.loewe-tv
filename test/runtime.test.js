@@ -284,7 +284,7 @@ async function waitUntil(predicate, message) {
     assert.fail(message);
 }
 
-async function harness(t, config = {}, prepare = () => {}) {
+async function harness(t, config = {}, prepare = () => {}, runtimeOptions = {}) {
     const adapter = new FakeAdapter(config);
     const client = new FakeClient();
     prepare(adapter, client);
@@ -295,6 +295,7 @@ async function harness(t, config = {}, prepare = () => {}) {
             clientOptions = options;
             return client;
         },
+        ...runtimeOptions,
     });
     t.after(async () => runtime.stop());
     await runtime.start();
@@ -311,6 +312,164 @@ function write({ adapter, runtime }, id, val) {
 function calls(client, method) {
     return client.calls.filter(call => call.method === method);
 }
+
+test('TV discovery works with an empty host and loading choices never searches automatically', async t => {
+    const requests = [];
+    const h = await harness(t, { host: '', pollInterval: 0, channelListView: '' }, () => {}, {
+        async tvDiscovery(options) {
+            requests.push(options);
+            return { devices: [
+                { host: '192.0.2.10', name: 'Wohnzimmer', model: 'bild 7.55', apiReachable: true },
+                { host: '192.0.2.20', name: 'Schlafzimmer', model: 'bild 5.32', apiReachable: true },
+            ], warnings: [] };
+        },
+    });
+    const before = structuredClone(h.adapter.config);
+    const writes = h.adapter.writes.length;
+    assert.equal(h.runtime.client, null);
+    const initial = await h.runtime.handleMessage('getDiscoveredTvs', { port: '905' });
+    assert.equal(initial.length, 1);
+    assert.match(initial[0].label, /Zuerst/u);
+    assert.equal(requests.length, 0);
+    const response = await h.runtime.handleMessage('discoverTvs', { port: '905' });
+    assert.equal(response.result, 'discoveryComplete');
+    assert.deepEqual(response.args, [2]);
+    assert.deepEqual(Object.keys(response.native).sort(), ['_discoveredTv', '_tvDiscoveryReload']);
+    assert.equal(response.native._discoveredTv, '');
+    assert.equal(typeof response.native._tvDiscoveryReload, 'number');
+    const choices = await h.runtime.handleMessage('getDiscoveredTvs', { port: 905 });
+    assert.deepEqual(choices.map(choice => choice.value), ['', '192.0.2.10', '192.0.2.20']);
+    assert.match(choices[1].label, /Wohnzimmer.*bild 7\.55/u);
+    assert.match(choices[2].label, /Schlafzimmer.*bild 5\.32/u);
+    await h.runtime.handleMessage('getDiscoveredTvs', { port: 905 });
+    assert.equal(requests.length, 1, 'Reopening the selector only reads cached results');
+    assert.equal(requests[0].port, 905);
+    assert.deepEqual(h.adapter.config, before, 'Search never saves an IP or changes native configuration');
+    assert.equal(h.adapter.writes.length, writes, 'Discovery creates no persistent data points or status writes');
+    assert.equal(h.client.calls.length, 0, 'No authentication, SOAP request or TV command during search');
+});
+
+test('TV search uses the unsaved control port and keeps caches scoped to that port and instance', async t => {
+    const ports = [];
+    const h = await harness(t, { pollInterval: 0 }, () => {}, {
+        async tvDiscovery({ port }) {
+            ports.push(port);
+            return { devices: [{ host: '192.0.2.9', name: 'Loewe', model: 'Connect 26 SL', apiReachable: false }], warnings: [] };
+        },
+    });
+    const response = await h.runtime.handleMessage('discoverTvs', { port: '1905' });
+    assert.equal(response.result, 'discoveryPartial');
+    assert.equal(h.runtime.config.port, 905);
+    assert.equal(h.adapter.config.port, 905);
+    assert.deepEqual(ports, [1905]);
+    const choices = await h.runtime.handleMessage('getDiscoveredTvs', { port: 1905 });
+    assert.equal(choices[1].value, '192.0.2.9', 'A discovered Loewe with unreachable control port is not silently omitted');
+    assert.match(choices[1].label, /Steuerport 1905 nicht erreichbar/u);
+    assert.equal((await h.runtime.handleMessage('getDiscoveredTvs', { port: 905 })).length, 1);
+    const other = await harness(t, { pollInterval: 0 }, () => {}, {
+        tvDiscovery() { assert.fail('A different instance must not scan just to load its choices'); },
+    });
+    assert.equal((await other.runtime.handleMessage('getDiscoveredTvs', { port: 1905 })).length, 1);
+});
+
+test('concurrent TV searches share one run while remote commands continue independently', async t => {
+    const pending = deferred();
+    let scans = 0;
+    const h = await harness(t, { pollInterval: 0 }, () => {}, {
+        tvDiscovery() { scans++; return pending.promise; },
+    });
+    const first = h.runtime.handleMessage('discoverTvs', { port: 905 });
+    const second = h.runtime.handleMessage('discoverTvs', { port: 905 });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(scans, 1);
+    assert.match((await h.runtime.handleMessage('getDiscoveredTvs', { port: 905 }))[0].label, /werden gesucht/u);
+    const differentPort = await h.runtime.handleMessage('discoverTvs', { port: 1905 });
+    assert.equal(differentPort.error, 'discoveryFailed');
+    await write(h, 'remote.home', true);
+    assert.equal(calls(h.client, 'key').length, 1, 'A TV command must finish before discovery has returned');
+    pending.resolve({ devices: [], warnings: [] });
+    const [a, b] = await Promise.all([first, second]);
+    assert.deepEqual(a, b);
+    assert.equal(a.result, 'discoveryEmpty');
+    assert.equal(scans, 1);
+});
+
+test('invalid search payloads do not open network sockets', async t => {
+    const h = await harness(t, { pollInterval: 0 }, () => {}, {
+        tvDiscovery() { assert.fail('Invalid discovery input reached the network'); },
+    });
+    for (const message of [null, [], 'invalid', { port: 0 }, { port: 65536 }, { port: -1 }, { port: 905.5 }, { port: true }, { port: null }, { port: '' }, { port: '905/path' }]) {
+        assert.equal((await h.runtime.handleMessage('discoverTvs', message)).error, 'discoveryInvalidPort');
+        const choices = await h.runtime.handleMessage('getDiscoveredTvs', message);
+        assert.equal(choices.length, 1);
+        assert.equal(choices[0].value, '');
+    }
+});
+
+test('TV discovery failures clear stale choices and a later explicit scan can succeed', async t => {
+    let attempt = 0;
+    const h = await harness(t, { pollInterval: 0 }, () => {}, {
+        async tvDiscovery() {
+            attempt++;
+            if (attempt === 2) throw codedError('DISCOVERY_UNAVAILABLE', 'Kein Netzwerk verfügbar');
+            return { devices: [{ host: '192.0.2.9', name: 'Loewe', apiReachable: true }], warnings: attempt === 3 ? ['One interface failed'] : [] };
+        },
+    });
+    const first = await h.runtime.handleMessage('discoverTvs', {});
+    const failure = await h.runtime.handleMessage('discoverTvs', {});
+    assert.equal(failure.result, 'discoveryFailed');
+    assert.deepEqual(failure.args, ['Kein Netzwerk verfügbar']);
+    assert.ok(failure.native._tvDiscoveryReload > first.native._tvDiscoveryReload);
+    const choices = await h.runtime.handleMessage('getDiscoveredTvs', {});
+    assert.equal(choices.length, 1);
+    assert.match(choices[0].label, /Suche fehlgeschlagen/u);
+    const retry = await h.runtime.handleMessage('discoverTvs', {});
+    assert.equal(retry.result, 'discoveryPartial');
+    assert.ok(retry.native._tvDiscoveryReload > failure.native._tvDiscoveryReload);
+    assert.equal((await h.runtime.handleMessage('getDiscoveredTvs', {})).length, 2);
+});
+
+test('stopping cancels TV discovery immediately and ignores late search results', async t => {
+    const pending = deferred();
+    let signal;
+    const h = await harness(t, { pollInterval: 0 }, () => {}, {
+        tvDiscovery(options) { signal = options.signal; return pending.promise; },
+    });
+    const running = h.runtime.handleMessage('discoverTvs', {});
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(signal.aborted, false);
+    await h.runtime.stop();
+    assert.equal(signal.aborted, true);
+    assert.deepEqual(await running, { error: 'discoveryUnavailable' });
+    pending.resolve({ devices: [{ host: '192.0.2.10', name: 'Late TV' }], warnings: [] });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(h.runtime._tvDiscoveryResult, null);
+    assert.equal(h.runtime._tvDiscoveryPromise, null);
+    assert.equal(h.runtime._tvDiscoveryAbort, null);
+    assert.equal((await h.runtime.handleMessage('discoverTvs', {})).error, 'discoveryUnavailable');
+});
+
+test('a stalled discovery dependency is bounded independently of the SOAP timeout', async t => {
+    const pending = deferred();
+    let signal;
+    const h = await harness(t, { pollInterval: 0 }, () => {}, {
+        tvDiscovery(options) { signal = options.signal; return pending.promise; },
+    });
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const running = h.runtime.handleMessage('discoverTvs', {});
+    await Promise.resolve();
+    assert.equal(signal.aborted, false);
+    t.mock.timers.tick(8000);
+    const response = await running;
+    assert.equal(signal.aborted, true);
+    assert.equal(response.result, 'discoveryFailed');
+    assert.match(response.args[0], /Zeitlimit/u);
+    pending.resolve({ devices: [{ host: '192.0.2.10', name: 'Late TV' }], warnings: [] });
+    await Promise.resolve();
+    assert.equal((await h.runtime.handleMessage('getDiscoveredTvs', {})).length, 1);
+    assert.equal(h.runtime._tvDiscoveryPromise, null);
+    t.mock.timers.reset();
+});
 
 test('startup creates usable button objects without replaying saved commands', async t => {
     const { adapter, client, clientOptions } = await harness(t, {}, store => {

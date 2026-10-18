@@ -12,6 +12,67 @@
           "text": "Turn on the TV for setup. Each adapter instance controls one TV.",
           "xs": 12
         },
+        "_tvDiscoveryHelp": {
+          "type": "staticText",
+          "text": "Start this adapter instance, then search for TVs in the local network. You can start the instance before entering a TV address. All discovered addresses are listed; choose one to copy it into TV address. You can also enter an address manually. Save the configuration to use the selected TV.",
+          "xs": 12
+        },
+        "_discoveredTv": {
+          "type": "selectSendTo",
+          "label": "Discovered TVs",
+          "command": "getDiscoveredTvs",
+          "jsonData": "${JSON.stringify({port: data.port})}",
+          "alsoDependsOn": [
+            "port",
+            "_tvDiscoveryReload"
+          ],
+          "manual": false,
+          "multiple": false,
+          "noTranslation": true,
+          "doNotSave": true,
+          "default": "",
+          "disabled": "!_alive",
+          "onChange": {
+            "alsoDependsOn": [
+              "host"
+            ],
+            "ignoreOwnChanges": true,
+            "calculateFunc": "data._discoveredTv === data.host ? data._discoveredTv : ''"
+          },
+          "xs": 12,
+          "sm": 8
+        },
+        "_tvDiscoveryReload": {
+          "type": "sendto",
+          "label": "Search TVs",
+          "command": "discoverTvs",
+          "jsonData": "${JSON.stringify({port: data.port})}",
+          "useNative": true,
+          "doNotSave": true,
+          "showProcess": true,
+          "timeout": 15000,
+          "icon": "search",
+          "variant": "outlined",
+          "disabled": "!_alive",
+          "result": {
+            "discoveryComplete": "Found %s TV addresses. Choose a TV from Discovered TVs and save the configuration.",
+            "discoveryEmpty": "No TVs found. Turn on the TV and check that ioBroker and the TV can communicate in the same local network. You can still enter the TV address manually.",
+            "discoveryPartial": "Found %s TV addresses. The search could not check every network interface or TV. Choose a listed address or enter the TV address manually.",
+            "discoveryFailed": "The TV search failed: %s. You can still enter the TV address manually."
+          },
+          "error": {
+            "discoveryFailed": "The TV search failed: %s. You can still enter the TV address manually.",
+            "discoveryInvalidPort": "Enter a whole TV control port from 1 to 65535 before starting the search.",
+            "discoveryUnavailable": "Start this adapter instance before searching for TVs."
+          },
+          "xs": 12,
+          "sm": 4
+        },
+        "_tvDiscoveryNetworkHelp": {
+          "type": "staticText",
+          "text": "The search runs from the ioBroker host and takes a few seconds. Network isolation or blocked multicast can prevent discovery. A TV that switches off its network in standby cannot be found; turn it on or enable Quick Start. A discovered Loewe device is not a guarantee that this adapter supports its control interface.",
+          "xs": 12
+        },
         "host": {
           "type": "text",
           "label": "TV address",
@@ -20,6 +81,13 @@
           "validator": "typeof data.host === 'string' && data.host.trim().length > 0 && !/[\\s/]/.test(data.host.trim())",
           "validatorNoSaveOnError": true,
           "validatorErrorText": "Enter the TV's IP address or hostname.",
+          "onChange": {
+            "alsoDependsOn": [
+              "_discoveredTv"
+            ],
+            "ignoreOwnChanges": true,
+            "calculateFunc": "typeof data._discoveredTv === 'string' && /^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(data._discoveredTv) && data._discoveredTv.split('.').every(part => Number(part) <= 255) ? data._discoveredTv : data.host"
+          },
           "xs": 12,
           "sm": 12,
           "md": 6

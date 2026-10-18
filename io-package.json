@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.8",
+    "version": "0.1.9",
     "news": {
+      "0.1.9": {
+        "en": "Find Loewe TV addresses in the instance configuration with an explicit, bounded local network search. List multiple TVs with device names and control-port reachability; copy a selected IP into the address field without saving automatically. Keep manual address entry and allow discovery before a TV address is configured. Discovery runs independently of TV commands and creates no additional data points.",
+        "de": "Loewe-TV-Adressen über eine ausdrücklich gestartete, zeitlich begrenzte Netzwerksuche in der Instanz-Konfiguration finden. Mehrere Fernseher mit Gerätenamen und Erreichbarkeit des Steuerports anzeigen; die gewählte IP ohne automatisches Speichern in das Adressfeld übernehmen. Manuelle Adresseingabe und Suche vor dem Konfigurieren einer TV-Adresse ermöglichen. Die Suche läuft unabhängig von TV-Befehlen und erzeugt keine zusätzlichen Datenpunkte."
+      },
       "0.1.8": {
         "en": "Read current and next programmes exclusively from the TV. Remove the XMLTV source, URL and channel mapping, and keep Admin saving available for existing instances with missing EPG defaults or obsolete XMLTV settings. Improve TV EPG pagination, retry and per-channel diagnostics. Remove redundant raw and channel-query data points on upgrade. TV EPG was confirmed with the earlier 0.1.8 build on bild 7.55 (SL420) and bild 5.32 (SL310F), both with V5.4.6.0. Document Quick Start as the prerequisite confirmed by the user for switching on from standby.",
         "de": "Aktuelle und nächste Sendungen ausschließlich vom Fernseher abrufen. XMLTV-Quelle, URL und Senderzuordnung entfernen und das Speichern bestehender Instanzen mit fehlenden EPG-Standardwerten oder veralteten XMLTV-Einstellungen ermöglichen. Seitennavigation, Wiederholungsversuche und Diagnose je Sender beim TV-EPG verbessern. Überflüssige Rohdaten- und Senderabfrage-Datenpunkte beim Update entfernen. TV-EPG mit dem früheren 0.1.8-Build am bild 7.55 (SL420) und bild 5.32 (SL310F), jeweils mit V5.4.6.0, bestätigt. Schnellstart als vom Nutzer bestätigte Voraussetzung für das Einschalten aus dem Standby dokumentieren."

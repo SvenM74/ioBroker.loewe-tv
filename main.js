@@ -7,6 +7,7 @@ const { AdapterRuntime } = require('./lib/adapter-runtime');
 // { error } would break the selector instead of showing the connection problem.
 function messageFailure(command, message, error) {
     const reason = typeof error?.message === 'string' ? error.message : 'Die Anfrage ist fehlgeschlagen.';
+    if (command === 'getDiscoveredTvs') return [{ value: '', label: `Gerätesuche nicht verfügbar: ${reason}` }];
     if (command !== 'getChannelLists') return { error: reason };
     const options = [{ value: '', label: `Senderlisten nicht verfügbar: ${reason}` }];
     const selected = typeof message?.channelListView === 'string' ? message.channelListView.trim() : '';
@@ -46,7 +47,7 @@ class LoeweTv extends utils.Adapter {
 
     async onMessage(message) {
         if (!message || !message.callback || typeof message.from !== 'string' || !message.from
-            || !['getChannelLists', 'refreshChannelLists'].includes(message.command)) return;
+            || !['getChannelLists', 'refreshChannelLists', 'getDiscoveredTvs', 'discoverTvs'].includes(message.command)) return;
 
         let timer;
         let completed = false;
@@ -61,9 +62,9 @@ class LoeweTv extends utils.Adapter {
             }
         };
 
-        // Discovery has its own shorter runtime deadline. Keep the UI response
+        // Network searches have their own shorter runtime deadlines. Keep the UI response
         // bounded even if startup or a future runtime implementation fails.
-        const timeout = message.command === 'getChannelLists' ? 35000 : 4000;
+        const timeout = message.command === 'getChannelLists' ? 35000 : message.command === 'discoverTvs' ? 10000 : 4000;
         timer = setTimeout(() => reply(messageFailure(message.command, message.message,
             new Error('Zeitlimit erreicht. Fernseher und laufende Adapterinstanz prüfen.'))), timeout);
         timer.unref?.();
@@ -71,8 +72,9 @@ class LoeweTv extends utils.Adapter {
         try {
             if (!this.runtime) throw new Error('Die Adapterinstanz ist noch nicht bereit. Bitte erneut versuchen.');
             const response = await this.runtime.handleMessage(message.command, message.message);
-            if (message.command === 'getChannelLists' && !Array.isArray(response)) {
-                throw new Error('Ungültige Antwort beim Laden der Senderlisten.');
+            if (['getChannelLists', 'getDiscoveredTvs'].includes(message.command) && !Array.isArray(response)) {
+                throw new Error(message.command === 'getChannelLists'
+                    ? 'Ungültige Antwort beim Laden der Senderlisten.' : 'Ungültige Antwort beim Laden der gefundenen Fernseher.');
             }
             reply(response);
         } catch (error) {

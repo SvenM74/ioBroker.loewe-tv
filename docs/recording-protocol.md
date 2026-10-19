@@ -1,6 +1,8 @@
 # Aufnahmeprotokoll: belegte Anfragen und Bestätigung
 
-Der Adapter verwendet für einmalige TV-Aufnahmen die in der ursprünglichen **Loewe App 1.4.7** nachgewiesenen Aktionen `ProgramTimer` und `GetTimerList`. Die Requests werden mit den unveränderten Originalvorlagen in [protocol-templates.json](protocol-templates.json) verglichen. Laut Nutzerrückmeldung ist ein Aufnahmeauftrag am Fernseher angekommen; beim Rücklesen meldete 0.1.11 eine unbekannte Timerstruktur. Die originale XML-Timerantwort liegt weiterhin nicht vor. Version **0.1.12**, Build **`0.1.12-recording-fix.1`**, korrigiert die zu strenge Behandlung zusätzlicher Textfelder und die dadurch ausgelöste falsche Offline-Anzeige. Ein Gerätetest dieses Fixes steht aus.
+Der Adapter verwendet für einmalige TV-Aufnahmen die in der ursprünglichen **Loewe App 1.4.7** nachgewiesenen Aktionen `ProgramTimer` und `GetTimerList`. Die Requests werden mit den unveränderten Originalvorlagen in [protocol-templates.json](protocol-templates.json) verglichen. Version **0.1.12**, Build **`0.1.12-recording-fix.1`**, korrigiert die zu strenge Behandlung zusätzlicher Textfelder und die dadurch ausgelöste falsche Offline-Anzeige. Version **0.1.13**, Build **`0.1.13-recording-status.1`**, verbessert ausschließlich die Darstellung von Übertragung und noch offenem Timerabgleich anhand des bereits gespeicherten Antwortzeitpunkts `acknowledgedAt`.
+
+**Nutzerrückmeldung vom 19. Oktober 2026:** Beide Aufnahmeaufträge sind am Fernseher angekommen; die erste Aufnahme ist tatsächlich gestartet. Eine erfolgreiche Fertigstellung wurde noch nicht bestätigt. Die Rückmeldung nennt kein konkretes Modell. Die originale `GetTimerList`-XML-Antwort fehlt weiterhin. Die Oberfläche zeigt bei diesen Aufträgen einen offenen Timerabgleich. Diese Beobachtung ersetzt keinen Nachweis des konkreten XML-Formats und keinen Gerätetest der neuen Statusdarstellung.
 
 ## Quelle und Nachvollziehbarkeit
 
@@ -56,6 +58,16 @@ Eine passende SOAP-Antwort wird so normalisiert:
 ```
 
 **`acknowledged` besagt ausschließlich, dass eine zur Aktion passende Antwort angekommen ist.** Es bestätigt keinen gespeicherten Timer. Auch für `Result=0` ist aus dem untersuchten Callback keine Erfolgsbedeutung belegt. HTTP-Fehler, SOAP-Faults und Verbindungsfehler werden als Fehler weitergereicht. Die Schreibanfrage wird vom Client nicht automatisch wiederholt: Bei einem Timeout kann der Fernseher den Timer trotzdem bereits gespeichert haben.
+
+### Antwortnachweis und Statusanzeige
+
+Die Aufnahmeverwaltung speichert `acknowledgedAt` im bestehenden Journal `recordings.jobs`, wenn `ProgramTimer` ohne Fehler eine passende Antwort mit `acknowledged=true` liefert. Dieser Zeitpunkt übersteht einen Neustart. Dagegen werden `sentAt` und `attempts=1` bereits vor dem eigentlichen TV-Befehl als Versandabsicht gespeichert; sie belegen für sich allein keinen Empfang am Fernseher.
+
+Die Oberfläche von 0.1.13 nutzt den dokumentierten Antwortzeitpunkt, um bei internem Status `uncertain` eine erfolgte Übertragung mit noch offenem Timerabgleich sachlich anzuzeigen. Ohne gültigen Antwortnachweis behauptet sie keine erfolgreiche Übertragung. Die technische Timerdiagnose bleibt in einem aufklappbaren Detail zugänglich. Diese Darstellung ändert weder den internen Auftragsstatus noch das Journalformat, die Runtime oder die Regeln für TV-Schreibbefehle. Bestehende Aufträge und ihr Schutz vor erneutem Versand bleiben erhalten.
+
+Ein unbekannter `Result`-Text wird vom Parser unverändert zurückgegeben und nicht als Erfolg oder Ablehnung entschlüsselt. Die [Protokolltests](../test/recording-protocol.test.js) zeigen diese Unterscheidung unter anderem mit den synthetischen Werten `17` und `BUSY`: Eine formal passende Antwort kann `acknowledged=true` haben, während `confirmed=false` bleibt. Die Anzeige einer TV-Antwort darf deshalb nicht als Bestätigung eines gespeicherten Timers oder einer erfolgreichen Aufnahme gelesen werden. Erst der eindeutige Timerabgleich kann den Auftrag auf `scheduled` setzen.
+
+Eine lesbare, aber nicht vollständig vergleichbare Timerliste erzeugt eine offene Statusdiagnose am Auftrag; diese Meldung ist für sich keine geworfene Runtime-Ausnahme. Tatsächliche Parser-, HTTP-, SOAP- und Verbindungsfehler werden weiterhin mit ihrer bisherigen Diagnose behandelt. Eine spätere Störung beim Rücklesen hebt einen bereits gespeicherten Antwortnachweis nicht auf und löst keinen erneuten Aufnahmebefehl aus.
 
 ### Vor dem tatsächlichen Senden erneut prüfen
 

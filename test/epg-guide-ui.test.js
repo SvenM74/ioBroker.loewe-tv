@@ -15,6 +15,19 @@ const channel = (id, number, events = []) => ({ id, name: id, number, available:
 const payload = channels => ({ schemaVersion: 1, source: 'tv', now: NOW, instance: 'loewe-tv.0',
     listName: 'ASTRA LCN', listView: 'selected-list', catalogRevision: 'verified-catalogue', status: 'ready', lastUpdate: NOW, connected: true, channels });
 
+// Synthetic schema-1 journal snapshot, including metadata already persisted
+// by earlier adapter versions. No live TV response is used by these tests.
+function recordingSnapshot(overrides = {}) {
+    return { schemaVersion: 1, ready: true, updatedAt: NOW, jobs: [{
+        id: 'existing-recording', status: 'uncertain', createdAt: NOW - 3000, updatedAt: NOW,
+        attempts: 1, sentAt: NOW - 2000, acknowledgedAt: NOW - 1000, confirmedAt: null,
+        lastError: 'Die TV-Timerliste ist nicht vollständig vergleichbar.', canCancel: false,
+        channel: { name: 'Das Erste', number: 1 },
+        programme: { title: 'Sendung', start: NOW + ui.HOUR, end: NOW + 2 * ui.HOUR },
+        ...overrides,
+    }] };
+}
+
 test('guide accepts only the expected TV snapshot and a bounded event list', () => {
     for (const invalid of [null, {}, { ...payload([]), source: 'xmltv' },
         { ...payload([]), schemaVersion: 2 }, { ...payload([]), now: 'today' },
@@ -240,6 +253,125 @@ test('recording snapshots preserve server status and allow cancellation only for
     assert.equal(result.jobs.find(job => job.id === 'job-8').status, 'unknown');
     assert.equal(result.jobs.find(job => job.id === 'job-3').status, 'scheduled');
     assert.equal(ui.normalizeRecordings({ ...raw, jobs: [{ ...raw.jobs[0], canCancel: false }] }).jobs[0].canCancel, false);
+});
+
+test('existing acknowledged journal snapshots show transfer separately without rewriting their status', () => {
+    const raw = recordingSnapshot({ canCancel: true });
+    const before = JSON.stringify(raw);
+    const job = ui.normalizeRecordings(raw).jobs[0];
+    assert.equal(job.acknowledgedAt, NOW - 1000);
+    assert.equal(job.status, 'uncertain');
+    assert.equal(job.canCancel, false);
+    assert.equal(job.lastError, raw.jobs[0].lastError, 'Timer diagnostics remain available.');
+    assert.deepEqual(ui.recordingPresentation(job), {
+        status: 'transferred', labelKey: 'recordingTransferred', noteKey: 'recordingTransferredNote',
+        mutedNote: true, collapseDiagnostic: true,
+    });
+    assert.deepEqual(ui.normalizeRecordings(JSON.parse(before)).jobs[0], job, 'Reloading the same journal needs no migration.');
+    assert.equal(JSON.stringify(raw), before, 'Display must not change the journal snapshot.');
+    const clockCorrected = ui.normalizeRecordings(recordingSnapshot({ acknowledgedAt: NOW - 4000 })).jobs[0];
+    assert.equal(clockCorrected.acknowledgedAt, NOW - 4000);
+    assert.equal(ui.recordingPresentation(clockCorrected).status, 'transferred', 'A clock correction may put the reply time before the send time.');
+});
+
+test('missing, zero, coerced or contradictory recording metadata never proves a TV reply', () => {
+    for (const acknowledgedAt of [undefined, null, 0, '', String(NOW), NaN, Infinity, -1,
+        NOW + 0.5, 946684799999, 4102444800000, [], {}]) {
+        const job = ui.normalizeRecordings(recordingSnapshot({ acknowledgedAt })).jobs[0];
+        assert.equal(job.acknowledgedAt, null);
+        const presentation = ui.recordingPresentation(job);
+        assert.equal(presentation.status, 'uncertain');
+        assert.equal(presentation.noteKey, 'recordingUncertainNote');
+        assert.equal(presentation.collapseDiagnostic, false);
+        assert.equal(presentation.mutedNote, false);
+    }
+    for (const patch of [
+        { attempts: 0, sentAt: null }, { attempts: 0 }, { attempts: undefined }, { attempts: 2 }, { attempts: '1' },
+        { sentAt: null }, { sentAt: undefined }, { sentAt: 0 }, { sentAt: String(NOW) }, { sentAt: NaN },
+    ]) {
+        const job = ui.normalizeRecordings(recordingSnapshot(patch)).jobs[0];
+        assert.equal(job.acknowledgedAt, null, 'A reply timestamp requires complete, valid send metadata.');
+        assert.equal(job.notSent, false, 'Contradictory reply metadata does not prove that no request was sent.');
+        const presentation = ui.recordingPresentation(job);
+        assert.equal(presentation.status, 'uncertain');
+        assert.equal(presentation.noteKey, 'recordingUncertainNote');
+        assert.equal(presentation.collapseDiagnostic, false);
+    }
+});
+
+test('an uncertain job is described as unsent only with complete explicit journal evidence', () => {
+    const unsent = { attempts: 0, sentAt: null, acknowledgedAt: null };
+    const job = ui.normalizeRecordings(recordingSnapshot({ ...unsent, canCancel: true })).jobs[0];
+    assert.equal(job.notSent, true);
+    assert.equal(job.status, 'uncertain');
+    assert.equal(job.canCancel, false, 'Presentation must not grant new cancellation rights.');
+    assert.deepEqual(ui.recordingPresentation(job), {
+        status: 'timerPending', labelKey: 'recordingTimerPending', noteKey: 'recordingTimerPendingNote',
+        mutedNote: true, collapseDiagnostic: false,
+    });
+    for (const patch of [
+        { attempts: undefined }, { attempts: '0' }, { attempts: 1 },
+        { sentAt: undefined }, { sentAt: 0 }, { sentAt: NOW }, { sentAt: 'null' },
+        { acknowledgedAt: undefined }, { acknowledgedAt: 0 }, { acknowledgedAt: NaN },
+    ]) {
+        const ambiguous = ui.normalizeRecordings(recordingSnapshot({ ...unsent, ...patch, notSent: true })).jobs[0];
+        assert.equal(ambiguous.notSent, false, 'Incomplete metadata and supplied UI flags cannot prove no attempt.');
+        assert.equal(ui.recordingPresentation(ambiguous).status, 'uncertain');
+    }
+});
+
+test('TV replies never override a rejection or turn programme times into recording progress', () => {
+    for (const status of ['queued', 'sending', 'scheduled', 'rejected', 'missed', 'cancelled', 'blockedDevice']) {
+        const job = ui.normalizeRecordings(recordingSnapshot({ status })).jobs[0];
+        const presentation = ui.recordingPresentation(job);
+        assert.equal(presentation.status, status, status);
+        assert.equal(presentation.noteKey, null, status);
+        assert.equal(presentation.collapseDiagnostic, false, status);
+    }
+    for (const [start, end] of [
+        [NOW + ui.HOUR, NOW + 2 * ui.HOUR], [NOW - ui.HOUR, NOW + ui.HOUR], [NOW - 2 * ui.HOUR, NOW - ui.HOUR],
+    ]) {
+        const raw = recordingSnapshot({ programme: { title: 'Sendung', start, end } });
+        const job = ui.normalizeRecordings(raw).jobs[0];
+        assert.equal(job.status, 'uncertain');
+        assert.equal(ui.recordingPresentation(job).status, 'transferred', 'Start and end times do not prove recording activity.');
+        raw.jobs[0].status = 'scheduled';
+        raw.jobs[0].confirmedAt = NOW;
+        raw.jobs[0].lastError = '';
+        const confirmed = ui.recordingPresentation(ui.normalizeRecordings(raw).jobs[0]);
+        assert.equal(confirmed.status, 'scheduled');
+        assert.equal(confirmed.noteKey, null, 'A subsequent timer confirmation removes the pending note.');
+    }
+});
+
+test('acknowledged pending jobs stay ahead of completed history and survive programme-action normalization', () => {
+    const raw = recordingSnapshot();
+    const selected = raw.jobs[0];
+    raw.jobs.push(...Array.from({ length: 35 }, (_, index) => ({
+        ...selected, id: `confirmed-${index}`, status: 'scheduled', createdAt: NOW + index,
+    })));
+    const jobs = ui.normalizeRecordings(raw).jobs;
+    assert.equal(jobs.length, 36);
+    assert.equal(jobs[0].id, selected.id, 'Open timer confirmation remains visible before the 30-row display limit.');
+    assert.equal(jobs[0].status, 'uncertain');
+    const result = ui.normalizeAction({ action: 'recordingQueued', job: selected }, selected.programme);
+    assert.equal(result.job.acknowledgedAt, selected.acknowledgedAt);
+    assert.equal(result.job.canCancel, false);
+    assert.equal(ui.recordingPresentation(result.job).status, 'transferred');
+});
+
+test('transfer explanations and timer diagnostics are available in both languages and retain plain text', () => {
+    const diagnosis = 'Timer <img src=x onerror=alert(1)> & <script>data</script>\u0000';
+    const job = ui.normalizeRecordings(recordingSnapshot({ lastError: diagnosis })).jobs[0];
+    const presentation = ui.recordingPresentation(job);
+    assert.equal(job.lastError, diagnosis.replace('\u0000', ''));
+    assert.equal(presentation.collapseDiagnostic, true);
+    assert.equal(ui.translate('de', presentation.labelKey), 'An TV übertragen');
+    assert.equal(ui.translate('en', presentation.labelKey), 'Transferred to TV');
+    assert.equal(ui.translate('de', presentation.noteKey), 'Der Fernseher hat auf den Aufnahmeauftrag geantwortet. Die automatische Bestätigung über die Timerliste steht noch aus.');
+    assert.equal(ui.translate('en', presentation.noteKey), 'The TV has replied to the recording request. Automatic confirmation through the timer list is still pending.');
+    assert.equal(ui.translate('de', 'recordingTimerDetails'), 'Details zum Timerabgleich');
+    assert.equal(ui.translate('en', 'recordingTimerDetails'), 'Timer check details');
 });
 
 test('recording snapshots reject oversized responses, strip controls and keep invalid entries out of the actionable list', () => {

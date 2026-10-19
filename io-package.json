@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.12",
+    "version": "0.1.13",
     "news": {
+      "0.1.13": {
+        "en": "Distinguish a recording request answered by the TV from pending timer confirmation. Show transferred requests with a neutral status and expandable timer diagnostics, including existing journal entries. Preserve genuine transfer uncertainty, timer matching and protection against repeated submissions. Document the reported delivery of two requests and the start of the first recording.",
+        "de": "Vom TV beantwortete Aufnahmeaufträge von einer noch offenen Timerbestätigung unterscheiden. Übertragene Aufträge mit sachlichem Status und aufklappbarer Timerdiagnose anzeigen, auch für vorhandene Journaleinträge. Tatsächlich unklaren Versand, Timerabgleich und Schutz vor erneutem Versand beibehalten. Gemeldete Übergabe zweier Aufträge und Beginn der ersten Aufnahme dokumentieren."
+      },
       "0.1.12": {
         "en": "Accept additional plain-text metadata in TV timer entries. Keep an established connection alive when a valid GetTimerList response contains unsupported timer data. Preserve strict timer matching and prevent repeated recording submissions, including after restart. Report unsupported metadata field names without logging their contents.",
         "de": "Zusätzliche Textmetadaten in TV-Timereinträgen akzeptieren. Eine bestehende Verbindung bei nicht auswertbaren Timerdaten in einer gültigen GetTimerList-Antwort erhalten. Timer weiterhin eindeutig abgleichen und Aufnahmeaufträge auch nach einem Neustart nicht erneut übertragen. Bei unbekannten strukturierten Metadaten den Feldnamen ohne dessen Inhalt melden."

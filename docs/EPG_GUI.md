@@ -1,10 +1,10 @@
 # Programmübersicht und Aufnahmeaufträge
 
-**Version 0.1.12, Build `0.1.12-recording-fix.1`**, bietet zwei getrennte Reiter: **EPG-Einstellungen** für Aktivierung und Abrufintervall sowie **Programmübersicht** für die Senderliste mit Zeitachse, Sendungsdetails und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
+**Version 0.1.13, Build `0.1.13-recording-status.1`**, bietet zwei getrennte Reiter: **EPG-Einstellungen** für Aktivierung und Abrufintervall sowie **Programmübersicht** für die Senderliste mit Zeitachse, Sendungsdetails und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
 
 ## Öffnen und vorbereiten
 
-1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0112). `info.adapterBuild` muss **`0.1.12-recording-fix.1`** anzeigen.
+1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0113). `info.adapterBuild` muss **`0.1.13-recording-status.1`** anzeigen.
 2. Verwende **ioBroker Admin ab 7.7.28**. Lade Admin nach dem Update vollständig neu und öffne die Instanz-Konfiguration erneut.
 3. Starte die betreffende Instanz, beispielsweise **`loewe-tv.0`**. Prüfe unter **Verbindung** und **Senderlisten** die TV-Adresse und die gewünschte TV-Senderliste.
 4. Aktiviere unter **EPG-Einstellungen** die **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**. Speichere Änderungen, bevor du die Übersicht verwendest.
@@ -62,14 +62,16 @@ Jeder Auftrag wird höchstens einmal möglicherweise wirksam an den TV gesendet.
 |---|---|
 | `queued` – Wartet auf Übertragung | Dauerhaft gespeichert, noch nicht an den TV gesendet. Bei fehlender Verbindung wartet der Adapter. |
 | `sending` – Wird übertragen | Der Versand wird bearbeitet. Nach einem Neustart in diesem Zustand folgt zunächst `uncertain`. |
-| `uncertain` – Übertragung unklar | Ein Versand könnte erfolgt sein, aber ein eindeutiger Timerlistennachweis fehlt. Kein automatischer erneuter Versand. Timer am TV prüfen. |
+| `uncertain` mit gespeicherter TV-Antwort – An TV übertragen | Der Fernseher hat auf den Aufnahmebefehl geantwortet. Der automatische Timerabgleich steht noch aus. Die Anzeige ist blau; Einzelheiten stehen unter **Details zum Timerabgleich**. Kein erneuter Versand. |
+| `uncertain` ohne TV-Antwort – Übertragung unklar | Ein Versand könnte erfolgt sein, aber es liegt kein Antwortnachweis vor. Kein automatischer erneuter Versand. Timer am TV prüfen. |
+| `uncertain` vor einem Sendversuch – Timerabgleich offen | Ein möglicherweise passender Timer ist bereits vorhanden, aber noch nicht eindeutig zugeordnet. Der Adapter hat deshalb keinen neuen Aufnahmebefehl gesendet. Timer am TV prüfen. |
 | `scheduled` – Im TV geplant | Genau ein passender Timer wurde in einer vollständig auswertbaren TV-Timerliste nachgewiesen. Senderkennung sowie Start und Ende müssen passen. |
 | `missed` – Startzeit verpasst | Der noch ungesendete Auftrag konnte vor Sendungsbeginn nicht übertragen werden. Er wird nicht nachträglich gesendet. |
 | `blockedDevice` – Anderer Fernseher konfiguriert | Die konfigurierte TV-Adresse oder der Steuerport gehören nicht zum ursprünglich vorgemerkten Ziel. Es erfolgt kein Versand an das andere Ziel. |
 | `rejected` – Abgelehnt | Der Auftrag wurde ausdrücklich als zurückgewiesen gemeldet; die Fehlerangabe enthält den Grund. |
 | `cancelled` – Vormerkung entfernt | Eine noch ungesendete Vormerkung wurde entfernt. |
 
-**`scheduled` bestätigt einen TV-Timer, keine erfolgreich ausgeführte Aufnahme.** Eine Antwort auf `ProgramTimer`, auch `Result=0`, reicht als Nachweis nicht aus. Für die neue Aufnahmefunktion liegt noch **keine echte Timerantwort der Nutzergeräte** vor. Unbekannte Timerlistenformate oder unvollständige Zuordnungen bleiben `uncertain`; die [Protokollnotizen](recording-protocol.md) dokumentieren die belegten Felder und Grenzen.
+**`scheduled` bestätigt einen TV-Timer, keine erfolgreich ausgeführte Aufnahme.** Eine Antwort auf `ProgramTimer`, auch `Result=0`, reicht für den Timer-Nachweis nicht aus. Die Anzeige **An TV übertragen** nutzt den bereits gespeicherten Zeitpunkt der TV-Antwort (`acknowledgedAt`) und funktioniert deshalb auch für vorhandene Aufträge nach einem Update oder Neustart. Die aktuelle Uhrzeit allein erzeugt keinen Status für eine laufende oder abgeschlossene Aufnahme. Unbekannte Timerlistenformate oder unvollständige Zuordnungen bleiben intern `uncertain`; die [Protokollnotizen](recording-protocol.md) dokumentieren die belegten Felder und Grenzen.
 
 **Vormerkung entfernen** ist nur vor dem Versand verfügbar. Bereits übertragene oder unklare TV-Timer werden damit nicht gelöscht. Prüfe und ändere solche Timer direkt am Fernseher. Änderungen der EPG-Zeiten passen einen gespeicherten Auftrag in dieser Version nicht automatisch an. Aufnahmeregeln, Vor-/Nachlauf und die Wahl eines anderen Aufnahmeziels sind noch nicht integriert.
 
@@ -96,8 +98,9 @@ Der TV-Abruf reicht ungefähr 24 Stunden voraus; nur tatsächlich gelieferte und
 | Auswahl inzwischen geändert | Übersicht neu laden und die Sendung erneut auswählen. |
 | Instanz oder Ansicht nicht erreichbar | Instanz starten, Build und Admin-Version prüfen; Admin nach dem Update neu laden. |
 | Admin-Sitzung abgelaufen oder nicht berechtigt | Über den vorhandenen Admin-Zugang erneut anmelden beziehungsweise Benutzerrechte prüfen. |
-| `uncertain` bei einer Aufnahme | Timerliste direkt am TV prüfen. Für die Protokollanpassung wird eine echte, auswertbare Timerantwort benötigt. |
+| **An TV übertragen** | Der TV hat geantwortet; der automatische Timerabgleich ist noch offen. **Details zum Timerabgleich** öffnet die Diagnose. Der Auftrag wird nicht erneut übertragen. |
+| **Übertragung unklar** oder **Timerabgleich offen** | Timerliste direkt am TV prüfen. Für die Protokollanpassung wird eine echte, auswertbare Timerantwort benötigt. |
 
 Öffnen, Suchen und Blättern lesen den vorhandenen Arbeitsspeicher-Cache und starten keine eigenen EPG-TV-Abfragen. **EPG aktualisieren** und das konfigurierte Intervall verwenden den bestehenden Hintergrundabgleich. Die EPG-Datenpunkte unter jedem Sender bleiben unverändert; neu ist das Aufnahmejournal `recordings.jobs`.
 
-Der direkte TV-EPG-Abruf wurde mit dem früheren 0.1.8-Stand vom Nutzer auf **bild 7.55 / SL420 / V5.4.6.0** und **bild 5.32 / SL310F / V5.4.6.0** bestätigt. Ein Aufnahmeauftrag ist laut Nutzerrückmeldung am Fernseher angekommen. Für **`0.1.12-recording-fix.1`** stehen die originale XML-Timerantwort und ein Gerätetest des Fixes noch aus. Zusätzliche einfache Textfelder werden nun akzeptiert; nicht auswertbare Timerdaten setzen eine bestehende Verbindung nicht mehr auf offline. Weitere Diagnosefelder und Abrufgrenzen beschreibt die [EPG-Anleitung](EPG.md).
+Der direkte TV-EPG-Abruf wurde mit dem früheren 0.1.8-Stand vom Nutzer auf **bild 7.55 / SL420 / V5.4.6.0** und **bild 5.32 / SL310F / V5.4.6.0** bestätigt. Am **19. Oktober 2026** bestätigt der Nutzer nach Bereitstellung von 0.1.12 zwei am TV angekommene Aufnahmeaufträge und den Start der ersten Aufnahme. Der Screenshot zeigt dabei noch die pauschale Anzeige **Übertragung unklar**. Version 0.1.13 korrigiert diese Darstellung anhand der vorhandenen TV-Antwortzeit. Ein erfolgreicher Aufnahmeabschluss und die originale XML-Timerantwort sind weiterhin nicht dokumentiert. Weitere Diagnosefelder und Abrufgrenzen beschreibt die [EPG-Anleitung](EPG.md).

@@ -38,13 +38,17 @@
             recordingsFailed: 'Die Aufnahmeaufträge konnten nicht geladen werden.',
             recordingsNotReady: 'Die gespeicherten Aufnahmeaufträge sind noch nicht geladen.',
             recordingsOne: '1 Aufnahmeauftrag', recordingsShown: '{count} Aufnahmeaufträge', recordingsLimited: '{count} von {total} Aufnahmeaufträgen werden angezeigt. Offene Aufträge stehen zuerst.',
-            recordingsNote: 'Offline vorgemerkte Aufträge werden übertragen, sobald der Fernseher erreichbar ist. „Im TV geplant“ bedeutet, dass der Timer im Fernseher bestätigt wurde.',
+            recordingsNote: 'Offline vorgemerkte Aufträge werden übertragen, sobald der Fernseher erreichbar ist. „An TV übertragen“ bedeutet, dass der Fernseher auf den Auftrag geantwortet hat. „Im TV geplant“ bestätigt zusätzlich den passenden Timer.',
             recordingQueued: 'Wartet auf Übertragung', recordingWaiting: 'Wartet auf Fernseher', recordingSending: 'Wird übertragen',
             recordingUncertain: 'Übertragung unklar', recordingScheduled: 'Im TV geplant', recordingRejected: 'Abgelehnt',
+            recordingTransferred: 'An TV übertragen', recordingTimerPending: 'Timerabgleich offen',
             recordingMissed: 'Startzeit verpasst', recordingCancelled: 'Vormerkung entfernt', recordingBlockedDevice: 'Anderer Fernseher konfiguriert',
             recordingUnknown: 'Status unbekannt', recordingCancel: 'Vormerkung entfernen', recordingCancelling: 'Wird entfernt …',
             recordingCancelledMessage: 'Die ungesendete Vormerkung wurde entfernt.', recordingCancelFailed: 'Die Vormerkung konnte nicht entfernt werden.',
             recordingUncertainNote: 'Bitte den Timer im Fernseher prüfen. Der Adapter sendet diesen Auftrag nicht automatisch erneut.',
+            recordingTransferredNote: 'Der Fernseher hat auf den Aufnahmeauftrag geantwortet. Die automatische Bestätigung über die Timerliste steht noch aus.',
+            recordingTimerPendingNote: 'Der Adapter hat noch keinen Aufnahmeauftrag gesendet. Die Zuordnung zu einem vorhandenen TV-Timer ist noch offen.',
+            recordingTimerDetails: 'Details zum Timerabgleich',
             savedConfiguration: 'Gespeicherte Instanz-Konfiguration',
             chooseProgramme: 'Sendung auswählen', loading: 'Programmübersicht wird geladen …',
             loadingDescription: 'Die vorhandenen Programmdaten werden aus dem Adapter geladen.',
@@ -109,13 +113,17 @@
             recordingsFailed: 'The recording requests could not be loaded.',
             recordingsNotReady: 'Saved recording requests have not loaded yet.',
             recordingsOne: '1 recording request', recordingsShown: '{count} recording requests', recordingsLimited: 'Showing {count} of {total} recording requests. Pending requests come first.',
-            recordingsNote: 'Requests queued while offline are transferred when the TV becomes reachable. “Scheduled on TV” means that the timer has been confirmed on the TV.',
+            recordingsNote: 'Requests queued while offline are transferred when the TV becomes reachable. “Transferred to TV” means the TV replied to the request. “Scheduled on TV” also confirms the matching timer.',
             recordingQueued: 'Waiting for transfer', recordingWaiting: 'Waiting for TV', recordingSending: 'Transferring',
             recordingUncertain: 'Transfer uncertain', recordingScheduled: 'Scheduled on TV', recordingRejected: 'Rejected',
+            recordingTransferred: 'Transferred to TV', recordingTimerPending: 'Timer check pending',
             recordingMissed: 'Start time missed', recordingCancelled: 'Request removed', recordingBlockedDevice: 'A different TV is configured',
             recordingUnknown: 'Unknown status', recordingCancel: 'Remove request', recordingCancelling: 'Removing …',
             recordingCancelledMessage: 'The unsent recording request has been removed.', recordingCancelFailed: 'The request could not be removed.',
             recordingUncertainNote: 'Please check the timer on the TV. The adapter will not automatically resend this request.',
+            recordingTransferredNote: 'The TV has replied to the recording request. Automatic confirmation through the timer list is still pending.',
+            recordingTimerPendingNote: 'The adapter has not sent a recording request yet. Matching it to an existing TV timer is still pending.',
+            recordingTimerDetails: 'Timer check details',
             savedConfiguration: 'Saved instance configuration',
             chooseProgramme: 'Select a programme', loading: 'Loading the programme guide …',
             loadingDescription: 'Reading the programme information stored in the adapter.',
@@ -232,6 +240,11 @@
                 programme: { title: string(raw.programme.title), start: raw.programme.start, end: raw.programme.end },
                 createdAt: timestamp(raw.createdAt) ? raw.createdAt : 0,
                 updatedAt: timestamp(raw.updatedAt) ? raw.updatedAt : 0,
+                acknowledgedAt: raw.attempts === 1 && timestamp(raw.sentAt) && timestamp(raw.acknowledgedAt)
+                    ? raw.acknowledgedAt : null,
+                // Only explicit, consistent journal metadata proves that no
+                // request was sent. Missing fields in older snapshots do not.
+                notSent: raw.attempts === 0 && raw.sentAt === null && raw.acknowledgedAt === null,
                 lastError: string(raw.lastError || raw.message, 800),
                 canCancel: raw.canCancel === true && ['queued', 'blockedDevice'].includes(status) });
         }
@@ -239,6 +252,24 @@
         jobs.sort((a, b) => rank(a) - rank(b) || b.createdAt - a.createdAt || b.updatedAt - a.updatedAt || a.programme.start - b.programme.start || a.id.localeCompare(b.id));
         return { ready: input.ready === true, updatedAt: timestamp(input.updatedAt) ? input.updatedAt : null,
             lastError: string(input.lastError, 800), jobs };
+    }
+    // Presentation only: journal status, retry rules and cancellation remain
+    // unchanged. A TV reply never proves that recording has started or ended.
+    function recordingPresentation(job, connected) {
+        const statusKeys = { queued: connected === false ? 'recordingWaiting' : 'recordingQueued', sending: 'recordingSending',
+            uncertain: 'recordingUncertain', scheduled: 'recordingScheduled', rejected: 'recordingRejected',
+            missed: 'recordingMissed', cancelled: 'recordingCancelled', blockedDevice: 'recordingBlockedDevice', unknown: 'recordingUnknown' };
+        const status = Object.hasOwn(statusKeys, job?.status) ? job.status : 'unknown';
+        if (status === 'uncertain' && timestamp(job.acknowledgedAt)) {
+            return { status: 'transferred', labelKey: 'recordingTransferred', noteKey: 'recordingTransferredNote',
+                mutedNote: true, collapseDiagnostic: true };
+        }
+        if (status === 'uncertain' && job.notSent === true) {
+            return { status: 'timerPending', labelKey: 'recordingTimerPending', noteKey: 'recordingTimerPendingNote',
+                mutedNote: true, collapseDiagnostic: false };
+        }
+        return { status, labelKey: statusKeys[status], noteKey: status === 'uncertain' ? 'recordingUncertainNote' : null,
+            mutedNote: false, collapseDiagnostic: false };
     }
     function standaloneUrl(value) {
         try {
@@ -395,6 +426,7 @@
         let recordingsPolling = null;
         let recordingsError = '';
         const cancellingJobs = new Set();
+        const expandedRecordingDiagnostics = new Set();
         const t = (key, values) => translate(lang, key, values);
         const clock = () => guide ? guide.now + Date.now() - receivedAt : Date.now();
         const time = value => new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false }).format(value);
@@ -825,25 +857,41 @@
             }
         }
         function renderRecordings() {
+            // Read the current DOM state before replacing the list. Native
+            // toggle events can arrive after a refresh has already started.
+            for (const details of elements.recordingsList.querySelectorAll('.recording-job-diagnostics')) {
+                if (details.open) expandedRecordingDiagnostics.add(details.dataset.job);
+                else expandedRecordingDiagnostics.delete(details.dataset.job);
+            }
             const jobs = recordings?.jobs || [];
             text(elements.recordingCount, String(jobs.length));
             const fragment = document.createDocumentFragment();
             const shown = jobs.slice(0, 30);
-            const statusKeys = { queued: guide?.connected === false ? 'recordingWaiting' : 'recordingQueued', sending: 'recordingSending',
-                uncertain: 'recordingUncertain', scheduled: 'recordingScheduled', rejected: 'recordingRejected',
-                missed: 'recordingMissed', cancelled: 'recordingCancelled', blockedDevice: 'recordingBlockedDevice', unknown: 'recordingUnknown' };
+            for (const id of expandedRecordingDiagnostics) {
+                if (!jobs.some(job => job.id === id && job.status === 'uncertain' && job.lastError)) expandedRecordingDiagnostics.delete(id);
+            }
             for (const job of shown) {
+                const presentation = recordingPresentation(job, guide?.connected);
                 const item = node('li', 'recording-job');
                 item.dataset.job = job.id;
                 const copy = node('div', 'recording-job-copy');
                 copy.appendChild(node('div', 'recording-job-title', job.programme.title));
                 copy.appendChild(node('div', 'recording-job-meta', `${job.channel.number === null ? '' : `${job.channel.number}. `}${job.channel.name} · ${eventTime(job.programme, true)}`));
-                if (job.status === 'uncertain') copy.appendChild(node('p', 'recording-job-detail', t('recordingUncertainNote')));
-                if (job.lastError) copy.appendChild(node('p', 'recording-job-detail', job.lastError));
+                if (presentation.noteKey) copy.appendChild(node('p', presentation.mutedNote ? 'recording-job-note' : 'recording-job-detail', t(presentation.noteKey)));
+                if (job.lastError && job.status !== 'scheduled') {
+                    if (presentation.collapseDiagnostic) {
+                        const details = node('details', 'recording-job-diagnostics');
+                        details.dataset.job = job.id;
+                        details.open = expandedRecordingDiagnostics.has(job.id);
+                        details.appendChild(node('summary', '', t('recordingTimerDetails')));
+                        details.appendChild(node('p', 'recording-job-detail', job.lastError));
+                        copy.appendChild(details);
+                    } else copy.appendChild(node('p', 'recording-job-detail', job.lastError));
+                }
                 item.appendChild(copy);
                 const side = node('div', 'recording-job-side');
-                const state = node('span', 'recording-job-state', t(statusKeys[job.status]));
-                state.dataset.status = job.status;
+                const state = node('span', 'recording-job-state', t(presentation.labelKey));
+                state.dataset.status = presentation.status;
                 side.appendChild(state);
                 if (recordings.ready && job.canCancel && typeof bridge?.cancelRecording === 'function') {
                     const button = node('button', 'text-button recording-cancel', t(cancellingJobs.has(job.id) ? 'recordingCancelling' : 'recordingCancel'));
@@ -1061,5 +1109,5 @@
 
     return { HOUR, DAY, MESSAGES, translate, language, timeWindow, normalizeGuide, filterChannels,
         visibleEvents, timelineLayout, eventKey, isCurrent, keyboardTarget, programmeAction, programmeSelection,
-        selectionExists, normalizeAction, normalizeRecordings, standaloneUrl, mount };
+        selectionExists, normalizeAction, normalizeRecordings, recordingPresentation, standaloneUrl, mount };
 }));

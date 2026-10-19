@@ -1,6 +1,6 @@
 {
   "name": "iobroker.loewe-tv",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Local Loewe TV control with a programme guide, channel selection and persistent recording requests",
   "repository": {
     "type": "git",

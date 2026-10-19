@@ -1,12 +1,14 @@
 # Loewe TV Adapter für ioBroker
 
-## Version 0.1.12
+## Version 0.1.13
 
-Build **`0.1.12-recording-fix.1`** korrigiert die Timerlistenauswertung nach einem Aufnahmeauftrag: Zusätzliche einfache Textfelder in Timereinträgen werden akzeptiert. Nicht auswertbare Timerdaten in einer gültigen TV-Antwort setzen eine bestehende Verbindung nicht mehr fälschlich auf offline. Der Auftrag wird weiterhin nur bei eindeutigem Timerabgleich bestätigt und nach möglichem Versand nicht erneut übertragen. [Update und Installation](docs/INSTALLATION.md#update-auf-0112) · [Prüfbericht](docs/PRUEFBERICHT_0.1.12.md).
+Build **`0.1.13-recording-status.1`** unterscheidet die Übertragung eines Aufnahmeauftrags von seiner Bestätigung über die Timerliste. Hat der Fernseher auf den Aufnahmebefehl geantwortet, zeigt die Programmübersicht **An TV übertragen** mit einem sachlichen Hinweis zum noch offenen Timerabgleich. Die Diagnose bleibt unter **Details zum Timerabgleich** erreichbar. Das gilt auch für bereits gespeicherte Aufträge. [Update und Installation](docs/INSTALLATION.md#update-auf-0113) · [Prüfbericht](docs/PRUEFBERICHT_0.1.13.md).
 
 **EPG-Einstellungen** und **Programmübersicht** haben seit 0.1.11 eigene Reiter. Die Übersicht zeigt die gespeicherte TV-Senderliste mit Zeitachse und Sendungsdetails. **Jetzt ansehen** schaltet auf eine zeitlich eindeutig laufende Sendung; zukünftige Sendungen lassen sich nach Bestätigung zur Aufnahme vormerken.
 
-Aufträge werden dauerhaft in **`recordings.jobs`** gespeichert. Ist der TV offline, wartet der Adapter auf seine Erreichbarkeit, ohne ihn aufzuwecken. Bleibt ein Auftrag bis zum Sendungsbeginn ungesendet, wird er **`missed`**. Ein möglicherweise bereits übertragener Auftrag wird nicht automatisch erneut gesendet. **`scheduled`** bedeutet, dass ein passender Timer in der TV-Timerliste nachgewiesen wurde; eine bloße Antwort auf den Aufnahmebefehl reicht dafür nicht aus. Ein Aufnahmeauftrag ist laut Nutzerrückmeldung am Fernseher angekommen. Die originale Timerantwort und ein Gerätetest dieses Fixes stehen noch aus. Bei unbekanntem Antwortformat bleibt der Auftrag **`uncertain`**.
+Aufträge werden dauerhaft in **`recordings.jobs`** gespeichert. Ist der TV offline, wartet der Adapter auf seine Erreichbarkeit, ohne ihn aufzuwecken. Bleibt ein Auftrag bis zum Sendungsbeginn ungesendet, wird er **`missed`**. Ein möglicherweise bereits übertragener Auftrag wird nicht automatisch erneut gesendet. **`scheduled`** bedeutet, dass ein passender Timer in der TV-Timerliste nachgewiesen wurde; eine bloße Antwort auf den Aufnahmebefehl reicht dafür nicht aus. Ein noch offener Timerabgleich bleibt intern **`uncertain`**, wird in der Oberfläche aber nach den vorhandenen Übertragungsnachweisen unterschieden.
+
+Am **19. Oktober 2026** hat der Nutzer bestätigt, dass beide Aufnahmeaufträge am Fernseher angekommen sind und die erste Aufnahme bereits gestartet wurde. Der Abschluss der Aufnahmen und die originale XML-Timerantwort sind damit noch nicht dokumentiert. Die Korrekturen an Timer-Textmetadaten und Verbindungsstatus aus 0.1.12 bleiben enthalten. [Geräteergebnisse und Grenzen](docs/COMPATIBILITY.md).
 
 Über **Separat öffnen** ist die Programmübersicht auch außerhalb des Konfigurationsdialogs unter der bestehenden Admin-Adresse erreichbar. Sie verwendet die konfigurierte Admin-Anmeldung und benötigt keinen eigenen Port. [Bedienung, Aufnahmezustände und separate URL](docs/EPG_GUI.md).
 

@@ -2,7 +2,7 @@
 
 ## Aktueller Stand
 
-**Version 0.1.12, Build `0.1.12-recording-fix.1`**, enthält die manuell bestätigte Aufnahmevormerkung aus der Programmübersicht und korrigiert die Behandlung zusätzlicher Timer-Textmetadaten sowie die falsche Offline-Anzeige nach semantischen Timerfehlern. Die automatische Suche nach Sendungen anhand eigener Regeln bleibt das nächste Ausbauziel.
+**Version 0.1.13, Build `0.1.13-recording-status.1`**, zeigt vom Fernseher beantwortete Aufnahmeaufträge als **An TV übertragen** und trennt diesen Nachweis vom noch offenen Timerabgleich. Die Diagnose ist aufklappbar. Die Korrekturen an Timer-Textmetadaten und Verbindungsstatus aus 0.1.12 bleiben enthalten. Die automatische Suche nach Sendungen anhand eigener Regeln bleibt das nächste Ausbauziel.
 
 | Baustein | Implementierter Stand |
 |---|---|
@@ -21,13 +21,13 @@ Die [Bedienungsanleitung zur Programmübersicht](EPG_GUI.md) beschreibt Dialoge,
 
 Der Nutzer hat den direkten TV-EPG-Abruf mit dem früheren 0.1.8-Stand auf **Loewe bild 7.55 / SL420 / V5.4.6.0** und **bild 5.32 / SL310F / V5.4.6.0** bestätigt. Die [Kompatibilitätsübersicht](COMPATIBILITY.md) dokumentiert die bisherigen Rückmeldungen. Daraus folgt keine Bestätigung jeder EPG-Spalte, sämtlicher Sender oder der neuen Aufnahmefunktion.
 
-Laut Nutzerrückmeldung ist ein Aufnahmeauftrag am Fernseher angekommen. Ein Gerätetest des neuen Fixes steht aus. **Die originale XML-Timerantwort des betroffenen Fernsehers liegt noch nicht vor.** Der implementierte `ProgramTimer`-Aufruf und die bekannten Timerlistenfelder stammen aus der Original-App. Die [Aufnahme-Protokollnotizen](recording-protocol.md) halten die Fundstellen und Grenzen fest. Die EPG-Grundlage und zusätzliche Feldquellen sind in [epg-protocol.md](epg-protocol.md) beschrieben. Frühere Prüfberichte bleiben historische Nachweise für ihren jeweiligen Build.
+Am **19. Oktober 2026** bestätigt der Nutzer zwei erfolgreich am Fernseher angekommene Aufnahmeaufträge und den Start der ersten Aufnahme. Der Abschluss der Aufnahmen ist noch nicht dokumentiert. **Die originale XML-Timerantwort des betroffenen Fernsehers liegt noch nicht vor.** Der implementierte `ProgramTimer`-Aufruf und die bekannten Timerlistenfelder stammen aus der Original-App. Die [Aufnahme-Protokollnotizen](recording-protocol.md) halten die Fundstellen und Grenzen fest. Die EPG-Grundlage und zusätzliche Feldquellen sind in [epg-protocol.md](epg-protocol.md) beschrieben. Frühere Prüfberichte bleiben historische Nachweise für ihren jeweiligen Build.
 
 ## Verhalten der Aufnahmeaufträge seit 0.1.11
 
 Der Adapter bestätigt eine Vormerkung erst nach dem Speichern des Journals. Bei Offline-TV bleibt ein ungesendeter Auftrag `queued`. Er wird weiterbearbeitet, sobald die Steuerschnittstelle erreichbar ist. Dieser Ablauf gilt auch bei deaktivierten regulären Status-, Sender- oder EPG-Abrufintervallen. Ein noch ungesendeter Auftrag wird nach Erreichen seiner Startzeit `missed` und nicht verspätet übertragen.
 
-Eine möglicherweise wirksame Übergabe wird höchstens einmal versucht. Bei unklarem Versand oder einem Neustart während der Übergabe bleibt der Auftrag `uncertain`; ein späterer Timerlistenabgleich kann ihn bestätigen. Ein sicher noch nicht gesendeter Auftrag darf weiter warten. Eine bloße SOAP-Antwort, einschließlich `Result=0`, belegt keinen gespeicherten Timer. **`scheduled` bedeutet Timer im TV nachgewiesen, nicht Aufnahme erfolgreich abgeschlossen.**
+Eine möglicherweise wirksame Übergabe wird höchstens einmal versucht. Bei unklarem Versand oder einem Neustart während der Übergabe bleibt der Auftrag `uncertain`; ein späterer Timerlistenabgleich kann ihn bestätigen. Eine gespeicherte TV-Antwort führt in der Oberfläche bereits zur Anzeige **An TV übertragen**, ohne den Journalstatus zu ändern. Ein sicher noch nicht gesendeter Auftrag darf weiter warten. Eine bloße SOAP-Antwort, einschließlich `Result=0`, belegt keinen gespeicherten Timer. **`scheduled` bedeutet Timer im TV nachgewiesen, nicht Aufnahme erfolgreich abgeschlossen.**
 
 Die Vormerkung behält den ursprünglichen TV-, Sender- und Sendungsbezug. Eine Änderung der TV-Adresse oder des Steuerports überträgt alte Aufträge nicht auf das neue Ziel. Ungesendete Vormerkungen können in der Oberfläche entfernt werden. Bereits übertragene oder unklare Timer müssen am Fernseher geprüft werden. Gespeicherte Aufträge werden bei EPG-Änderungen nicht automatisch verschoben.
 
@@ -35,8 +35,8 @@ Die Vormerkung behält den ursprünglichen TV-, Sender- und Sendungsbezug. Eine 
 
 | Schritt | Benötigtes Ergebnis |
 |---|---|
-| Aufnahmeablauf auf Nutzerhardware prüfen | Eine ausdrücklich bestätigte zukünftige Testsendung übertragen, die echte `GetTimerList`-Antwort auswerten und Sender, Beginn, Ende sowie Aufnahmeziel am TV vergleichen. Unbekannte Felder nicht raten. |
-| Standby und tatsächliche Aufnahme prüfen | Übergabe bei erreichbarer Steuerschnittstelle sowie spätere Ausführung eines bereits gespeicherten Timers separat prüfen. Fehlende Erreichbarkeit ohne Schnellstart bleibt eine Grenze für neue Übertragungen. |
+| Automatische Timerbestätigung am Nutzergerät prüfen | Nach den bestätigten Übertragungen die echte `GetTimerList`-Antwort auswerten und Sender, Beginn, Ende sowie Aufnahmeziel am TV vergleichen. Unbekannte Felder nicht raten. |
+| Standby und Aufnahmeabschluss prüfen | Nach dem bestätigten ersten Aufnahmestart den erfolgreichen Abschluss sowie die Ausführung gespeicherter Timer aus Standby separat prüfen. Fehlende Erreichbarkeit ohne Schnellstart bleibt eine Grenze für neue Übertragungen. |
 | Automatische Suchregeln | Sendungen nach Titel, Sender oder weiteren gelieferten Merkmalen auswählen; zunächst eine nachvollziehbare Planungsvorschau, anschließend ausdrücklich aktivierbare Regeln. |
 | Vor- und Nachlauf | Zusätzliche Zeit vor und nach einer Sendung anbieten und die daraus entstehenden Grenzen sowie Überschneidungen prüfen. Im aktuellen Build werden die ausgewählten Sendungszeiten verwendet. |
 | Geänderte Sendezeiten | Abweichungen zwischen gespeicherter Vormerkung und neuem EPG erkennen. Änderungen am TV erst automatisieren, wenn Ändern oder Löschen bestehender Timer belegt ist. |

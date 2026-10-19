@@ -4,6 +4,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const config = require('../admin/jsonConfig.json');
 const createAdminContract = require('./fixtures/admin-json-config/contract.cjs');
+const { normalizeManualMappings } = require('../lib/epg-mapping');
+const { buildMappingRows } = require('../lib/epg-config');
 
 const items = config.items._epg.items;
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -344,6 +346,90 @@ test('only manual matrix cells ask for XMLTV choices; real row/global templates 
         assert.equal(harness.data.epgXmltvMappings[0].xmltvId, typed);
         harness.noErrors();
     }
+});
+
+test('an upstream autocomplete event without a target value survives the real table, RPC, repair and native save', async t => {
+    for (const mode of ['manual', 'auto', 'disabled']) {
+        await t.test(mode, async () => {
+            const rows = [fullRow(0, 'manual', 'previous-id'), fullRow(1, 'manual', 'keep-id'),
+                fullRow(2, 'disabled'), fullRow(3)];
+            const harness = admin({ ...form(), epgXmltvMappings: rows });
+            const table = await harness.table();
+            const input = harness.cell(table);
+            const rendered = input.render();
+            assert.equal(rendered.item.value, 'previous-id');
+            assert.equal(typeof rendered.onInputChange, 'function');
+
+            // Material UI can send an event whose target is an option element.
+            // Execute the pinned upstream JSX callback itself, including its
+            // unchecked target.value read, rather than synthesizing broken rows.
+            rendered.onInputChange({ target: { tagName: 'LI' } });
+            assert.equal(table.state.value[0].xmltvId, undefined);
+            if (mode !== 'manual') table.onTableCellChange(0, 'mode', mode);
+            await harness.clock.advance(300);
+            assert.equal(harness.data.epgXmltvMappings[0].channel, rows[0].channel,
+                'Editing a cell must preserve the hidden TV identity.');
+
+            harness.control('_epgMappingLoad', harness.classes.ConfigSendto)._onClick();
+            const call = harness.calls.find(request => request.command === 'getEpgMappingRows');
+            assert.ok(call, 'The request must come from the shipped form and original SendTo implementation.');
+            assert.equal(Object.hasOwn(call.data.mappings[0], 'xmltvId'), false,
+                'The actual JSON request drops the undefined field.');
+            assert.equal(call.data.mappings[0].mode, mode);
+            const expected = { [rows[1].channel]: 'keep-id', [rows[2].channel]: '' };
+            if (mode !== 'auto') expected[rows[0].channel] = '';
+            assert.deepEqual(normalizeManualMappings(call.data.mappings), expected);
+
+            const services = rows.map((row, index) => ({ id: row.channel,
+                name: `Fixture TV ${index}`, number: index + 1, itemClass: 'video' }));
+            const catalogue = services.map((service, index) => ({
+                id: index === 1 ? 'keep-id' : `automatic-${index}`, names: [service.name],
+            }));
+            const repaired = buildMappingRows(services, catalogue, call.data.mappings,
+                { catalogueLoaded: true, revision: 11 });
+            assert.equal(repaired.rows[0].mode, mode);
+            assert.equal(repaired.rows[0].xmltvId, '');
+            assert.equal(repaired.rows[1].xmltvId, 'keep-id', 'Other manual corrections remain intact.');
+            assert.equal(repaired.rows[2].mode, 'disabled');
+            assert.equal(repaired.assigned, mode === 'auto' ? 3 : 2,
+                'An unfinished manual row must not silently accept an automatic match.');
+            if (mode === 'manual') assert.match(repaired.rows[0].assignment, /bitte einen XMLTV-Sender auswählen/u);
+
+            await harness.reply(call, harness.response(call, repaired.rows));
+            await harness.clock.advance(300);
+            assert.deepEqual(harness.data.epgXmltvMappings, repaired.rows);
+            const saved = harness.saveNative();
+            assert.deepEqual(saved.epgXmltvMappings, repaired.rows);
+            assert.deepEqual(normalizeManualMappings(saved.epgXmltvMappings), expected);
+            assert.equal(Object.hasOwn(saved, '_epgMappingResponse'), false);
+
+            const reopened = admin(saved);
+            const reopenedTable = await reopened.table();
+            assert.deepEqual(reopenedTable.state.value, repaired.rows);
+            reopened.control('_epgMappingLoad', reopened.classes.ConfigSendto)._onClick();
+            assert.deepEqual(normalizeManualMappings(reopened.calls[0].data.mappings), expected,
+                'Opening the saved configuration must not repeat the error.');
+            assert.deepEqual(harness.alerts, []);
+            harness.noErrors();
+            reopened.noErrors();
+        });
+    }
+});
+
+test('upstream autocomplete clear and selection callbacks preserve an explicit XMLTV field', async () => {
+    const harness = admin({ ...form(), epgXmltvMappings: [fullRow(0, 'manual', 'previous-id')] });
+    const table = await harness.table();
+    const input = harness.cell(table);
+    const rendered = input.render();
+    rendered.onChange({}, null);
+    await harness.clock.advance(300);
+    assert.equal(harness.data.epgXmltvMappings[0].xmltvId, '');
+    assert.deepEqual(normalizeManualMappings(harness.data.epgXmltvMappings), { 'channels.tv.TV_0': '' });
+    rendered.onChange({}, { value: 'replacement-id', label: 'Replacement channel' });
+    await harness.clock.advance(300);
+    assert.equal(harness.data.epgXmltvMappings[0].xmltvId, 'replacement-id');
+    assert.deepEqual(normalizeManualMappings(harness.saveNative().epgXmltvMappings), { 'channels.tv.TV_0': 'replacement-id' });
+    harness.noErrors();
 });
 
 test('source changes invalidate full-row choices but keep corrections and untouched legacy rows for backend migration', async () => {

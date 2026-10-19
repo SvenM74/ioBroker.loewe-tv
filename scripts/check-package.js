@@ -18,10 +18,10 @@ const catalog = readJson('docs/protocol-templates.json');
 const remote115 = readJson('docs/remote115-keys.json');
 
 assert.equal(pkg.name, `iobroker.${io.common.name}`);
-assert.equal(pkg.version, '0.1.23');
+assert.equal(pkg.version, '0.1.24');
 assert.equal(pkg.version, io.common.version);
 assert.ok(BUILD_ID.startsWith(`${pkg.version}-`), 'Build identifier must match package version');
-assert.equal(BUILD_ID, '0.1.23-logo-registry.1');
+assert.equal(BUILD_ID, '0.1.24-xmltv-mapping.1');
 assert.ok(pkg.keywords.includes('xmltv'), 'Package keywords must describe optional XMLTV support');
 assert.equal(io.common.mode, 'daemon');
 assert.equal(io.common.messagebox, true, 'Admin list selection requires adapter messaging');
@@ -93,7 +93,7 @@ assert.equal(externalConfig.epgXmltvUrl, 'https://guide.example.invalid/guide.xm
 assert.deepEqual(externalConfig.epgXmltvMappings, { 'channels.tv.example': 'Example.de' });
 assert.equal(externalConfig.epgConfigError, '');
 const invalidExternalConfig = normalizeConfig({ ...io.native, host: 'fixture.invalid',
-    epgSource: 'xmltv', epgXmltvUrl: 'not a guide URL', epgXmltvMappings: [{}] });
+    epgSource: 'xmltv', epgXmltvUrl: 'not a guide URL', epgXmltvMappings: [{ xmltvId: 'missing-tv-identity' }] });
 assert.ok(invalidExternalConfig.epgConfigError, 'Invalid optional EPG settings must be diagnosed without disabling TV control');
 assert.equal(invalidExternalConfig.host, config.host);
 const retiredStaticStates = [

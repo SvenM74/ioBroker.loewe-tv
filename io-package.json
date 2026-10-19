@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.23",
+    "version": "0.1.24",
     "news": {
+      "0.1.24": {
+        "en": "Repair XMLTV configuration loading when Admin omits an empty channel choice. Normalize incomplete automatic, disabled and manual rows, ignore empty legacy placeholders and retain valid existing assignments. Keep unfinished manual choices unassigned; report real TV-ID errors with their row number.",
+        "de": "XMLTV-Konfiguration wieder laden, wenn Admin eine leere Senderauswahl ohne XMLTV-ID übergibt. Unvollständige automatische, deaktivierte und manuelle Zeilen normalisieren, vollständig leere Altzeilen ignorieren und gültige Zuordnungen erhalten. Unfertige manuelle Auswahlen bleiben ohne automatische Zuordnung; echte TV-ID-Fehler mit Zeilennummer melden."
+      },
       "0.1.23": {
         "en": "Add a channel-logo registry with 1,046 pinned tv-logo/tv-logos paths, automatic TV-channel matching, country preference and editable per-channel assignments. Choose TV logos, registry logos or both; retain manual image URLs and square logo frames. Populate the logo tab from the saved channel list even when TV and EPG are off. Preserve the Admin 7.7.28 baseline and existing Web/Cloud routes.",
         "de": "Senderlogo-Verzeichnis mit 1.046 festgelegten tv-logo/tv-logos-Dateipfaden, automatischer Zuordnung zur TV-Liste, Länderpräferenz und Korrektur je Sender ergänzen. TV-Logos, Verzeichnis oder beide Quellen wählen; manuelle Bildadressen und quadratische Anzeigen erhalten. Das Logo-Register verwendet die gespeicherte Senderliste auch bei ausgeschaltetem TV oder deaktiviertem EPG. Admin-Mindestversion 7.7.28 und bestehende Web-/Cloud-Routen beibehalten."

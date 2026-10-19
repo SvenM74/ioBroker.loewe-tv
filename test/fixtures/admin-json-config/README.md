@@ -21,7 +21,7 @@ All paths below are relative to the pinned upstream commit
 | --- | --- | --- |
 | `src/JsonConfigComponent/ConfigGeneric.tsx` | `d2130908809eedca99aba48dc53154475ec9c36b` | `onUpdate`, `getValue`, `setValue`, `getText`, `onChangeAsync`, `onChange`, `execute`, `executeCustom`, `calculate`, `escapeString`, `getPattern`, and the pre-layout portion of `render` |
 | `src/JsonConfigComponent/ConfigSendto.tsx` | `9af31e6e2d534ce783d9544a228830889cbffd01` | `componentDidMount`, `_onClick` |
-| `src/JsonConfigComponent/ConfigAutocompleteSendTo.tsx` | `247640ecae3f87a0bd9819083bbdba1d54679c10` | `askInstance`, `getContext`, and `renderItem` before Material UI rendering |
+| `src/JsonConfigComponent/ConfigAutocompleteSendTo.tsx` | `247640ecae3f87a0bd9819083bbdba1d54679c10` | `askInstance`, `getContext`, `renderItem` before Material UI rendering, and the Autocomplete JSX `onInputChange`/`onChange` callbacks |
 | `src/JsonConfigComponent/ConfigTable.tsx` | `50c4bc7a77204ce8b929e5f458ee36da53f03aef` | `componentDidMount`, `itemTable`'s `onChange` callback body, `onChangeWrapper` |
 | `src/JsonConfigComponent/index.tsx` | `d059ad151d7a5606f38df2b1fe7e6cd5851dc44e` | `onError`, `flatten`, `buildDependencies` |
 | `src/JsonConfig.tsx` | `6bcffb84aa2ed34c50115e05bac4e21b9124995e` | `findAttr`, `onSave`'s loop copying native and transient form fields |
@@ -39,7 +39,17 @@ The base `ConfigGeneric.componentDidMount` is empty: application subscriptions
 and mounting defaults are not exercised. The hidden-spacer JSX branch throws
 if selected; this configuration never uses `hideOnlyControl`. The rest of
 `ConfigGeneric.render` stops after the real `renderItem` call. Autocomplete
-returns its calculated item/options instead of rendering Material UI. The table
+returns its calculated item/options instead of rendering Material UI. When its
+options branch applies, the returned object also exposes the original JSX
+`onInputChange` and `onChange` callbacks. These callbacks were checked against
+the same pinned upstream blob on 2026-10-19; only JSX attribute syntax and the
+TypeScript cast around `e.target` were removed. Their unchecked read of
+`e.target.value` is intentionally preserved. An event target without that
+property produces `undefined`, which the real table/RPC flow can serialize as
+an absent XMLTV field. The regression exercises this path through backend
+normalization, repair, saving, and reopening. It does not identify which browser
+event occurred on a user's installation or emulate all Material UI event order.
+The empty-options TextField JSX callback remains outside this fixture. The table
 cell callback and native-copy loop have named wrappers to expose their original
 bodies without JSX or saving a real ioBroker object. No adapter, TV, HTTP source,
 or user's native configuration is contacted by these tests.

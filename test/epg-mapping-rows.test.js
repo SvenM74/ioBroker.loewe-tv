@@ -87,6 +87,50 @@ test('an unfinished manual row is clearly unassigned and never quietly selects a
     assert.equal(result.assigned, 1);
 });
 
+test('saved partial rows can reload and remain editable without losing source choices or absent TV corrections', () => {
+    const input = [
+        {},
+        { channel: services[0].id, mode: 'auto' },
+        { channel: services[1].id, mode: 'manual', xmltvId: null },
+        { channel: services[2].id, mode: 'disabled' },
+        { channel: 'channels.tv.Temporarily_Absent', xmltvId: 'keep-exact-id' },
+        { channel: 'channels.tv.Unfinished_Absent' },
+    ];
+    const before = structuredClone(input);
+    const result = buildMappingRows(services, catalogue, input, { catalogueLoaded: true, revision: 8 });
+    assert.deepEqual(result.rows.map(row => [row.channel, row.mode, row.xmltvId]), [
+        [services[0].id, 'auto', ''], [services[1].id, 'manual', ''], [services[2].id, 'disabled', ''],
+        ['channels.tv.Temporarily_Absent', 'manual', 'keep-exact-id'],
+        ['channels.tv.Unfinished_Absent', 'manual', ''],
+    ]);
+    assert.equal(result.assigned, 1, 'The unselected manual SD row must not fall back to its exact automatic match.');
+    assert.equal(result.retained, 2);
+    assert.match(result.rows[1].assignment, /bitte einen XMLTV-Sender auswählen/u);
+    assert.match(result.rows[2].assignment, /deaktiviert/u);
+    assert.ok(result.rows.every(row => Object.hasOwn(row, 'xmltvId') && row.revision === 8));
+    assert.deepEqual(normalizeManualMappings(result.rows), {
+        [services[1].id]: '', [services[2].id]: '',
+        'channels.tv.Temporarily_Absent': 'keep-exact-id', 'channels.tv.Unfinished_Absent': '',
+    });
+    assert.deepEqual(input, before);
+    const reloaded = buildMappingRows(services, catalogue, result.rows, { catalogueLoaded: true, revision: 8 });
+    assert.deepEqual(reloaded, result);
+});
+
+test('a legacy unfinished manual row becomes an editable request for a source selection', () => {
+    for (const selection of [{}, { xmltvId: undefined }, { xmltvId: null }]) {
+        const result = buildMappingRows(services, catalogue, [{ channel: services[0].id, ...selection }],
+            { catalogueLoaded: true });
+        assert.equal(result.rows[0].mode, 'manual');
+        assert.equal(result.rows[0].xmltvId, '');
+        assert.match(result.rows[0].assignment, /bitte einen XMLTV-Sender auswählen/u);
+        assert.equal(result.assigned, 1);
+    }
+    const oldDisabled = buildMappingRows(services, catalogue, [{ channel: services[0].id, xmltvId: '' }],
+        { catalogueLoaded: true });
+    assert.equal(oldDisabled.rows[0].mode, 'disabled', 'An explicitly disabled legacy selection remains disabled.');
+});
+
 test('empty/restored TV lists retain earlier corrections and describe the required initial TV import', () => {
     const saved = { 'channels.tv.Stored': 'stored-source', 'channels.tv.Disabled': '' };
     const empty = buildMappingRows([], [], saved);

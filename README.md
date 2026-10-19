@@ -1,6 +1,14 @@
 # Loewe TV Adapter für ioBroker
 
-## Version 0.1.23
+## Version 0.1.24
+
+Build **`0.1.24-xmltv-mapping.1`** korrigiert den Fehler **„XMLTV: Jede Senderzuordnung benötigt channel und xmltvId.“** beim Laden oder Prüfen der EPG-Konfiguration. Das Admin-Auswahlfeld kann einen leeren Wert ohne `xmltvId` übergeben. Bisher führte eine solche Zeile dazu, dass die gesamte Tabelle abgewiesen wurde. Die gemeinsame Normalisierung für Adapterstart, Senderliste und Quellenvorschau ergänzt jetzt eine fehlende Auswahl und ignoriert vollständig leere Altzeilen. Gültige manuelle und deaktivierte Zuordnungen bleiben erhalten.
+
+Eine unvollständige **manuelle** Auswahl wird als noch nicht zugeordnet angezeigt; es wird dafür kein automatischer Ersatzsender gewählt. **Automatisch** und **Deaktiviert** behalten ihre bisherige Bedeutung. Echte Strukturfehler, beispielsweise eine XMLTV-ID ohne TV-Senderkennung, nennen die betreffende Zeile. Die TV-Kennung wird nicht aus Name, Programmplatz oder Zeilenposition geraten. [Prüfbericht](docs/PRUEFBERICHT_0.1.24.md) · [Update](docs/INSTALLATION.md#update-auf-0124).
+
+Nach dem Update die Instanzkonfiguration erneut öffnen, unter **EPG-Einstellungen** die **TV-Senderliste laden** und anschließend **Quelle laden und Zuordnung prüfen**. Die bereinigte Tabelle prüfen und speichern. Die gespeicherte XMLTV-Adresse, gültige Korrekturen und die Logo-Einstellungen können weiterverwendet werden. Admin ab **7.7.28** bleibt ausreichend.
+
+## Senderlogos seit 0.1.23
 
 Build **`0.1.23-logo-registry.1`** erweitert das Register **Senderlogos** um den Katalog aus [tv-logo/tv-logos](https://github.com/tv-logo/tv-logos). Die gespeicherte TV-Senderliste wird automatisch als Tabelle vorbereitet. Wähle **Nur Fernseher**, **Nur Logo-Verzeichnis** oder **Fernseher und Logo-Verzeichnis** sowie die Länderpräferenz. Eindeutige Treffer werden zugeordnet; pro Sender sind manuelle Korrektur und das Abschalten des Verzeichnislogos möglich. Bestehende manuelle Bildadressen haben weiterhin Vorrang. [Einrichtung und Quellen](docs/CHANNEL_LOGOS.md) · [Update](docs/INSTALLATION.md#update-auf-0123) · [Prüfbericht](docs/PRUEFBERICHT_0.1.23.md).
 
@@ -16,7 +24,7 @@ Unter **EPG-Einstellungen** stehen **Nur TV**, **TV mit XMLTV-Ergänzung** und *
 
 ### Instanzlink und Schnellzugriff
 
-**Die automatischen Instanz-Pfeile sind unter älteren Admin-8-Versionen weiterhin nicht zuverlässig direkt.** Der in Admin 8.0.14 nachgewiesene Linkaufbau entfernt den EPG-Pfad und die TV-Nummer und führt beide Pfeile zu `/loewe-tv/`. Auch 0.1.23 behebt diesen Admin-Linkfehler nicht. Für den Aufruf ohne Auswahl die jeweilige direkte Web-Adresse **`/loewe-tv.0/epg.html`** beziehungsweise **`/loewe-tv.1/epg.html`** oder den Admin-Pfad **`/adapter/loewe-tv/epg.html?instance=0`** beziehungsweise **`?instance=1`** verwenden. [Direkte Zugänge](docs/ADMIN_LINKS.md).
+**Die automatischen Instanz-Pfeile sind unter älteren Admin-8-Versionen weiterhin nicht zuverlässig direkt.** Der in Admin 8.0.14 nachgewiesene Linkaufbau entfernt den EPG-Pfad und die TV-Nummer und führt beide Pfeile zu `/loewe-tv/`. Auch 0.1.24 behebt diesen Admin-Linkfehler nicht. Für den Aufruf ohne Auswahl die jeweilige direkte Web-Adresse **`/loewe-tv.0/epg.html`** beziehungsweise **`/loewe-tv.1/epg.html`** oder den Admin-Pfad **`/adapter/loewe-tv/epg.html?instance=0`** beziehungsweise **`?instance=1`** verwenden. [Direkte Zugänge](docs/ADMIN_LINKS.md).
 
 Der allgemeine Einstieg `/loewe-tv/` aus 0.1.20 bleibt erhalten, damit ältere Links keine erneute 404 erzeugen. Bei mehreren TVs enthält er weiterhin eine Auswahl. Die vorhandenen instanzbezogenen Web-/Cloud-Kacheln und die gespeicherte Web-Adapter-Auswahl bleiben bestehen. Admin 8.0.22 enthält einen offiziellen Fix für seinen Linkaufbau; dieser Stand ist eine Möglichkeit für direkte automatische Pfeile und keine neue Betriebsvoraussetzung des TV-Adapters. [Offizieller Admin-Fix](https://github.com/ioBroker/ioBroker.admin/releases/tag/v8.0.22) · [Web-/Cloud-Zugang](docs/EPG_GUI.md#über-iobrokercloud-remote-öffnen).
 

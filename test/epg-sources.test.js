@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { serviceIdentity } = require('../lib/channel-catalog');
 const { createCache, restoreCache, selectNowNext, MAX_CACHE_AGE } = require('../lib/epg-data');
-const { guideUrl, normalizeEpgConfig, configurationKey, channelSourceKey, combineCaches,
+const { guideUrl, normalizeEpgConfig, usesXmltv, configurationKey, channelSourceKey, combineCaches,
     safeMapping, serializeSources, restoreSources, MAX_BUNDLE_BYTES } = require('../lib/epg-sources');
 
 // Synthetic channels, schedules and URLs; no captured TV or provider data.
@@ -48,7 +48,7 @@ function restored(value, cfg = config(), service = SERVICE, now = NOW) {
 test('optional source mistakes remain an EPG diagnostic instead of throwing during configuration', () => {
     assert.deepEqual(normalizeEpgConfig({}), { epgSource: 'tv', epgXmltvUrl: '',
         epgXmltvMappings: {}, channelLogoOverrides: {}, epgConfigError: '' });
-    for (const epgXmltvMappings of [false, 'invalid', [{}],
+    for (const epgXmltvMappings of [false, 'invalid', [{ xmltvId: XMLTV_ID }],
         [{ channel: SERVICE.id, xmltvId: XMLTV_ID }, { channel: SERVICE.id, xmltvId: 'other' }]]) {
         const value = config({ epgXmltvMappings, channelLogoOverrides: [{ channel: SERVICE.id, url: {} }] });
         assert.equal(value.epgSource, 'auto');
@@ -61,6 +61,33 @@ test('optional source mistakes remain an EPG diagnostic instead of throwing duri
         assert.ok(value.epgConfigError);
     }
     assert.equal(config({ epgSource: 'tv', epgXmltvUrl: 7, epgXmltvMappings: 'invalid' }).epgConfigError, '');
+});
+
+test('harmless saved table gaps no longer disable XMLTV or alter established source bindings', () => {
+    const complete = [
+        { channel: SERVICE.id, xmltvId: XMLTV_ID },
+        { channel: 'channels.tv.Auto', mode: 'auto', xmltvId: '' },
+        { channel: 'channels.tv.Disabled', mode: 'disabled', xmltvId: '' },
+        { channel: 'channels.tv.Unfinished', mode: 'manual', xmltvId: '' },
+    ];
+    const partial = [
+        {}, { channel: SERVICE.id, xmltvId: XMLTV_ID },
+        { channel: 'channels.tv.Auto', mode: 'auto' },
+        { channel: 'channels.tv.Disabled', mode: 'disabled', xmltvId: null },
+        { channel: 'channels.tv.Unfinished', mode: 'manual' },
+        { channel: '', xmltvId: '' },
+    ];
+    const expected = config({ epgXmltvMappings: complete });
+    const recovered = config({ epgXmltvMappings: partial });
+    assert.equal(recovered.epgConfigError, '');
+    assert.equal(usesXmltv(recovered), true);
+    assert.deepEqual(recovered.epgXmltvMappings, expected.epgXmltvMappings);
+    assert.equal(configurationKey(recovered), configurationKey(expected));
+    for (const id of complete.map(row => row.channel)) {
+        const tv = { ...SERVICE, id };
+        assert.equal(channelSourceKey(tv, recovered), channelSourceKey(tv, expected));
+    }
+    assert.deepEqual(config({ epgXmltvMappings: [{}] }), config({ epgXmltvMappings: [] }));
 });
 
 test('optional EPG errors leave the TV and remote runtime configuration usable', () => {

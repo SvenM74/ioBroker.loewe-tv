@@ -189,6 +189,7 @@ Zuerst **Quelle laden und Zuordnung prüfen**, danach den gespeicherten Betrieb 
 
 | Beobachtung | Prüfung |
 |---|---|
+| `XMLTV: Jede Senderzuordnung benötigt channel und xmltvId.` | Auf **0.1.24** aktualisieren, Konfiguration neu öffnen, **TV-Senderliste laden** und **Quelle laden und Zuordnung prüfen** verwenden. Fehlende leere Auswahlwerte und vollständig leere Altzeilen werden normalisiert; gültige Korrekturen bleiben erhalten. Unfertige manuelle Auswahlen vervollständigen und speichern. [Ursache und Prüfung](PRUEFBERICHT_0.1.24.md). |
 | `EPG_XMLTV_CONFIG` | Quellenmodus, gültige HTTP(S)-Adresse und manuelle Korrekturen prüfen. TV-EPG bleibt bei optionalem Konfigurationsfehler nutzbar. |
 | `XMLTV_URL`, `XMLTV_REDIRECT` | Direktlink auf die Feeddatei verwenden; erlaubtes Protokoll, Weiterleitungsziel und Anzahl prüfen. |
 | `XMLTV_HTTP`, `XMLTV_NETWORK`, `XMLTV_TIMEOUT` | Erreichbarkeit vom ioBroker-Rechner, HTTP-Status und Antwortdauer des Anbieters prüfen. |

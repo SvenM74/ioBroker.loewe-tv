@@ -940,7 +940,29 @@ module.exports = function createAdminContract(environment) {
             }
             item = item || null;
         }
-        return { error, disabled, options, item }; // Fixture: omit Material UI JSX.
+        // Fixture: omit Material UI JSX, but expose the original Autocomplete
+        // callbacks when the upstream options branch would render it.
+        const rendered = { error, disabled, options, item };
+        if (!options.length) return rendered;
+        return {
+            ...rendered,
+            onInputChange: e => {
+                    if (!e || !this.props.schema.freeSolo) {
+                        return;
+                    }
+
+                    const val = e.target.value;
+                    if (val !== this.state.value) {
+                        this.setState({ value: val }, () => this.onChange(this.props.attr, val));
+                    }
+            },
+            onChange: (_, value) => {
+                    const val = typeof value === 'object' ? (value ? value.value : '') : value;
+                    if (val !== this.state.value) {
+                        this.setState({ value: val }, () => this.onChange(this.props.attr, val));
+                    }
+            },
+        };
     }
 
     }

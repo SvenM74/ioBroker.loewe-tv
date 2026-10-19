@@ -364,6 +364,62 @@ test('a fully restored empty catalogue differs from an instance that has not sta
     assert.deepEqual(h.calls, []);
 });
 
+test('saved incomplete XMLTV drafts reload through the actual form and message route and survive a fresh startup', async t => {
+    const services = mergeChannelPage(null, page()).services;
+    for (const [index, mode] of ['auto', 'manual', 'disabled'].entries()) {
+        const saved = [{}, { channel: services[0].id, mode },
+            { channel: services[1].id, xmltvId: `provider-choice-${index}` },
+            { channel: 'channels.tv.Previous_Sender', mode: 'disabled' },
+            { channel: '', xmltvId: '' }];
+        const h = await harness(t, { namespace: `loewe-tv.${index}`, config: { epgXmltvMappings: saved } });
+        await h.runtime.channelObjects.whenIdle();
+        assert.equal(h.runtime.config.epgConfigError, '', 'An omitted empty field must not switch off all XMLTV.');
+        const effective = { [services[1].id]: `provider-choice-${index}`, 'channels.tv.Previous_Sender': '' };
+        if (mode !== 'auto') effective[services[0].id] = '';
+        assert.deepEqual(h.runtime.config.epgXmltvMappings, effective);
+        const request = formRequest(h.adapter.config);
+        const response = await h.send(request);
+        const envelope = mappingEnvelope(response, request);
+        assert.equal(envelope.rows.length, 3);
+        assert.equal(envelope.rows[0].channel, services[0].id);
+        assert.equal(envelope.rows[0].mode, mode);
+        assert.equal(envelope.rows[0].xmltvId, '');
+        assert.equal(envelope.rows[1].xmltvId, `provider-choice-${index}`);
+        assert.equal(envelope.rows[2].mode, 'disabled');
+        assert.deepEqual(h.adapter.config.epgXmltvMappings, saved, 'Preparing repair rows is not a live settings write.');
+        assert.deepEqual(h.calls, []);
+
+        const restarted = await harness(t, { namespace: `loewe-tv.${index}`, config: {
+            ...structuredClone(h.adapter.config), epgXmltvMappings: envelope.rows } });
+        await restarted.runtime.channelObjects.whenIdle();
+        assert.equal(restarted.runtime.config.epgConfigError, '');
+        assert.deepEqual(restarted.runtime.config.epgXmltvMappings, effective);
+        const reopenedRequest = formRequest(restarted.adapter.config);
+        const reopened = mappingEnvelope(await restarted.send(reopenedRequest), reopenedRequest);
+        assert.deepEqual(reopened.rows.map(({ channel, mode, xmltvId }) => ({ channel, mode, xmltvId })),
+            envelope.rows.map(({ channel, mode, xmltvId }) => ({ channel, mode, xmltvId })));
+        assert.deepEqual(restarted.calls, []);
+    }
+});
+
+test('a nonempty XMLTV assignment without a TV identity reports its row and preserves the existing draft', async t => {
+    const h = await harness(t);
+    await h.runtime.channelObjects.whenIdle();
+    const draft = { ...structuredClone(h.adapter.config), epgXmltvMappings: [
+        { channel: h.catalog.services[0].id, xmltvId: 'keep-this-correction' },
+        { xmltvId: 'unbound-provider-id' },
+    ] };
+    const before = structuredClone(draft);
+    const effective = structuredClone(h.runtime.config.epgXmltvMappings);
+    const response = await h.send(formRequest(draft));
+    assert.match(response.error, /Zeile 2/u);
+    assert.match(response.error, /TV-Sender/u);
+    assert.equal(Object.hasOwn(response, 'native'), false);
+    assert.deepEqual(draft, before);
+    assert.deepEqual(h.runtime.config.epgXmltvMappings, effective);
+    assert.deepEqual(h.calls, []);
+});
+
 test('the shipped logo form waits for saved channels and resolves logos with TV and EPG off', async t => {
     const televisionPage = page();
     televisionPage.items[0].name = 'ZDF HD';

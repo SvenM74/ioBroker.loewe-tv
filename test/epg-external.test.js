@@ -441,6 +441,52 @@ test('local configuration rows use the requested cached source and never downloa
     assert.deepEqual(liveSnapshot(h), before);
 });
 
+test('incomplete XMLTV drafts can preview and load real parsed programmes while the TV is off', async t => {
+    const first = service();
+    const secondLocator = 'channel://2:synthetic-b:synthetic-list';
+    const second = service({ id: 'channels.tv.Other_HD', name: 'Other HD', number: 2, caption: '2',
+        mediaItemUuid: 'synthetic-service-b', locator: secondLocator,
+        positions: [{ caption: '2', locator: secondLocator }] });
+    const xml = feed([
+        { id: 'fixture-a', name: first.name, events: [programme('Automatic programme', -5, 30)] },
+        { id: 'fixture-b', name: second.name, events: [programme('Preserved manual programme', -5, 30)] },
+    ]);
+    for (const mode of ['auto', 'manual', 'disabled']) {
+        const incomplete = [{ channel: first.id, mode }, {},
+            { channel: second.id, xmltvId: 'fixture-b' },
+            { channel: 'channels.tv.Previous', mode: 'disabled' }];
+        const h = await harness(t, { services: [first, second], xml, config: { epgXmltvMappings: incomplete } });
+        assert.equal(h.runtime.config.epgConfigError, '');
+        const { calls: beforeCalls, ...before } = liveSnapshot(h);
+        const request = { url: FEED_URL, listView: 'synthetic-list', mappings: structuredClone(incomplete) };
+        const preview = await h.runtime.handleMessage('previewEpgMappings', request);
+        assert.equal(preview.result, 'mappingPreviewReady');
+        assert.deepEqual(preview.args, [mode === 'auto' ? 2 : 1, 2]);
+        assert.deepEqual(preview.native._epgMappingResponse.basis, request);
+        const rows = preview.native._epgMappingResponse.rows;
+        assert.equal(rows[0].mode, mode);
+        assert.equal(rows[0].xmltvId, '');
+        if (mode === 'manual') assert.match(rows[0].assignment, /bitte einen XMLTV-Sender auswählen/u);
+        assert.equal(rows[1].xmltvId, 'fixture-b');
+        assert.equal(rows[2].mode, 'disabled');
+        const { calls: afterCalls, ...after } = liveSnapshot(h);
+        assert.deepEqual(after, before, 'Previewing a repair cannot apply it to the live instance.');
+        assert.deepEqual(beforeCalls, { tv: [], xmltv: [], zap: [] });
+        assert.deepEqual(afterCalls, { tv: [], zap: [], xmltv: [{ url: FEED_URL,
+            services: [first, second], manualMappings: h.runtime.config.epgXmltvMappings }] },
+        'Only the explicitly requested XMLTV preview may access a source.');
+
+        await h.manager.refresh({ manual: true });
+        const guide = h.manager.guide();
+        assert.equal(guide.channels.find(row => row.id === second.id).events[0].title, 'Preserved manual programme');
+        assert.deepEqual(guide.channels.find(row => row.id === first.id).events.map(event => event.title),
+            mode === 'auto' ? ['Automatic programme'] : []);
+        assert.equal(h.calls.xmltv.length, 2, 'One explicit preview and one refresh both reach the real XMLTV parser.');
+        assert.deepEqual(h.calls.tv, []);
+        assert.deepEqual(incomplete, request.mappings);
+    }
+});
+
 test('delayed preview replies carry an immutable draft basis and retain explicit and unavailable TV corrections', async t => {
     const started = deferred();
     const release = deferred();

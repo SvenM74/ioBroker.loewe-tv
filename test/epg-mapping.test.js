@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { resolveMappings, normalizeManualMappings, normalizeName, safeIconUrl, MAPPING_LIMITS } = require('../lib/epg-mapping');
+const { resolveMappings, normalizeManualMappings, normalizeMappingRows, normalizeName, safeIconUrl, MAPPING_LIMITS } = require('../lib/epg-mapping');
 
 const service = (name, aliases = [], id = 'channels.tv.Selected') => ({ id, name, aliases, itemClass: 'video' });
 const channel = (id, ...names) => ({ id, names });
@@ -108,11 +108,69 @@ test('manual rows normalize into a plain object and unselected TV IDs do not cre
     assert.equal(rows[0].tvChannelId, 'channels.tv.Selected');
 });
 
+test('cleared or omitted Admin selections preserve automatic, disabled and unfinished manual intent', () => {
+    const tv = service('ZDF HD');
+    const catalogue = [channel('zdf', 'ZDF HD')];
+    for (const selection of [{}, { xmltvId: undefined }, { xmltvId: null }, { xmltvId: '' }]) {
+        for (const mode of ['auto', 'disabled', 'manual']) {
+            const input = [{ channel: tv.id, mode, ...selection }];
+            const before = structuredClone(input);
+            const normalized = normalizeMappingRows(input);
+            assert.deepEqual(normalized, [{ channel: tv.id, mode, xmltvId: '' }]);
+            assert.deepEqual(normalizeManualMappings(input), mode === 'auto' ? {} : { [tv.id]: '' });
+            const result = match(tv, catalogue, input);
+            assert.equal(result.status, mode === 'auto' ? 'automatic' : 'disabled');
+            assert.equal(result.xmltvId, mode === 'auto' ? 'zdf' : null);
+            assert.deepEqual(input, before, 'Recovery never changes the saved form value in place.');
+            assert.notEqual(normalized[0], input[0]);
+        }
+    }
+});
+
+test('empty legacy placeholders are skipped without losing adjacent saved corrections', () => {
+    const input = [
+        {}, { channel: '', xmltvId: '' }, { channel: null, xmltvId: null },
+        { channel: undefined, xmltvId: undefined, mode: 'auto', tvChannel: '', assignment: '', revision: 3 },
+        { mode: 'manual', tvChannel: ' ', assignment: '', revision: null },
+        { channel: 'channels.tv.Selected', xmltvId: 'keep-this-id' },
+        { channel: 'channels.tv.Other', xmltvId: '' },
+        { channel: 'channels.tv.Unfinished' },
+    ];
+    const before = structuredClone(input);
+    const normalized = normalizeMappingRows(input);
+    assert.deepEqual(normalized, [
+        { channel: 'channels.tv.Selected', xmltvId: 'keep-this-id' },
+        { channel: 'channels.tv.Other', xmltvId: '' },
+        { channel: 'channels.tv.Unfinished', xmltvId: '', mode: 'manual' },
+    ]);
+    assert.deepEqual(normalizeManualMappings(input), {
+        'channels.tv.Selected': 'keep-this-id', 'channels.tv.Other': '', 'channels.tv.Unfinished': '',
+    });
+    assert.deepEqual(input, before);
+    assert.deepEqual(normalizeMappingRows(normalized), normalized, 'Recovery is stable on a second load.');
+});
+
+test('recovery never infers a missing TV identity from a source ID, label or row position', () => {
+    for (const incomplete of [{ xmltvId: 'keep-this-id' }, { channel: null, xmltvId: 'keep-this-id' },
+        { tvChannel: '1. ZDF HD', mode: 'auto' }, { assignment: 'Manuell: ZDF HD', mode: 'manual' }]) {
+        assert.throws(() => normalizeMappingRows([{}, { channel: 'channels.tv.Other', xmltvId: 'other' }, incomplete]),
+            error => error.code === 'XMLTV_MAPPING' && /Zeile 3: Der TV-Sender fehlt/u.test(error.message));
+    }
+    for (const row of [{ host: '' }, { xmltvId: '', locator: '' }, { mode: 'unknown' },
+        { revision: -1 }, { xmltvId: false }, { tvChannel: ' '.repeat(513) },
+        { assignment: ' '.repeat(1201) }, { assignment: '\n' }, { channel: 'channels.radio.Wrong', mode: 'auto' }]) {
+        assert.throws(() => normalizeMappingRows([row]), { code: 'XMLTV_MAPPING' });
+    }
+    assert.throws(() => normalizeMappingRows([
+        { channel: 'channels.tv.Selected', mode: 'auto' }, {}, { channel: 'channels.tv.Selected', mode: 'disabled' },
+    ]), error => error.code === 'XMLTV_MAPPING' && /Zeile 3: Der TV-Sender ist doppelt/u.test(error.message));
+});
+
 test('manual mapping validation rejects duplicate, foreign and malformed rows before use', () => {
     for (const input of [null, '', [{ channel: 'channels.tv.Selected', xmltvId: 'x' }, { channel: 'channels.tv.Selected', xmltvId: 'x' }],
         [{ channel: 'loewe-tv.1.channels.tv.Selected', xmltvId: 'x' }], [{ channel: 'channels.radio.Selected', xmltvId: 'x' }],
         [{ channel: 'channels.tv.Selected', xmltvId: 'x', host: 'other' }], { 'channels.tv.Selected': null },
-        { 'channels.tv.Selected': ' x' }, { 'channels.tv.Selected': 'x\u0000' }, new Map(),
+        { '': '' }, { 'channels.tv.Selected': ' x' }, { 'channels.tv.Selected': 'x\u0000' }, new Map(),
         { 'channels.tv.Selected': 'x'.repeat(513) }]) {
         assert.throws(() => normalizeManualMappings(input), { code: 'XMLTV_MAPPING' });
     }

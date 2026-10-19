@@ -18,10 +18,10 @@ const catalog = readJson('docs/protocol-templates.json');
 const remote115 = readJson('docs/remote115-keys.json');
 
 assert.equal(pkg.name, `iobroker.${io.common.name}`);
-assert.equal(pkg.version, '0.1.18');
+assert.equal(pkg.version, '0.1.19');
 assert.equal(pkg.version, io.common.version);
 assert.ok(BUILD_ID.startsWith(`${pkg.version}-`), 'Build identifier must match package version');
-assert.equal(BUILD_ID, '0.1.18-epg-offline.1');
+assert.equal(BUILD_ID, '0.1.19-epg-config.1');
 assert.ok(pkg.keywords.includes('xmltv'), 'Package keywords must describe optional XMLTV support');
 assert.equal(io.common.mode, 'daemon');
 assert.equal(io.common.messagebox, true, 'Admin list selection requires adapter messaging');
@@ -45,7 +45,9 @@ function visit(items, nativeFields = true) {
     for (const [key, item] of Object.entries(items || {})) {
         if (nativeFields && !key.startsWith('_')) configFields.add(key);
         for (const name of ['label', 'title', 'help', 'text', 'validatorErrorText']) {
-            if (typeof item[name] === 'string') translationKeys.add(item[name]);
+            // Empty hidden holders and data-driven status text have no literal
+            // translation key. Static labels/help still require both languages.
+            if (typeof item[name] === 'string' && item[name] && !item[name].includes('${')) translationKeys.add(item[name]);
         }
         for (const option of Array.isArray(item.options) ? item.options : []) {
             if (typeof option.label === 'string') translationKeys.add(option.label);

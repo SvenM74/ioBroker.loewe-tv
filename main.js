@@ -4,7 +4,7 @@ const utils = require('@iobroker/adapter-core');
 const { AdapterRuntime } = require('./lib/adapter-runtime');
 const EPG_COMMANDS = ['getEpgGuide', 'refreshEpgGuide', 'selectEpgProgramme', 'recordEpgProgramme', 'getRecordings', 'cancelRecording'];
 const REMOTE_COMMANDS = ['sendRemoteCommand', 'getRemoteStatus'];
-const MAPPING_COMMANDS = ['getEpgTvChannels', 'getXmltvChannels', 'previewEpgMappings', 'applyEpgMapping'];
+const MAPPING_COMMANDS = ['getEpgTvChannels', 'getXmltvChannels', 'getEpgMappingRows', 'previewEpgMappings', 'applyEpgMapping'];
 
 function epgGuideUrl(namespace, message) {
     // iframeSendTo requires a URL string, including during adapter startup.
@@ -113,6 +113,7 @@ class LoeweTv extends utils.Adapter {
         // bounded even if startup or a future runtime implementation fails.
         const timeout = ['getChannelLists', 'previewEpgMappings'].includes(message.command) ? 35000
             : ['discoverTvs', 'selectEpgProgramme', 'sendRemoteCommand'].includes(message.command) ? 10000
+                : message.command === 'getEpgMappingRows' ? 8000
                 : ['recordEpgProgramme', 'cancelRecording'].includes(message.command) ? 6000 : 4000;
         timer = setTimeout(() => {
             const error = new Error('Zeitlimit erreicht. Fernseher und laufende Adapterinstanz prüfen.');

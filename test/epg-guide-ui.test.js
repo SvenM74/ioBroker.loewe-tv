@@ -125,6 +125,8 @@ test('a logo retries only its one local fallback and then restores the full stat
     assert.equal(logo.title, value.name);
     assert.equal(logo.loading, 'lazy');
     assert.equal(logo.referrerPolicy, 'no-referrer');
+    assert.equal(logo.width, 48);
+    assert.equal(logo.height, logo.width, 'The image reserves a square before CSS and source loading.');
     assert.equal(label.hidden, true);
     assert.deepEqual(logo.sources, [value.logoUrl]);
     logo.emit('error');
@@ -146,6 +148,63 @@ test('a logo retries only its one local fallback and then restores the full stat
         assert.equal(node.children.length, 1);
         assert.equal(node.children[0].textContent, value.name);
         assert.equal(node.children[0].hidden, false);
+    }
+});
+
+test('logo and text fallback share a fixed square inside the desktop and mobile channel heading', () => {
+    // Read the actual stylesheet and created DOM classes. This checks the
+    // declared box geometry and breakpoint cascade, not browser rendering.
+    const css = fs.readFileSync(path.join(__dirname, '../admin/epg.css'), 'utf8');
+    const declarations = (source, selector) => Object.fromEntries(
+        [...source.matchAll(/([^{}]+)\{([^{}]*)\}/gu)]
+            .filter(([, selectors]) => selectors.split(',').some(value => value.trim() === selector))
+            .flatMap(([, , body]) => body.split(';').filter(value => value.includes(':')).map(value => {
+                const colon = value.indexOf(':');
+                return [value.slice(0, colon).trim(), value.slice(colon + 1).trim()];
+            })));
+    for (const viewport of [300, 640, 641, 1280]) {
+        const active = css.replace(/@media\s*\(max-width:\s*(\d+)px\)\s*\{([\s\S]*?)^\}/gmu,
+            (_, maximum, body) => viewport <= Number(maximum) ? body : '');
+        const style = selector => declarations(active, selector);
+        const variables = style(':root');
+        const pixels = value => {
+            const resolved = value?.replace(/var\((--[a-z-]+)\)/gu, (_, name) => variables[name]);
+            assert.match(resolved || '', /^\d+px$/u, `A definite size is required: ${value}`);
+            return Number.parseInt(resolved, 10);
+        };
+        const identity = ui.createChannelIdentity(logoDocument(), {
+            name: 'Synthetic long station name HD', logoUrl: 'logos/zdf.svg',
+        }, 'https:');
+        const frame = style(`.${identity.className}`);
+        const [label, image] = identity.children;
+        const imageStyle = style(`.${image.className}`);
+        const frameWidth = pixels(frame.width);
+        const frameHeight = pixels(frame.height);
+        assert.equal(frameWidth, viewport <= 640 ? 44 : 48);
+        assert.equal(frameHeight, frameWidth, `Square logo frame at viewport ${viewport}`);
+        assert.equal(frame.flex, '0 0 var(--channel-logo-size)', 'Flex layout cannot grow or shrink the square.');
+        assert.equal(frame.background, '#f1f3f6');
+        assert.equal(style('*')['box-sizing'], 'border-box');
+        assert.equal(imageStyle.width, '100%');
+        assert.equal(imageStyle.height, '100%');
+        assert.equal(imageStyle['object-fit'], 'contain');
+        assert.equal(style(`.${label.className}`)['overflow-wrap'], 'anywhere');
+        assert.equal(style('[hidden]').display, 'none !important', 'Only the image or its name fallback occupies the frame.');
+
+        const button = style('.channel-button');
+        const [verticalPadding, horizontalPadding] = button.padding.split(/\s+/u).map(pixels);
+        assert.ok(frameHeight + 2 * verticalPadding <= pixels(button['min-height']), 'The square fits the existing programme row.');
+        assert.ok(frameWidth + 2 * horizontalPadding + pixels(button.gap) + pixels(style('.channel-number')['min-width'])
+            < pixels(variables['--station-width']), 'The station number keeps its own space next to the square.');
+
+        image.emit('error');
+        assert.equal(image.hidden, true);
+        assert.equal(label.hidden, false);
+        assert.equal(label.textContent, identity.title);
+        assert.deepEqual(style(`.${identity.className}`), frame, 'A failed logo keeps exactly the same frame.');
+        const noLogo = ui.createChannelIdentity(logoDocument(), { name: identity.title }, 'https:');
+        assert.equal(noLogo.children.length, 1);
+        assert.deepEqual(style(`.${noLogo.className}`), frame, 'A station without a logo uses the same square.');
     }
 });
 

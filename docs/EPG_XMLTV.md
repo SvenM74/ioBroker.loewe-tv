@@ -1,6 +1,6 @@
 # XMLTV: Programmdaten bei ausgeschaltetem Fernseher
 
-Diese Anleitung gilt für **Version 0.1.18**, Build **`0.1.18-epg-offline.1`**. Der Adapter kann eine selbst gewählte XMLTV-Quelle laden, deren Sender der gespeicherten TV-Senderliste zuordnen und die Programme auch bei ausgeschaltetem Fernseher anzeigen. Quelle und Senderzuordnung bleiben bei jeder Sendung nachvollziehbar. Eine zukünftige Sendung mit vollständigen Zeiten kann anschließend wie ein TV-EPG-Eintrag zur Aufnahme vorgemerkt werden.
+Diese Anleitung gilt für **Version 0.1.19**, Build **`0.1.19-epg-config.1`**. Der Adapter kann eine selbst gewählte XMLTV-Quelle laden, deren Sender der gespeicherten TV-Senderliste zuordnen und die Programme auch bei ausgeschaltetem Fernseher anzeigen. Quelle und Senderzuordnung bleiben bei jeder Sendung nachvollziehbar. Eine zukünftige Sendung mit vollständigen Zeiten kann anschließend wie ein TV-EPG-Eintrag zur Aufnahme vorgemerkt werden.
 
 Eine **eigene HTTP(S)-Adresse** ist erforderlich. Der Adapter wählt keinen Anbieter automatisch und liefert kein Abonnement mit. Die Adresse muss eine XMLTV-Datei oder deren gzip-komprimierte Fassung ausliefern; eine normale Webseite mit einem Fernsehprogramm genügt nicht. Verwende eine Quelle, die du nutzen darfst und die deine Sender einschließlich der passenden regionalen und HD-/SD-/UHD-Varianten abdeckt.
 
@@ -8,12 +8,12 @@ Die [Programmübersicht](EPG_GUI.md) beschreibt die Bedienung, Fernbedienung und
 
 ## Einrichten
 
-1. Aktualisiere nach der [Installationsanleitung](INSTALLATION.md#update-auf-0118). Unter `info.adapterBuild` muss **`0.1.18-epg-offline.1`** stehen. Die betreffende LOEWE-TV-Instanz muss laufen; nach dem Update Admin vollständig neu laden.
+1. Aktualisiere nach der [Installationsanleitung](INSTALLATION.md#update-auf-0119). Unter `info.adapterBuild` muss **`0.1.19-epg-config.1`** stehen. Die betreffende LOEWE-TV-Instanz muss laufen; nach dem Update Admin vollständig neu laden.
 2. Prüfe die **gespeicherte TV-Senderliste**. Bei der ersten Einrichtung den Fernseher einschalten, die gewünschte Liste wählen und die Sender abrufen. Die zugehörigen Dienste müssen unter `channels.tv` vorhanden sein. XMLTV erzeugt keine TV-Senderliste und erfindet keine Sender-Locators. Eine bereits gespeicherte Liste kann anschließend auch bei TV aus verwendet werden.
 3. Öffne **Instanzen → loewe-tv.0 → Konfiguration → EPG-Einstellungen**. Aktiviere **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**.
 4. Wähle **EPG-Quelle → TV mit XMLTV-Ergänzung** oder **Nur XMLTV**. Trage unter **XMLTV-Adresse** die vollständige Adresse deiner Quelle ein. HTTP und HTTPS sind zulässig; Benutzername/Passwort im URL-Benutzerinfofeld sowie ein Fragment nach `#` sind nicht zulässig.
-5. Drücke ausdrücklich **Quelle laden und Zuordnung prüfen**. Die Quelle wird heruntergeladen und die Vorschau mit der bereits gespeicherten TV-Liste erstellt. Eine gerade erst ungespeichert ausgewählte andere TV-Liste muss zuerst gespeichert und geladen werden.
-6. Kontrolliere **Vorschau der Senderzuordnung**. Eindeutige automatische Treffer benötigen keine zusätzliche Zeile. Für eine Ausnahme wähle oberhalb der Korrekturtabelle **TV-Sender für die Korrektur**. Suche unter **XMLTV-Sender oder genaue ID** nach dem Sendernamen und wähle einen Treffer oder gib die exakte XMLTV-ID ein. Drücke **Korrektur in die Tabelle übernehmen** und kontrolliere die entstandene beziehungsweise aktualisierte Zeile. Anschließend kannst du die Vorschau erneut ausdrücklich prüfen lassen.
+5. Die Tabelle wird beim Öffnen mit den **gespeicherten TV-Sendern** gefüllt. Das benötigt weder einen eingeschalteten TV noch eine bereits eingetragene XMLTV-Adresse. Falls die lokale Wiederherstellung länger dauert, zeigt das Formular einen Hinweis; drücke dann **TV-Senderliste laden**. Eine gerade erst ungespeichert ausgewählte andere TV-Liste muss zuerst gespeichert und geladen werden.
+6. Drücke **Quelle laden und Zuordnung prüfen**. Danach zeigt die Ergebnisspalte eindeutige automatische Treffer oder Vorschläge. Für eine Korrektur wähle in der Zeile des TV-Senders **Manuell**, suche direkt daneben nach dem XMLTV-Sender und wähle ihn aus oder trage seine exakte XMLTV-ID ein. Mit **Automatisch** setzt du eine frühere manuelle Entscheidung zurück; **Deaktiviert** schaltet alternative EPG-Daten nur für diesen Sender aus.
 7. **Speichere** die Konfiguration. Die Vorschau allein aktiviert keine neue Quelle, speichert keine Zuordnung und ersetzt keine laufenden Programmcaches. Der laufende Betrieb verwendet ausschließlich die gespeicherten Einstellungen.
 8. Öffne **Programmübersicht** und drücke bei Bedarf **EPG aktualisieren**. Prüfe die Quellangabe **TV / XMLTV** an einer ausgewählten Sendung und anschließend die Anzeige bei ausgeschaltetem TV.
 
@@ -33,7 +33,7 @@ Bei zwei Fernsehern gilt die Konfiguration je LOEWE-TV-Instanz. Beide können di
 
 Gültige, noch vorhandene Werte in `native.epgSource`, `native.epgXmltvUrl` und `native.epgXmltvMappings` aus früheren Versionen werden wieder ausgewertet. Dabei wird kein alter Anbieter geraten und kein früherer externer Programmcache ungeprüft übernommen. Prüfe nach dem Update die angezeigte Quellenwahl, Adresse und Senderzuordnung. Ohne ausdrücklichen gültigen Quellenmodus gilt **Nur TV**.
 
-Ungültige optionale XMLTV-Einstellungen legen den Adapter und sein TV-EPG nicht still. Der Manager verwendet dann TV-Daten und meldet das Problem als `EPG_XMLTV_CONFIG` unter `channels.epgLastError`. Bei erfolgreichem TV-Abruf kann der einzelne Sender `ready` sein, während der Gesamtstatus wegen der fehlerhaften externen Konfiguration `partial` zeigt. Das Formular verhindert außerdem das Speichern einer erkennbar ungültigen aktiven Feedadresse.
+Ungültige optionale XMLTV-Einstellungen legen den Adapter und sein TV-EPG nicht still. Der Manager verwendet dann TV-Daten und meldet das Problem als `EPG_XMLTV_CONFIG` unter `channels.epgLastError`. Bei erfolgreichem TV-Abruf kann der einzelne Sender `ready` sein, während der Gesamtstatus wegen der fehlerhaften externen Konfiguration `partial` zeigt. Das Formular zeigt einen Hinweis zur fehlenden oder ungültigen Feedadresse, blockiert damit aber nicht das Speichern der übrigen Konfiguration. **Quelle laden und Zuordnung prüfen** prüft die tatsächlich eingetragene Adresse ausdrücklich. Das EPG-Intervall akzeptiert auch von Admin als Text gelieferte ganze Zahlen wie `"900"`; ungültige Werte bleiben Speichersperren.
 
 ## Sender automatisch zuordnen und korrigieren
 
@@ -41,39 +41,47 @@ Die automatische Zuordnung vergleicht die Namen und ausdrücklich vorhandenen Al
 
 **HD, SD, UHD, Zahlen, zeitversetzte Varianten und Regionen bleiben unterscheidend.** Ein ähnlicher Name genügt nicht für eine automatische Auswahl. Auch ein scheinbar passender XMLTV-ID-Text oder die Position eines Senders ist kein Namensnachweis. Aliasse mit zusätzlichen oder fehlenden Editions-/Regionalwörtern bleiben konservativ Vorschläge. Ein mehrfach im Feed vorkommender passender Anzeigename wird nicht nach Reihenfolge, Logo oder besonders plausibel aussehender ID entschieden.
 
-| Vorschau | Bedeutung | Nächster Schritt |
+| Ergebnis in der Senderzeile | Bedeutung | Nächster Schritt |
 |---|---|---|
-| **Automatisch zugeordnet** | Genau ein geeigneter Namenstreffer wurde gefunden. | Sender und Variante prüfen; eine zusätzliche Korrekturzeile ist nicht nötig. |
-| **Manuell zugeordnet** | Die ausdrücklich gewählte XMLTV-ID kommt in der Quelle vor. | Prüfen, dass sie tatsächlich zum TV-Dienst passt. Die manuelle Auswahl hat Vorrang vor der Namenssuche. |
-| **Mehrdeutig; bitte auswählen** | Mehrere Namenstreffer sind möglich. | Den richtigen Sender anhand der Quelle identifizieren und als Korrektur festlegen. |
+| **Automatisch: …** | Genau ein geeigneter Namenstreffer wurde gefunden. | Sender und Variante prüfen; **Automatisch** beibehalten. |
+| **Manuell: …** | Die ausdrücklich gewählte XMLTV-ID kommt in der Quelle vor. | Prüfen, dass sie tatsächlich zum TV-Dienst passt. Die manuelle Auswahl hat Vorrang vor der Namenssuche. |
+| **Mehrere passende Sender; bitte manuell auswählen** | Mehrere Namenstreffer sind möglich. | In dieser Zeile **Manuell** wählen und den richtigen Sender auswählen. |
 | **Kein eindeutiger Treffer** | Kein sicherer automatischer Treffer; gegebenenfalls gibt es Vorschläge. | Vorschläge prüfen oder eine bekannte exakte XMLTV-ID eingeben. |
-| **Manuelle XMLTV-ID fehlt in der Quelle** | Die gespeicherte manuelle Kennung wurde im geladenen Guide nicht gefunden. | Feed und Schreibweise prüfen. Der Adapter ersetzt diese Auswahl nicht automatisch durch einen anderen Sender. |
-| **Manuell deaktiviert** | Für diesen TV-Sender ist ausdrücklich eine leere XMLTV-ID hinterlegt. | So belassen oder die Zeile löschen, wenn wieder automatisch zugeordnet werden soll. |
+| **XMLTV-ID fehlt in dieser Quelle** | Die gespeicherte manuelle Kennung wurde im geladenen Guide nicht gefunden. | Feed und Schreibweise prüfen. Der Adapter ersetzt diese Auswahl nicht automatisch durch einen anderen Sender. |
+| **Alternative EPG-Daten deaktiviert** | Für diesen TV-Sender wurde **Deaktiviert** gewählt. | So belassen oder den Modus wieder auf **Automatisch** stellen. |
+| **Quelle noch nicht geladen** | Die TV-Liste ist verfügbar; XMLTV wurde noch nicht erfolgreich geprüft. | Eine gültige Quellenadresse eintragen und die Quelle laden. |
+| **Nicht in der gespeicherten TV-Senderliste** | Zu diesem TV-Dienst gibt es noch eine frühere Korrektur. | Die Korrektur bleibt erhalten, falls der Sender später wieder in der TV-Liste erscheint. |
 
-Die Vorschau ist eine Prüfansicht. Sie übernimmt keine Vorschläge in die Korrekturtabelle und speichert keine Live-Konfiguration. Sie kann bereits ungespeicherte Formularwerte prüfen; das ändert weder die aktuell sichtbaren Programme noch die persistenten TV-/XMLTV-Caches. Die gelesenen XMLTV-Sendernamen stehen anschließend für die suchbare Eingabe beziehungsweise Auswahl oberhalb der Korrekturtabelle zur Verfügung.
+Die Tabelle ist ein Konfigurationsentwurf. Sie kann bereits ungespeicherte Formularwerte prüfen; das ändert weder die aktuell sichtbaren Programme noch die persistenten TV-/XMLTV-Caches. Die gelesenen XMLTV-Sendernamen stehen anschließend in den **manuellen** Zeilen als suchbare Auswahl bereit. Vorschläge stehen zuerst, eine bereits gewählte exakte ID bleibt auch außerhalb der angezeigten Trefferliste erhalten.
 
-**Korrektur in die Tabelle übernehmen** ändert ausschließlich das offene Formular. Für den ausgewählten TV-Sender wird die Korrekturzeile angelegt beziehungsweise aktualisiert. Erst das normale **Speichern** der Instanz aktiviert sie. Bestehende Zeilen können auch direkt bearbeitet werden. Wenn du die Quellenadresse oder TV-Senderliste wechselst, werden die Vorschau und die zugehörige XMLTV-Auswahl zurückgesetzt; vorhandene manuelle Korrekturzeilen bleiben erhalten und müssen zur neuen Quelle geprüft werden.
+Beim Öffnen erfolgt nur ein lokaler Lesezugriff auf den gespeicherten TV-Katalog. Ein XMLTV-Download braucht den ausdrücklichen Klick auf **Quelle laden und Zuordnung prüfen**. Während der lokalen Wiederherstellung wartet der Leseaufruf bis zu 2,5 Sekunden. Bei Zeitlimit, angehaltenem Adapter oder Lesefehler erscheint eine Fehlermeldung; eine bestehende Zuordnung wird nicht durch eine leere Tabelle ersetzt. Wenn sich das Formular während einer Quellenabfrage ändert, muss die geladene Zuordnung über **TV-Senderliste laden** erneut übernommen werden.
+
+**Während die Senderliste oder XMLTV-Quelle lädt, bitte warten und erst anschließend Zuordnungen bearbeiten.** Admin puffert Tabellenänderungen für etwa 300 Millisekunden. Der Vergleich schützt bereits im Formularmodell vorliegende Änderungen; mehrere schnelle Eingaben über den Zeitpunkt einer eintreffenden Antwort hinweg können den lokalen Tabellenpuffer dennoch überholen. Diese Grenze des Admin-Tabellenbausteins ist reproduziert und wird durch dieses Adapterupdate nicht vollständig behoben. Nach dem Laden erst die Zeile bearbeiten und anschließend prüfen und speichern. Der [Prüfbericht](PRUEFBERICHT_0.1.19.md) beschreibt den nachgewiesenen Fall.
+
+Wenn du die Quellenadresse oder TV-Senderliste wechselst, wird das bisherige Prüfergebnis zurückgesetzt. Manuelle Entscheidungen bleiben erhalten und müssen zur neuen Quelle geprüft werden. Eine andere TV-Liste muss zuerst gespeichert werden. Die Tabelle bietet keine frei hinzufügbaren oder löschbaren TV-Sender; ihre Zeilen stammen aus der tatsächlichen TV-Liste und den erhaltenen älteren Korrekturen.
 
 ### Drei unterschiedliche Entscheidungen
 
-| Korrekturtabelle | Wirkung nach dem Speichern |
+| Modus in der Senderzeile | Wirkung nach dem Speichern |
 |---|---|
-| Für den TV-Sender fehlt eine Zeile. | Automatische Namen-/Aliaszuordnung verwenden. |
-| Eine Zeile enthält die genaue XMLTV-ID. | Diese Kennung verwenden; bei fehlender Kennung in der Quelle bleiben externe Programme für diesen Sender aus. |
-| Eine Zeile enthält eine leere XMLTV-ID. | Externe Programme für diesen Sender bewusst deaktivieren. Das ist nicht „automatisch“. |
+| **Automatisch** | Automatische Namen-/Aliaszuordnung verwenden. Die sichtbare Zeile erzeugt keine manuelle Sperre. |
+| **Manuell** mit genauer XMLTV-ID | Diese Kennung verwenden; bei fehlender Kennung in der Quelle bleiben externe Programme für diesen Sender aus. |
+| **Deaktiviert** | Externe Programme für diesen TV-Sender ausschalten. |
+| **Manuell** ohne ausgewählte ID | Noch unvollständige Auswahl; bis zur Auswahl keine externen Programme für diesen TV-Sender verwenden. |
 
-Zum Zurücksetzen einer manuellen Entscheidung **die Zeile löschen**, nicht nur deren XMLTV-ID leeren. Jeder TV-Sender darf höchstens einmal in der Korrekturtabelle stehen. Doppelte beziehungsweise ungültige Zeilen führen zu einer Konfigurationsdiagnose; der Adapter entscheidet nicht stillschweigend zwischen ihnen.
+Zum Zurücksetzen einer manuellen Entscheidung **Automatisch** wählen. Jeder TV-Sender darf höchstens einmal in der Tabelle stehen. Doppelte beziehungsweise ungültige Zeilen führen zu einer Konfigurationsdiagnose; der Adapter entscheidet nicht stillschweigend zwischen ihnen.
 
-Die gespeicherten Zeilen verwenden `channel` für die TV-Dienst-ID und `xmltvId` für die exakte Kennung im Feed. Ein schematisches Beispiel, dessen Kennungen durch die tatsächlichen Werte ersetzt werden müssen:
+Die gespeicherten Zeilen verwenden `channel` für die TV-Dienst-ID, `mode` für die Entscheidung und `xmltvId` für die exakte Kennung im Feed. Die Oberfläche ergänzt Senderbeschriftung, Prüfergebnis und einen Aktualisierungszähler; diese Anzeigewerte bestimmen weder TV-Befehle noch die wirksame Zuordnung. Ein schematisches Beispiel:
 
 ```json
 [
-  { "channel": "channels.tv.Beispiel_HD", "xmltvId": "beispiel-hd" },
-  { "channel": "channels.tv.Andere_Region", "xmltvId": "" }
+  { "channel": "channels.tv.Beispiel_HD", "mode": "manual", "xmltvId": "beispiel-hd" },
+  { "channel": "channels.tv.Andere_Region", "mode": "auto", "xmltvId": "" },
+  { "channel": "channels.tv.Ohne_Extern", "mode": "disabled", "xmltvId": "" }
 ]
 ```
 
-Die TV-ID beginnt innerhalb der jeweiligen Instanz mit `channels.tv.`. Sie ist weder die Feed-ID noch die Programmplatznummer. Frühere einfache Zuordnungsobjekte mit TV-ID→XMLTV-ID werden im Backend ebenfalls normalisiert. Die Oberfläche verwaltet die Korrekturen als Zeilen.
+Die TV-ID beginnt innerhalb der jeweiligen Instanz mit `channels.tv.`. Sie ist weder die Feed-ID noch die Programmplatznummer. Frühere einfache Zuordnungsobjekte mit TV-ID→XMLTV-ID und ältere zweispaltige Zeilen werden beim Laden übernommen. Eine frühere leere XMLTV-ID bleibt **Deaktiviert**. Bis zu 2.000 aktuelle TV-Sender und zusätzlich bis zu 2.000 ältere Korrekturen können gemeinsam angezeigt werden; die Zahl wirksamer manueller Entscheidungen bleibt auf 2.000 begrenzt.
 
 Wenn ein Guide seine Sender nur über die `channel`-Angaben der Programme bezeichnet und keine Anzeigenamen liefert, fehlt die Grundlage für eine automatische Namenserkennung. Eine ausdrücklich manuelle, tatsächlich im Feed vorkommende ID ist weiterhin verwendbar. Das folgt aus der optionalen Senderdefinition im [XMLTV-Format](https://github.com/XMLTV/xmltv/blob/b424ef772a667856ca44b9dac3b4310d02191dea/xmltv.dtd).
 
@@ -186,7 +194,9 @@ Zuerst **Quelle laden und Zuordnung prüfen**, danach den gespeicherten Betrieb 
 | `XMLTV_HTTP`, `XMLTV_NETWORK`, `XMLTV_TIMEOUT` | Erreichbarkeit vom ioBroker-Rechner, HTTP-Status und Antwortdauer des Anbieters prüfen. |
 | `XMLTV_ENCODING`, `XMLTV_INVALID_XML`, `XMLTV_TIME` | Tatsächliches XMLTV in UTF-8, unterstützte Komprimierung, konkrete Sendezeiten und Zeitzonen prüfen. Eine HTML-Fehler-/Loginseite ist kein Guide. |
 | `XMLTV_LIMIT` | Kleinere beziehungsweise passend eingegrenzte Quelle verwenden; die feste Grenze wird nicht durch einen Teilimport umgangen. |
-| Fehlender oder mehrdeutiger Sender | Vorschau prüfen, TV-Sender wählen und den XMLTV-Sender suchen oder seine genaue ID eingeben. **Korrektur in die Tabelle übernehmen**, prüfen und normal speichern. Ähnliche Namen werden nicht automatisch bestätigt. |
+| Fehlender oder mehrdeutiger Sender | Die betreffende TV-Zeile auf **Manuell** stellen, den XMLTV-Sender suchen oder seine genaue ID eingeben, prüfen und normal speichern. Ähnliche Namen werden nicht automatisch bestätigt. |
+| Keine TV-Sender in der Konfiguration | **TV-Senderliste laden** anklicken. Die Instanz muss laufen und eine bereits gespeicherte TV-Liste besitzen. Ein ausgeschalteter TV oder eine leere XMLTV-Adresse verhindert das Laden einer vorhandenen Liste nicht. |
+| Speichern bleibt rot | Die konkret rot markierten Felder prüfen. Eine fehlende optionale XMLTV-Adresse blockiert ab 0.1.19 nicht mehr; ein ungültiges Intervall oder andere Pflichtfelder können weiterhin das Speichern verhindern. |
 | Leere Vorschau trotz erfolgreichem Abruf | Gewählten Zeitraum, Quelle, Senderabdeckung und deren tatsächlich gelieferte Programme prüfen. **Jetzt** stellt die aktuelle Zeitansicht wieder her. |
 | Daten nach einem Tag verschwunden | Die betroffene Quelle erneut erfolgreich abrufen. Ein bis 48 Stunden reichender Plan bleibt nicht länger als 24 Stunden ohne gültige Aktualisierung verwendbar. |
 

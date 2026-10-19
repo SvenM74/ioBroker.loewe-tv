@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.18",
+    "version": "0.1.19",
     "news": {
+      "0.1.19": {
+        "en": "Populate XMLTV configuration from the saved TV channel list, preserve older mappings, remove optional source save blockers, and display square station logos with ARTE, RTLZWEI and VOX assets.",
+        "de": "XMLTV-Zuordnung aus der gespeicherten TV-Senderliste aufbauen, ältere Korrekturen erhalten, optionale Quellenfehler ohne Speichersperre anzeigen und quadratische Senderlogos mit ARTE, RTLZWEI und VOX ergänzen."
+      },
       "0.1.18": {
         "en": "Restore optional XMLTV programme data with automatic channel matching, editable mapping suggestions and persistent per-source caches for use while the TV is off. Add manual and XMLTV channel logos plus KiKA, phoenix and ZDFneo fallbacks. Preserve per-TV command targets and recording delivery; document the Admin 8 link resolver issue, direct access and proposed upstream corrections.",
         "de": "Optionale XMLTV-Programmdaten mit automatischer Senderzuordnung, anpassbaren Vorschlägen und getrennt gespeicherten Quellcaches auch bei ausgeschaltetem TV wieder bereitstellen. Manuelle und XMLTV-Senderlogos sowie Ersatzbilder für KiKA, phoenix und ZDFneo ergänzen. TV-Ziele und Aufnahmeübertragung erhalten; Admin-8-Linkfehler, Direktzugriff und Korrekturvorschläge für Admin dokumentieren."

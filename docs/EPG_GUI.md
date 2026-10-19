@@ -1,10 +1,10 @@
 # Programmübersicht und Aufnahmeaufträge
 
-**Version 0.1.18, Build `0.1.18-epg-offline.1`**, bietet getrennte Reiter für **EPG-Einstellungen** mit Aktivierung, Abrufintervall, Quellenwahl und XMLTV-Zuordnung, **Web-Zugriff** mit der Web-Adapter-Auswahl sowie **Programmübersicht** mit Senderliste, Zeitachse und Aktionen. Die Vorschau bleibt an die gespeicherte TV-Senderliste gebunden. Programmdaten können vom TV, aus einer selbst eingetragenen XMLTV-Quelle oder aus beiden Quellen stammen. XMLTV ermöglicht eine aktuelle Vorschau auch bei ausgeschaltetem Fernseher.
+**Version 0.1.19, Build `0.1.19-epg-config.1`**, bietet getrennte Reiter für **EPG-Einstellungen** mit Aktivierung, Abrufintervall, Quellenwahl und XMLTV-Zuordnung, **Web-Zugriff** mit der Web-Adapter-Auswahl sowie **Programmübersicht** mit Senderliste, Zeitachse und Aktionen. Die Vorschau bleibt an die gespeicherte TV-Senderliste gebunden. Programmdaten können vom TV, aus einer selbst eingetragenen XMLTV-Quelle oder aus beiden Quellen stammen. XMLTV ermöglicht eine aktuelle Vorschau auch bei ausgeschaltetem Fernseher.
 
 ## Öffnen und vorbereiten
 
-1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0118). `info.adapterBuild` muss **`0.1.18-epg-offline.1`** anzeigen.
+1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0119). `info.adapterBuild` muss **`0.1.19-epg-config.1`** anzeigen.
 2. Verwende **ioBroker Admin ab 7.7.28**. Lade Admin nach dem Update vollständig neu und öffne die Instanz-Konfiguration erneut.
 3. Starte die betreffende Instanz, beispielsweise **`loewe-tv.0`**. Prüfe unter **Verbindung** und **Senderlisten** die TV-Adresse und die gewünschte TV-Senderliste.
 4. Aktiviere unter **EPG-Einstellungen** die **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**, die Quelle **Nur TV**. Für externe Programme **TV mit XMLTV-Ergänzung** oder **Nur XMLTV** auswählen, eigene XMLTV-Adresse eintragen und die [Senderzuordnung prüfen](EPG_XMLTV.md#einrichten). Speichere die gewünschten Änderungen.
@@ -18,7 +18,7 @@ Die große TV-Kanal-/Detailfläche ist entfernt. In der kompakten Auswahlzeile s
 
 Die gemeinsame Bedienleiste enthält Datum, Stundenpfeile, **Jetzt**, die Stundenauswahl, **Jetzt ansehen / Aufnahme planen**, **EPG aktualisieren**, **Fernbedienung** und anschließend die Sendersuche. Auf schmalen Bildschirmen bricht sie in dieser Reihenfolge um. Die Programmtabelle nutzt die verbleibende Höhe und ordnet die Sender nach ihrer gespeicherten Position, die Sendungen nach der Uhrzeit an. Mehrere Plätze desselben TV-Dienstes teilen sich eine Zeile; die kleinste gültige Position bestimmt die Einordnung. Sender ohne passende EPG-Daten bleiben sichtbar.
 
-Senderlogos ersetzen den Namen in der linken Tabellenspalte, wenn ein Bild verfügbar ist. Die Sendernummer bleibt sichtbar; der vollständige Name bleibt für Suche, Tooltip und Screenreader verfügbar. Die Reihenfolge ist: manuell eingetragenes Logo, TV-Bildadresse, Logo des eindeutig zugeordneten XMLTV-Senders, mitgeliefertes Logo, Sendername. Unter HTTPS werden unverschlüsselte Bildadressen übersprungen; bei Ladefehlern wird die nächste Quelle versucht. Manuelle Bilder lassen sich unter **Senderlogos** zuordnen. Die [Logoquellen und Grenzen](CHANNEL_LOGOS.md) sind einzeln dokumentiert.
+Senderlogos ersetzen den Namen in der linken Tabellenspalte, wenn ein Bild verfügbar ist. Bild und Textersatz nutzen eine quadratische Fläche mit **48 × 48 Pixeln**, bis 640 Pixel Ansichtsbreite **44 × 44 Pixeln**. Die Grafik behält ihre Proportionen und wird nicht beschnitten. Die Sendernummer bleibt sichtbar; der vollständige Name bleibt für Suche, Tooltip und Screenreader verfügbar. Die Reihenfolge ist: manuell eingetragenes Logo, TV-Bildadresse, Logo des eindeutig zugeordneten XMLTV-Senders, mitgeliefertes Logo, Sendername. Unter HTTPS werden unverschlüsselte Bildadressen übersprungen; bei Ladefehlern wird die nächste Quelle versucht. Manuelle Bilder lassen sich unter **Senderlogos** zuordnen. Die [Logoquellen und Grenzen](CHANNEL_LOGOS.md) sind einzeln dokumentiert.
 
 Die ausgewählte Sendung zeigt ihre Quelle als **TV** oder **XMLTV**. Die Herkunft gehört zu den Programmdaten; sie beschreibt weder den Verbindungszustand des Fernsehers noch den Status einer Aufnahme. In **TV mit XMLTV-Ergänzung** können Sendungen beider Quellen in derselben Zeile stehen. Vollständige TV-Intervalle haben Vorrang, XMLTV ergänzt andere Zeitbereiche. [Zusammenführung ohne geschätzte Zeiten](EPG_XMLTV.md#wie-tv-und-xmltv-zusammenwirken).
 
@@ -40,7 +40,7 @@ Tab erreicht die Bedienelemente; Pfeiltasten wechseln innerhalb der Programmtabe
 
 Suche, Blättern und reine Detailauswahl ändern keine Einstellungen. Die Übersicht verwendet die **gespeicherte** TV-Adresse und Liste. Ungespeicherte Formularänderungen werden erst nach dem Speichern wirksam.
 
-Die separate Schaltfläche **Quelle laden und Zuordnung prüfen** in den EPG-Einstellungen dient ausschließlich der Vorschau einer XMLTV-Adresse und ihrer Zuordnungen. Sie verwendet die bereits gespeicherte TV-Senderliste, speichert das Formular nicht und ersetzt keine aktiven Programmcaches. Für eine Ausnahme oberhalb der Tabelle den TV-Sender wählen, den XMLTV-Sender suchen oder seine genaue ID eingeben und **Korrektur in die Tabelle übernehmen** drücken. Diese Übernahme ändert nur das Formular; anschließend normal speichern. [Vorschau und Korrekturen](EPG_XMLTV.md#sender-automatisch-zuordnen-und-korrigieren).
+Die separate Schaltfläche **Quelle laden und Zuordnung prüfen** in den EPG-Einstellungen prüft eine XMLTV-Adresse und ihre Zuordnungen. Die gespeicherten TV-Sender stehen bereits beim Öffnen als feste Tabellenzeilen bereit, bei Bedarf über **TV-Senderliste laden** erneut laden. Für eine Ausnahme in der betreffenden Zeile **Manuell** wählen und direkt daneben den XMLTV-Sender auswählen oder seine genaue ID eingeben. Das ändert nur den Entwurf im Formular; anschließend normal speichern. Die Quellenprüfung ersetzt keine aktiven Programmcaches. [Zuordnung und Korrekturen](EPG_XMLTV.md#sender-automatisch-zuordnen-und-korrigieren).
 
 ## Fernbedienung öffnen
 
@@ -98,7 +98,7 @@ Jeder Auftrag wird höchstens einmal möglicherweise wirksam an den TV gesendet.
 
 ## Instanzübersicht und Schnellzugriff
 
-Der bisherige Button **Separat öffnen** ist aus der Konfiguration entfernt. Die Instanz hinterlegt einen Link für Instanzübersicht und **Admin-Schnellzugriff** mit dem Adaptertitel **Loewe TV**. Unter **Admin 8** kann dessen automatischer Resolver den Link auf die ausgewählte Web-Instanz umschreiben, dabei eine unbrauchbare Adresse bilden oder die TV-Instanzzuordnung verlieren. **Version 0.1.18 behebt dieses Admin-Problem nicht.** Die [Analyse der Admin-Links](ADMIN_LINKS.md) erklärt die geprüften Fälle und den aktuellen Prüfstand.
+Der bisherige Button **Separat öffnen** ist aus der Konfiguration entfernt. Die Instanz hinterlegt einen Link für Instanzübersicht und **Admin-Schnellzugriff** mit dem Adaptertitel **Loewe TV**. Unter **Admin 8** kann dessen automatischer Resolver den Link auf die ausgewählte Web-Instanz umschreiben, dabei eine unbrauchbare Adresse bilden oder die TV-Instanzzuordnung verlieren. **Version 0.1.19 behebt dieses Admin-Problem nicht.** Die [Analyse der Admin-Links](ADMIN_LINKS.md) erklärt die geprüften Fälle und den aktuellen Prüfstand.
 
 Die direkte Admin-Seite bleibt nutzbar und lässt sich als Lesezeichen speichern. Eine normale Admin-Installation auf Port 8081 verwendet beispielsweise:
 
@@ -172,13 +172,13 @@ Der TV-Abruf reicht ungefähr 24 Stunden voraus, die XMLTV-Auswahl bis 48 Stunde
 | Auswahl inzwischen geändert | Übersicht neu laden und die Sendung erneut auswählen. |
 | Instanz oder Ansicht nicht erreichbar | Instanz starten, Build und Admin-Version prüfen; Admin nach dem Update neu laden. |
 | Automatischer Admin-Link zeigt `127.0.0.1`, `localhost` oder den falschen TV | Die direkte Admin-Adresse mit passendem `instance`-Parameter oder eine [eigene Schnellzugriffskachel](ADMIN_LINKS.md) verwenden. Der Admin-8-Linkresolver ist mit diesem Adapterupdate nicht repariert. |
-| XMLTV-Sender fehlt oder passt nicht | **Quelle laden und Zuordnung prüfen** öffnen; die exakte XMLTV-ID als manuelle Korrektur eintragen beziehungsweise auswählen und speichern. Eine leere ID deaktiviert XMLTV; Löschen der Zeile stellt Automatik wieder her. |
+| XMLTV-Sender fehlt oder passt nicht | **Quelle laden und Zuordnung prüfen** öffnen; in der betreffenden TV-Zeile **Manuell** wählen und die passende XMLTV-ID eintragen beziehungsweise auswählen. Danach speichern. **Deaktiviert** schaltet alternative Programme aus; **Automatisch** setzt eine manuelle Entscheidung zurück. |
 | `EPG_XMLTV_CONFIG` trotz sichtbarer TV-Programme | Die optionalen XMLTV-Einstellungen korrigieren. Der TV-Betrieb bleibt währenddessen verfügbar. |
 | Admin-/Web-Sitzung abgelaufen oder nicht berechtigt | Am jeweils verwendeten Admin-/Web-Zugang anmelden und die Benutzerrechte zum Senden von Adapter-Nachrichten prüfen. |
 | Web-Seite meldet eine fehlende integrierte Socket-Verbindung | In der gewählten Web-Instanz die integrierte Verbindung aktivieren und speichern. |
-| Kein Feld zur Web-Auswahl sichtbar | `info.adapterBuild = 0.1.18-epg-offline.1` prüfen, Admin mit Strg+F5 neu laden und den Reiter **Web-Zugriff** öffnen. Eine Web-Instanz muss bereits installiert sein. |
+| Kein Feld zur Web-Auswahl sichtbar | `info.adapterBuild = 0.1.19-epg-config.1` prüfen, Admin mit Strg+F5 neu laden und den Reiter **Web-Zugriff** öffnen. Eine Web-Instanz muss bereits installiert sein. |
 | Cloud zeigt keine EPG-Seite oder einen anderen Fernseher | In LOEWE-TV und Cloud dieselbe Web-Instanz auswählen und speichern; den instanzbezogenen Link auf der Cloud-Web-Startseite öffnen. |
-| Zusätzlich zu den LOEWE-Kacheln erscheinen **Programmübersicht.0/.1** mit `adapter/loewe-tv/...` | Auf 0.1.18 aktualisieren, den Build beider TV-Instanzen prüfen, die ausgewählte Web-Instanz neu starten und die Cloud-Web-Startseite neu öffnen. Das betrifft den zusätzlichen Web-Import, nicht den Admin-Linkresolver. |
+| Zusätzlich zu den LOEWE-Kacheln erscheinen **Programmübersicht.0/.1** mit `adapter/loewe-tv/...` | Auf 0.1.19 aktualisieren, den Build beider TV-Instanzen prüfen, die ausgewählte Web-Instanz neu starten und die Cloud-Web-Startseite neu öffnen. Das betrifft den zusätzlichen Web-Import, nicht den Admin-Linkresolver. |
 | Cloud meldet Anmeldung, HTTPS oder einen anderen Host als Fehler | Die separate Web-Instanz wie oben auf dem Host des Cloud-Adapters einrichten und **Test web** erneut ausführen. |
 | Kein Senderlogo | TV-Senderliste über `channels.refresh` erneuern, XMLTV-Zuordnung prüfen oder unter **Senderlogos** eine passende HTTPS-Bildadresse hinterlegen. Nicht jede Quelle liefert ein Bild; der Sendername bleibt als Ersatz sichtbar. |
 | **An TV übertragen** | Der TV hat geantwortet; der automatische Timerabgleich ist noch offen. **Details zum Timerabgleich** öffnet die Diagnose. Der Auftrag wird nicht erneut übertragen. |

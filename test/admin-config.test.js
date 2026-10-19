@@ -29,7 +29,8 @@ function adminValidationErrors(config, data) {
     const visit = (items, values, globalData, pathPrefix = '', arrayIndex) => {
         for (const [key, item] of Object.entries(items)) {
             const id = `${pathPrefix}${key}`;
-            if (item.hidden && executeAdminFunction(item.hidden, values, { globalData, arrayIndex })) continue;
+            if (item.hidden === true || (typeof item.hidden === 'string'
+                && executeAdminFunction(item.hidden, values, { globalData, arrayIndex }))) continue;
             // A disabled control still reports validatorNoSaveOnError errors in
             // ConfigGeneric.render. Only hidden controls clear their errors.
             if (item.validator && item.validatorNoSaveOnError) {
@@ -239,11 +240,18 @@ test('EPG configuration provides explicit TV/XMLTV sources separately from web a
     assert.deepEqual(Object.keys(items).filter(key => !key.startsWith('_')).sort(), Object.keys(expected).sort());
     for (const [key, value] of Object.entries(expected)) {
         assert.deepEqual(io.native[key], value);
-        assert.deepEqual(items[key].default, value);
+        if (key === 'epgXmltvMappings') {
+            assert.equal(items[key].default, undefined, 'A delayed Admin default must not overwrite the automatically loaded TV rows');
+        } else assert.deepEqual(items[key].default, value);
     }
     assert.match(items._epgHelp.text, /even while the TV is off/u);
     assert.deepEqual(items.epgSource.options.map(option => option.value), ['tv', 'auto', 'xmltv']);
-    assert.equal(items._epgMappingPreview.doNotSave, true);
+    assert.equal(items._epgMappingPreview, undefined, 'The saved TV list is edited directly instead of a separate preview table');
+    assert.equal(items._epgMappingResponse.doNotSave, true);
+    assert.equal(items._epgMappingStatus.doNotSave, true);
+    assert.equal(items._epgMappingLoad.onLoaded, true);
+    assert.equal(items._epgMappingLoad.command, 'getEpgMappingRows', 'Opening the tab reads only the local TV catalogue');
+    assert.equal(items.epgXmltvMappings.noDelete, true);
     assert.equal(items._epgMappingReload.useNative, true);
     assert.equal(items._epgMappingReload.onLoaded, undefined, 'A preview download requires an explicit click');
     const translatedItems = [panel, ...Object.values(items)];
@@ -251,7 +259,7 @@ test('EPG configuration provides explicit TV/XMLTV sources separately from web a
         const translations = JSON.parse(fs.readFileSync(path.join(root, `admin/i18n/${language}/translations.json`), 'utf8'));
         for (const item of translatedItems) {
             for (const key of ['label', 'title', 'text', 'help', 'validatorErrorText']) {
-                if (item[key]) assert.ok(translations[item[key]], `${language} translation missing: ${item[key]}`);
+                if (item[key] && !item[key].includes('${')) assert.ok(translations[item[key]], `${language} translation missing: ${item[key]}`);
             }
         }
     }
@@ -555,9 +563,9 @@ test('EPG form validates manual-only operation and bounded automatic intervals',
     const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
     const items = config.items._epg.items;
     const validateInterval = value => executeAdminFunction(items.epgRefreshInterval.validator, { epgRefreshInterval: value });
-    for (const value of [0, 300, 900, 86400]) assert.equal(validateInterval(value), true, String(value));
+    for (const value of [0, 300, 900, 86400, '0', '300', '900', '86400']) assert.equal(validateInterval(value), true, String(value));
     assert.equal(validateInterval(undefined), true, 'A missing upgrade setting uses the 900-second default');
-    for (const value of [-1, 1, 299, 300.5, 86401, null, '900']) assert.equal(validateInterval(value), false, String(value));
+    for (const value of [-1, 1, 299, 300.5, 86401, null, '', ' ', 'invalid']) assert.equal(validateInterval(value), false, String(value));
     assert.equal(items.epgRefreshInterval.validatorNoSaveOnError, true);
     assert.equal(executeAdminFunction(items.epgRefreshInterval.disabled, { epgEnabled: false }), true);
     assert.equal(executeAdminFunction(items.epgRefreshInterval.disabled, { epgEnabled: true }), false);
@@ -605,9 +613,10 @@ test('missing EPG defaults and obsolete settings do not block Save while upgrade
             assert.deepEqual(adminValidationErrors(config, native), []);
             assert.deepEqual(native, data, 'Validation must not mutate the native settings');
             for (const [key, field] of order) {
-                native[key] = clone(field.default);
+                if (field.default !== undefined) native[key] = clone(field.default);
                 assert.deepEqual(adminValidationErrors(config, native), [], `After initializing ${key}`);
             }
+            assert.equal(native.epgXmltvMappings, undefined, 'The mapping table is filled by the guarded local reply, not an Admin default timer');
             assert.equal(native.channelListView, 'selected-favourites');
         }
     }

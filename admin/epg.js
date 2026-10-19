@@ -334,8 +334,10 @@
             logo.className = 'channel-logo';
             logo.alt = name;
             logo.title = name;
-            logo.width = 110;
-            logo.height = 42;
+            // Reserve a square before loading; CSS sizes the shared image/text
+            // frame for the viewport and contain preserves the logo's shape.
+            logo.width = 48;
+            logo.height = 48;
             logo.loading = 'lazy';
             logo.decoding = 'async';
             logo.referrerPolicy = 'no-referrer';

@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
+const sax = require('sax');
 const { bundledLogo, televisionOrigin, channelLogo, normalizedName } = require('../lib/channel-logos');
 const sources = require('../admin/logos/sources.json');
 
@@ -38,10 +39,28 @@ test('logo aliases accept quality tokens and German spellings while preserving c
     assert.equal(bundledLogo('KiKA HD'), 'logos/kika.svg');
     assert.equal(bundledLogo('phoenix HD'), 'logos/phoenix.svg');
     for (const name of ['WDR HD Unknown', 'NDR HD Radio', 'WDRHD Köln', 'RTL HD+',
-        'RTL+ HD', 'RTLZWEI HD', 'SUPER RTL extra HD', 'ZDF neo extra', 'ZDF SDInfo',
+        'RTL+ HD', 'RTLZWEI extra HD', 'SUPER RTL extra HD', 'ZDF neo extra', 'ZDF SDInfo',
         'ZDF' + ' '.repeat(1024), [], {}]) {
         assert.equal(bundledLogo(name), '', String(name));
     }
+});
+
+test('ARTE, RTLZWEI and VOX cover their names without claiming neighbouring programmes', () => {
+    // Synthetic spelling examples, not a captured TV channel list.
+    for (const name of ['ARTE', 'arte HD', 'ARTE UHD']) {
+        assert.equal(bundledLogo(name), 'logos/arte.svg', name);
+    }
+    for (const name of ['RTLZWEI HD', 'RTL Zwei', 'RTL II HD', 'RTLII', 'RTL 2', 'RTL2 HD']) {
+        assert.equal(bundledLogo(name), 'logos/rtlzwei.svg', name);
+    }
+    for (const name of ['VOX', 'Vox HD', 'VOX SD']) {
+        assert.equal(bundledLogo(name), 'logos/vox.svg', name);
+    }
+    for (const name of ['RTLup HD', 'RTL+ HD', 'RTLZWEI YOU', 'VOXup HD', 'VOX Music TV', 'ARTE extra']) {
+        assert.equal(bundledLogo(name), '', name);
+    }
+    assert.notEqual(bundledLogo('RTLZWEI'), bundledLogo('RTL'));
+    assert.notEqual(bundledLogo('RTLZWEI'), bundledLogo('SUPER RTL'));
 });
 
 test('TV thumbnail takes precedence while retaining the local fallback and original service', () => {
@@ -157,6 +176,16 @@ test('every bundled logo has traceable licensing, a unique alias and a checked s
         assert.equal(createHash('sha256').update(svg).digest('hex'), source.sha256, source.slug);
         assert.match(svg, /<svg\b/u);
         assert.match(svg, /\bviewBox=/u);
+        const parser = sax.parser(true);
+        let root;
+        parser.onopentag = node => { if (!root) root = node; };
+        assert.doesNotThrow(() => parser.write(svg).close(), `${source.slug}: well-formed SVG`);
+        assert.equal(root.name, 'svg', source.slug);
+        assert.equal(root.attributes.xmlns, 'http://www.w3.org/2000/svg', source.slug);
+        const viewBox = root.attributes.viewBox.trim().split(/[\s,]+/u).map(Number);
+        assert.equal(viewBox.length, 4, source.slug);
+        assert.ok(viewBox.every(Number.isFinite) && viewBox[2] > 0 && viewBox[3] > 0,
+            `${source.slug}: valid image proportions`);
         assert.doesNotMatch(svg, /<(?:script|foreignObject|iframe|image|animate|set)\b|\bon[a-z]+\s*=|<!ENTITY|<!DOCTYPE|@import/iu);
         for (const match of svg.matchAll(/\bhref\s*=\s*["']([^"']*)["']/giu)) {
             assert.match(match[1], /^#/u, `${source.slug}: external SVG reference`);

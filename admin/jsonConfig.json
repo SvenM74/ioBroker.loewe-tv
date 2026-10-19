@@ -212,7 +212,7 @@
           "step": 1,
           "default": 900,
           "disabled": "data.epgEnabled === false",
-          "validator": "const value = data.epgRefreshInterval === undefined ? 900 : data.epgRefreshInterval; return Number.isInteger(value) && (value === 0 || (value >= 300 && value <= 86400));",
+          "validator": "const input = data.epgRefreshInterval === undefined ? 900 : data.epgRefreshInterval; if (!['number','string'].includes(typeof input) || (typeof input === 'string' && !input.trim())) return false; const value = Number(input); return Number.isInteger(value) && (value === 0 || (value >= 300 && value <= 86400));",
           "validatorNoSaveOnError": true,
           "validatorErrorText": "Enter 0 or a whole number from 300 to 86400.",
           "xs": 12,
@@ -248,67 +248,118 @@
           "hidden": "!['auto', 'xmltv'].includes(data.epgSource)",
           "disabled": "data.epgEnabled === false",
           "validator": "if (data.epgEnabled === false || !['auto','xmltv'].includes(data.epgSource)) return true; try { const u = new URL(data.epgXmltvUrl); return typeof data.epgXmltvUrl === 'string' && data.epgXmltvUrl.length <= 4096 && ['http:','https:'].includes(u.protocol) && !!u.hostname && !u.username && !u.password && !u.hash; } catch { return false; }",
-          "validatorNoSaveOnError": true,
+          "validatorNoSaveOnError": false,
           "validatorErrorText": "Enter an HTTP(S) XMLTV URL without username, password or fragment.",
+          "xs": 12
+        },
+        "_epgXmltvWarning": {
+          "type": "staticText",
+          "text": "External programme data needs a valid HTTP(S) XMLTV URL. You can still save the TV settings and prepare the channel assignments.",
+          "hidden": "if (data.epgEnabled === false || !['auto','xmltv'].includes(data.epgSource)) return true; try { const u = new URL(data.epgXmltvUrl); return typeof data.epgXmltvUrl === 'string' && data.epgXmltvUrl.length <= 4096 && ['http:','https:'].includes(u.protocol) && !!u.hostname && !u.username && !u.password && !u.hash; } catch { return false; }",
           "xs": 12
         },
         "_epgMappingHelp": {
           "type": "staticText",
-          "text": "Unique matching channel names are assigned automatically. HD, UHD, time-shift and regional variants remain distinct. Check the preview and correct uncertain matches below. The preview uses the saved TV channel list and does not save settings or change active programme data.",
-          "hidden": "!['auto', 'xmltv'].includes(data.epgSource)",
+          "text": "The rows come from the saved TV channel list and load automatically when this tab opens. Save a changed TV channel list first. Choose Automatic, Manual or Disabled for each TV channel. In Manual mode, search for an XMLTV channel or enter its exact ID. Load the source to check assignments, then save your changes.",
           "xs": 12
+        },
+        "_epgMappingLoadingHelp": {
+          "type": "staticText",
+          "text": "While the channel list or XMLTV source is loading, please wait and only edit assignments afterwards.",
+          "controlStyle": {
+            "fontWeight": 600
+          },
+          "xs": 12
+        },
+        "_epgMappingLoad": {
+          "type": "sendTo",
+          "label": "Reload saved TV channels",
+          "command": "getEpgMappingRows",
+          "jsonData": "${JSON.stringify({url: data.epgXmltvUrl, mappings: data.epgXmltvMappings || [], listView: data.channelListView || undefined})}",
+          "useNative": true,
+          "doNotSave": true,
+          "onLoaded": true,
+          "showProcess": true,
+          "timeout": 8000,
+          "variant": "outlined",
+          "disabled": "!_alive",
+          "xs": 12,
+          "sm": 6
         },
         "_epgMappingReload": {
           "type": "sendTo",
           "label": "Load source and check channel mapping",
           "command": "previewEpgMappings",
-          "jsonData": "${JSON.stringify({url: data.epgXmltvUrl, mappings: data.epgXmltvMappings || [], listView: data.channelListView})}",
+          "jsonData": "${JSON.stringify({url: data.epgXmltvUrl, mappings: data.epgXmltvMappings || [], listView: data.channelListView || undefined})}",
           "useNative": true,
           "doNotSave": true,
-          "default": 0,
-          "onChange": {
-            "alsoDependsOn": [
-              "epgSource",
-              "epgXmltvUrl",
-              "channelListView"
-            ],
-            "ignoreOwnChanges": true,
-            "calculateFunc": "0"
-          },
           "showProcess": true,
           "timeout": 35000,
           "icon": "search",
           "variant": "outlined",
-          "disabled": "!_alive || data.epgEnabled === false",
+          "disabled": "!_alive || data.epgEnabled === false || typeof data.epgXmltvUrl !== 'string' || !data.epgXmltvUrl.trim()",
           "hidden": "!['auto', 'xmltv'].includes(data.epgSource)",
-          "result": {
-            "mappingPreviewReady": "Mapping preview loaded: %s of %s channels assigned. Review the suggestions, add corrections if needed, then save."
+          "xs": 12,
+          "sm": 6
+        },
+        "_epgMappingResponse": {
+          "type": "staticText",
+          "text": "",
+          "hidden": true,
+          "doNotSave": true,
+          "onChange": {
+            "alsoDependsOn": [
+              "epgSource",
+              "epgXmltvUrl",
+              "channelListView",
+              "epgXmltvMappings"
+            ],
+            "ignoreOwnChanges": true,
+            "calculateFunc": "null"
           },
           "xs": 12
         },
-        "_epgMappingPreview": {
-          "type": "table",
-          "label": "Channel mapping preview",
+        "_epgMappingStatus": {
+          "type": "staticText",
+          "text": "${data._epgMappingStatus || \"\"}",
           "doNotSave": true,
-          "noDelete": true,
-          "compact": true,
-          "default": [],
+          "hidden": "!data._epgMappingStatus",
           "onChange": {
             "alsoDependsOn": [
               "epgSource",
               "epgXmltvUrl",
               "channelListView",
               "epgXmltvMappings",
-              "_applyEpgMapping"
+              "_epgMappingLoad",
+              "_epgMappingReload"
             ],
             "ignoreOwnChanges": true,
-            "calculateFunc": "[]"
+            "calculateFunc": "const response = data._epgMappingResponse; const same = response && response.basis && Array.isArray(response.rows) && JSON.stringify([data.epgXmltvUrl ?? '', data.channelListView || '', data.epgXmltvMappings || []]) === JSON.stringify([response.basis.url, response.basis.listView, response.basis.mappings]); return !response ? '' : same ? response.status || '' : 'The form changed while loading. Click Reload saved TV channels again.';"
           },
-          "hidden": "!['auto', 'xmltv'].includes(data.epgSource)",
+          "xs": 12
+        },
+        "epgXmltvMappings": {
+          "type": "table",
+          "label": "TV channels and XMLTV assignments",
+          "help": "Every saved TV channel has one row. Automatic uses an unambiguous match, Manual uses the chosen XMLTV ID, and Disabled excludes external data for this TV channel. The assignment column shows the last source check. Check the source again after editing. Changes take effect after saving.",
+          "noDelete": true,
+          "compact": true,
+          "disabled": "data.epgEnabled === false",
+          "onChange": {
+            "alsoDependsOn": [
+              "epgSource",
+              "epgXmltvUrl",
+              "channelListView",
+              "_epgMappingLoad",
+              "_epgMappingReload"
+            ],
+            "ignoreOwnChanges": true,
+            "calculateFunc": "const response = data._epgMappingResponse; const same = response && response.basis && Array.isArray(response.rows) && JSON.stringify([data.epgXmltvUrl ?? '', data.channelListView || '', data.epgXmltvMappings || []]) === JSON.stringify([response.basis.url, response.basis.listView, response.basis.mappings]); if (response) return same ? response.rows : data.epgXmltvMappings; if (!Array.isArray(data.epgXmltvMappings)) return data.epgXmltvMappings; return data.epgXmltvMappings.map(row => row && typeof row === 'object' && !Array.isArray(row) && Object.prototype.hasOwnProperty.call(row, 'mode') ? {...row, assignment: '', revision: (Number.isSafeInteger(row.revision) && row.revision >= 0 && row.revision < Number.MAX_SAFE_INTEGER ? row.revision : 0) + 1} : row);"
+          },
           "items": [
             {
               "type": "text",
-              "attr": "channel",
+              "attr": "tvChannel",
               "title": "TV channel",
               "readOnly": true,
               "filter": true,
@@ -316,141 +367,48 @@
               "width": "24%"
             },
             {
-              "type": "text",
-              "attr": "match",
-              "title": "Assigned XMLTV channel",
-              "readOnly": true,
-              "filter": true,
-              "sort": true,
-              "width": "28%"
+              "type": "select",
+              "attr": "mode",
+              "title": "XMLTV assignment mode",
+              "options": [
+                {
+                  "value": "auto",
+                  "label": "Automatic"
+                },
+                {
+                  "value": "manual",
+                  "label": "Manual"
+                },
+                {
+                  "value": "disabled",
+                  "label": "Disabled"
+                }
+              ],
+              "width": "16%"
             },
             {
-              "type": "text",
-              "attr": "status",
-              "title": "Mapping status",
-              "readOnly": true,
-              "filter": true,
-              "sort": true,
-              "width": "22%"
-            },
-            {
-              "type": "text",
-              "attr": "suggestions",
-              "title": "Suggestions for review",
-              "readOnly": true,
-              "filter": true,
-              "sort": false,
-              "width": "26%"
-            }
-          ],
-          "xs": 12
-        },
-        "_epgMappingEditorHelp": {
-          "type": "staticText",
-          "text": "Load the source above, then select a TV channel. Search by XMLTV channel name and choose a result, or enter an exact XMLTV ID. Apply the correction to the table, check the preview again and save. Changing the source URL clears the preview; your corrections remain in the table.",
-          "hidden": "!['auto', 'xmltv'].includes(data.epgSource)",
-          "xs": 12
-        },
-        "_epgMappingChannel": {
-          "type": "selectSendTo",
-          "label": "TV channel to correct",
-          "command": "getEpgTvChannels",
-          "jsonData": "${JSON.stringify({listView: data.channelListView, channel: data._epgMappingChannel})}",
-          "alsoDependsOn": [
-            "channelListView",
-            "_epgMappingReload"
-          ],
-          "onChange": {
-            "alsoDependsOn": [
-              "channelListView"
-            ],
-            "ignoreOwnChanges": true,
-            "calculateFunc": "''"
-          },
-          "manual": false,
-          "noTranslation": true,
-          "doNotSave": true,
-          "default": "",
-          "disabled": "!_alive || data.epgEnabled === false",
-          "hidden": "!['auto', 'xmltv'].includes(data.epgSource)",
-          "xs": 12,
-          "sm": 5
-        },
-        "_epgMappingChoice": {
-          "type": "autocompleteSendTo",
-          "label": "XMLTV channel or exact ID",
-          "command": "getXmltvChannels",
-          "jsonData": "${JSON.stringify({url: data.epgXmltvUrl, listView: data.channelListView, channel: data._epgMappingChannel, selected: data._epgMappingChoice, query: data._epgMappingChoice})}",
-          "alsoDependsOn": [
-            "epgXmltvUrl",
-            "channelListView",
-            "_epgMappingReload",
-            "_epgMappingChannel",
-            "_epgMappingChoice"
-          ],
-          "onChange": {
-            "alsoDependsOn": [
-              "epgSource",
-              "epgXmltvUrl",
-              "channelListView",
-              "_epgMappingChannel"
-            ],
-            "ignoreOwnChanges": true,
-            "calculateFunc": "''"
-          },
-          "freeSolo": true,
-          "noTranslation": true,
-          "maxLength": 512,
-          "doNotSave": true,
-          "default": "",
-          "disabled": "data.epgEnabled === false || !data._epgMappingChannel",
-          "hidden": "!['auto', 'xmltv'].includes(data.epgSource)",
-          "xs": 12,
-          "sm": 7
-        },
-        "_applyEpgMapping": {
-          "type": "sendTo",
-          "label": "Apply correction to table",
-          "command": "applyEpgMapping",
-          "jsonData": "${JSON.stringify({mappings: data.epgXmltvMappings || [], channel: data._epgMappingChannel, xmltvId: data._epgMappingChoice, listView: data.channelListView})}",
-          "useNative": true,
-          "doNotSave": true,
-          "showProcess": true,
-          "timeout": 10000,
-          "variant": "outlined",
-          "disabled": "!_alive || data.epgEnabled === false || typeof data._epgMappingChannel !== 'string' || !/^channels\\.tv\\.[A-Za-z0-9_]{1,240}$/.test(data._epgMappingChannel) || typeof data._epgMappingChoice !== 'string' || !data._epgMappingChoice.trim() || data._epgMappingChoice.length > 512",
-          "hidden": "!['auto', 'xmltv'].includes(data.epgSource)",
-          "xs": 12
-        },
-        "epgXmltvMappings": {
-          "type": "table",
-          "label": "Manual XMLTV mapping corrections",
-          "help": "This table contains your manual exceptions to automatic matching. Add corrections with the selectors above or edit a row directly. An empty XMLTV ID disables external data for that TV channel. Delete a row to restore automatic matching. Changes take effect after saving.",
-          "default": [],
-          "uniqueColumns": [
-            "channel"
-          ],
-          "hidden": "!['auto', 'xmltv'].includes(data.epgSource)",
-          "disabled": "data.epgEnabled === false",
-          "items": [
-            {
-              "type": "selectSendTo",
-              "attr": "channel",
-              "title": "TV channel",
-              "command": "getEpgTvChannels",
-              "jsonData": "${JSON.stringify({listView: globalData.channelListView, channel: data.channel})}",
-              "manual": true,
-              "noTranslation": true,
-              "width": "40%"
-            },
-            {
-              "type": "text",
+              "type": "autocompleteSendTo",
               "attr": "xmltvId",
-              "title": "XMLTV ID (empty disables external data)",
+              "title": "XMLTV channel or exact ID",
+              "command": "getXmltvChannels",
+              "jsonData": "${JSON.stringify({url: globalData.epgXmltvUrl, listView: globalData.channelListView || undefined, channel: data.channel, selected: data.xmltvId, query: data.xmltvId})}",
+              "alsoDependsOn": [
+                "mode",
+                "revision",
+                "xmltvId"
+              ],
+              "freeSolo": true,
               "noTranslation": true,
               "maxLength": 512,
-              "default": "",
-              "width": "60%"
+              "hidden": "data.mode !== 'manual'",
+              "width": "32%"
+            },
+            {
+              "type": "text",
+              "attr": "assignment",
+              "title": "Assignment from last source check",
+              "readOnly": true,
+              "width": "28%"
             }
           ],
           "xs": 12
@@ -648,8 +606,8 @@
               "title": "Logo image URL",
               "default": "",
               "width": "60%",
-              "validator": "try { const u = new URL(data.url); return typeof data.url === 'string' && data.url.length <= 2048 && ['http:','https:'].includes(u.protocol) && !!u.hostname && !u.username && !u.password; } catch { return false; }",
-              "validatorNoSaveOnError": true,
+              "validator": "if (data.url === undefined || data.url === null || (typeof data.url === 'string' && !data.url.trim())) return true; try { const u = new URL(data.url); return typeof data.url === 'string' && data.url.length <= 2048 && ['http:','https:'].includes(u.protocol) && !!u.hostname && !u.username && !u.password; } catch { return false; }",
+              "validatorNoSaveOnError": false,
               "validatorErrorText": "Enter an HTTP(S) image URL without username or password."
             }
           ],

@@ -1,6 +1,6 @@
 # EPG: Programmübersicht, XMLTV und Datenpunkte
 
-Diese Anleitung gilt für Version **0.1.18**, Build **`0.1.18-epg-offline.1`**. Die Instanz-Konfiguration hat eigene Reiter für **EPG-Einstellungen**, **Web-Zugriff** und **Programmübersicht**. Die Übersicht zeigt die gespeicherte TV-Senderliste mit Zeitachse und Details. Aus einer ausgewählten Sendung kannst du auf ein aktuell eindeutig laufendes Programm umschalten oder eine zukünftige Aufnahme nach Bestätigung vormerken. Die Datenpunkte für aktuelle und nächste Sendung bleiben unter jedem TV-Sender erhalten; Aufnahmeaufträge stehen im dauerhaften Journal `recordings.jobs`.
+Diese Anleitung gilt für Version **0.1.19**, Build **`0.1.19-epg-config.1`**. Die Instanz-Konfiguration hat eigene Reiter für **EPG-Einstellungen**, **Web-Zugriff** und **Programmübersicht**. Die Übersicht zeigt die gespeicherte TV-Senderliste mit Zeitachse und Details. Aus einer ausgewählten Sendung kannst du auf ein aktuell eindeutig laufendes Programm umschalten oder eine zukünftige Aufnahme nach Bestätigung vormerken. Die Datenpunkte für aktuelle und nächste Sendung bleiben unter jedem TV-Sender erhalten; Aufnahmeaufträge stehen im dauerhaften Journal `recordings.jobs`.
 
 Programmdaten stammen je nach gespeicherter **EPG-Quelle** vom Loewe-TV, aus einer selbst eingetragenen XMLTV-Quelle oder aus beiden Quellen. Standard ist **Nur TV**. XMLTV kann auch bei ausgeschaltetem Fernseher frische Programme liefern; dafür müssen die TV-Senderliste bereits gespeichert und die externe Quelle erreichbar sein. Die Übersicht und die Datenpunkte verwenden denselben daraus abgeleiteten Plan. Reines Blättern, Suchen und Lesen lädt keine Quelle neu. Die vollständige [XMLTV-Anleitung](EPG_XMLTV.md) erklärt Einrichtung, automatische Zuordnung, manuelle Korrekturen und Datenumfang. Die [Netzwerksuche](NETWORK_DISCOVERY.md) hilft bei der Auswahl der TV-Adresse.
 
@@ -14,7 +14,7 @@ Die jüngste Rückmeldung bestätigt erste erfolgreiche Tests der Fernbedienung 
 
 **Jetzt ansehen** prüft serverseitig, ob die ausgewählte Sendung eindeutig läuft, und kontrolliert dies nochmals unmittelbar vor dem Umschaltbefehl. **Aufnahme planen** öffnet für eine zukünftige Sendung den Bestätigungsdialog. Vergangene, veraltete oder zeitlich mehrdeutige Programme und Sendungen ohne bekannte Start- und Endzeit erlauben diese Aktionen nicht.
 
-Die separate Programmübersicht ist unter der bestehenden Admin-Adresse erreichbar, etwa `http://IOBROKER-HOST:8081/adapter/loewe-tv/epg.html?instance=0`. Die automatisch erzeugten Instanz- und Schnellzugrifflinks können unter **Admin 8** auf eine falsche Web-Adresse zeigen. Dieses Resolverproblem wird durch 0.1.18 nicht als behoben ausgewiesen. Verwende in diesem Fall die direkte Admin-Adresse, ein Lesezeichen oder eine eigene Schnellzugriffskachel; [Anleitung und geprüfte Ursachen](ADMIN_LINKS.md).
+Die separate Programmübersicht ist unter der bestehenden Admin-Adresse erreichbar, etwa `http://IOBROKER-HOST:8081/adapter/loewe-tv/epg.html?instance=0`. Die automatisch erzeugten Instanz- und Schnellzugrifflinks können unter **Admin 8** auf eine falsche Web-Adresse zeigen. Dieses Resolverproblem wird durch 0.1.19 nicht als behoben ausgewiesen. Verwende in diesem Fall die direkte Admin-Adresse, ein Lesezeichen oder eine eigene Schnellzugriffskachel; [Anleitung und geprüfte Ursachen](ADMIN_LINKS.md).
 
 Optional kann unter **Web-Zugriff → Web-Adapter für die Programmübersicht** eine vorhandene Web-Instanz gewählt werden. Sie stellt die Seite unter `/loewe-tv.0/epg.html` und als Schnellzugriff auf ihrer Startseite bereit. Lokal gelten die Anmeldung und Benutzerrechte der Web-Instanz; die integrierte Socket-Verbindung ist erforderlich. [Lokalen Web-Zugriff einrichten](EPG_GUI.md#über-iobrokerweb-öffnen).
 
@@ -28,7 +28,7 @@ Die Vorschau kann über `now` und `next` hinausreichen, soweit weitere Sendungen
 
 ## Am Fernseher beginnen
 
-1. Den Build **`0.1.18-epg-offline.1`** nach der [Updateanleitung](INSTALLATION.md#update-auf-0118) installieren und die bestehende Instanz starten. Ein Neustart allein übernimmt das Update nicht. `info.adapterBuild` muss **`0.1.18-epg-offline.1`** anzeigen. Für die eingebettete Übersicht wird **Admin ab 7.7.28** benötigt. Admin vollständig neu laden und die Adapter-Konfiguration neu öffnen.
+1. Den Build **`0.1.19-epg-config.1`** nach der [Updateanleitung](INSTALLATION.md#update-auf-0119) installieren und die bestehende Instanz starten. Ein Neustart allein übernimmt das Update nicht. `info.adapterBuild` muss **`0.1.19-epg-config.1`** anzeigen. Für die eingebettete Übersicht wird **Admin ab 7.7.28** benötigt. Admin vollständig neu laden und die Adapter-Konfiguration neu öffnen.
 2. Fernseher einschalten und prüfen, dass die gewünschte Senderliste in der Adapter-Konfiguration ausgewählt ist. Die zugehörigen Sender müssen unter `channels.tv` vorhanden sein.
 3. Im Reiter **EPG-Einstellungen** die Voreinstellungen verwenden: **Programminformationen aktivieren** eingeschaltet, Abrufintervall **900 Sekunden**, **EPG-Quelle → Nur TV**. Für frische Daten bei ausgeschaltetem TV anschließend [XMLTV einrichten](EPG_XMLTV.md#einrichten).
 4. Nach dem Start und der Senderanlage beginnt der erste EPG-Abgleich automatisch. **EPG aktualisieren** in der Übersicht startet ihn auch manuell. Alternativ **`channels.epgRefresh=true`** wie bei anderen Tastern mit `ack:false` schreiben.
@@ -44,7 +44,7 @@ Der Abgleich geht die bekannten, verfügbaren TV-Dienste der ausgewählten Liste
 | EPG-Aktualisierung (Sekunden) (`epgRefreshInterval`) | 900 Sekunden | Zeit zwischen abgeschlossenen Abgleichläufen. Ganze Werte von 300 bis 86.400 Sekunden. `0` schaltet automatische EPG-Netzabfragen aus; die Schaltfläche in der Übersicht und der manuelle Taster bleiben verfügbar. |
 | EPG-Quelle (`epgSource`) | Nur TV (`tv`) | `auto`: TV mit XMLTV-Ergänzung; `xmltv`: EPG ausschließlich aus XMLTV. In den beiden externen Modi wird XMLTV vor möglichen TV-EPG-Anfragen geladen. |
 | XMLTV-Adresse (`epgXmltvUrl`) | Leer | Eigene HTTP(S)-Adresse einer XMLTV- oder gzip-Datei. Es wird kein Anbieter automatisch ausgewählt. |
-| Manuelle Korrekturen (`epgXmltvMappings`) | Keine | Nur Ausnahmen ergänzen: fehlende Zeile bedeutet automatische Zuordnung; eine Zeile mit leerer XMLTV-ID deaktiviert externe Programme für diesen TV-Sender. |
+| Senderzuordnung (`epgXmltvMappings`) | Automatisch | Die gespeicherte TV-Liste gibt die Zeilen vor. Je Sender **Automatisch**, **Manuell** mit genauer XMLTV-ID oder **Deaktiviert** auswählen. |
 
 Ein Intervall von `0` verhindert auch den automatischen EPG-Erstabruf. Bereits vorgemerkte Aufnahmeaufträge werden unabhängig von den Abrufintervallen weiterbearbeitet. Bereits gespeicherte Programme werden trotzdem zeitlich weitergeschaltet, solange EPG aktiviert ist. Bei `epgEnabled=false` starten weder die Schaltfläche noch der manuelle Taster einen Import.
 
@@ -54,7 +54,7 @@ Die Einstellungen wirken nach dem Speichern. Das Blättern, Suchen oder Auswähl
 
 **Quelle laden und Zuordnung prüfen** testet ausdrücklich die im Formular eingetragene XMLTV-Adresse und Zuordnung gegen die bereits gespeicherte TV-Senderliste. Die Vorschau speichert keine Konfiguration und ersetzt keine laufenden Programmcaches. Erst Speichern und ein regulärer EPG-Abgleich übernehmen die Änderungen. Gültige frühere Werte für `epgSource`, `epgXmltvUrl` und `epgXmltvMappings` werden wieder ausgewertet. Ungültige optionale XMLTV-Einstellungen verhindern den TV-Betrieb nicht: TV-EPG bleibt verfügbar, während `channels.epgLastError` das Konfigurationsproblem meldet.
 
-Für eine Korrektur oberhalb der Tabelle den TV-Sender auswählen und den XMLTV-Sender suchen beziehungsweise seine genaue ID eingeben. **Korrektur in die Tabelle übernehmen** aktualisiert nur das offene Formular; anschließend normal speichern. Eine Änderung der Quelle oder TV-Senderliste setzt Vorschau und XMLTV-Auswahl zurück, erhält aber die vorhandenen Korrekturzeilen. Diese müssen dann auf die neue Quelle geprüft werden.
+Die TV-Sender erscheinen beim Öffnen direkt in der Tabelle, auch ohne eingetragene XMLTV-Adresse und bei ausgeschaltetem TV. Für eine Korrektur in der betreffenden Zeile **Manuell** wählen und daneben den XMLTV-Sender suchen beziehungsweise seine genaue ID eingeben. **Automatisch** setzt eine manuelle Entscheidung zurück. Anschließend normal speichern. Eine Änderung der Quelle oder TV-Senderliste setzt das Prüfergebnis zurück, erhält aber vorhandene manuelle Entscheidungen. Diese müssen dann auf die neue Quelle geprüft werden. Eine fehlende optionale Quellenadresse zeigt einen Hinweis und blockiert das Speichern der übrigen Einstellungen nicht.
 
 ## Datenpunkte am Sender
 

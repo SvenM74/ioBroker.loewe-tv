@@ -223,5 +223,40 @@
     "license": "Public domain (PD-textlogo, Wikimedia Commons)",
     "checkedAt": "2026-10-19",
     "sha256": "b685fb1397ca44941daa8deebffe1aa14eff689607946c38a69d4bde4eef3185"
+  },
+  {
+    "slug": "arte",
+    "name": "ARTE",
+    "aliases": [],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Arte_Logo_2017.svg",
+    "downloadSource": "https://github.com/mediathekview/MediathekView/blob/55f8f7dfda8adaeb8f6d4112dac4b38e0d149639/src/main/resources/icons/sender/arte.svg",
+    "variant": "Horizontal rendition of the ARTE wordmark; geometry and colour retained from the pinned SVG.",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "165b65ce3178c234b8ff4c118da9f1202828bb6a19a99c1cc25b5f38030880eb"
+  },
+  {
+    "slug": "rtlzwei",
+    "name": "RTLZWEI",
+    "aliases": [
+      "RTL II",
+      "RTL 2"
+    ],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:RTLZWEI_Logo_2019.svg",
+    "downloadSource": "https://github.com/Jasmeet181/mediaportal-de-logos/blob/8eabb30922657c839259795597d2cba35b8af18d/TV/RTLZwei.svg",
+    "aliasSource": "https://unternehmen.rtl2.de/blog/so-schreibt-man-rtlzwei-ein-oder-zwei-gedanken-zu-unserer-wortmarke",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "f980d99ec0bf818450c6d9f357c5a0b2322e1693ec4e8984e34e21653c403e73"
+  },
+  {
+    "slug": "vox",
+    "name": "VOX",
+    "aliases": [],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:VOX_Logo_2013.svg",
+    "downloadSource": "https://github.com/picons/picons/blob/2666916e01c5b87c74a809a755d0e133a238ac95/build-source/logos/vox.default.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "cc96378b477c01c050ca36d258258e15c0b0ec733659b3720ed0ee2457b1c586"
   }
 ]

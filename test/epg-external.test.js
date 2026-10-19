@@ -125,6 +125,9 @@ async function harness(t, options = {}) {
     async function catalog(services) {
         runtime.channelObjects.services = new Map(services.map(selected => [selected.id, selected]));
         await manager.prepareCatalog(services);
+        // This integration harness installs synthetic services directly. Match
+        // the real ChannelObjects restore signal after EPG bindings are ready.
+        runtime.channelObjects._settleReady('ready');
         for (const selected of services) {
             if (selected.itemClass !== 'video' || selected.listView !== runtime.config.channelListView) continue;
             for (const definition of createEpgDefinitions(selected.id)) {
@@ -395,8 +398,10 @@ test('mapping preview and option reads affect only temporary RAM choices, not li
         mappings: [{ channel: service().id, xmltvId: 'preview-other' }] });
     assert.equal(preview.result, 'mappingPreviewReady');
     assert.deepEqual(preview.args, [1, 1]);
-    assert.match(preview.native._epgMappingPreview[0].match, /preview-other/u);
-    assert.deepEqual(Object.keys(preview.native).sort(), ['_epgMappingPreview', '_epgMappingReload']);
+    assert.match(preview.native._epgMappingResponse.rows[0].assignment, /preview-other/u);
+    assert.deepEqual(Object.keys(preview.native), ['_epgMappingResponse']);
+    assert.deepEqual(preview.native._epgMappingResponse.basis, { url, listView: 'synthetic-list',
+        mappings: [{ channel: service().id, xmltvId: 'preview-other' }] });
     const channels = await h.runtime.handleMessage('getEpgTvChannels', { listView: 'synthetic-list' });
     const options = await h.runtime.handleMessage('getXmltvChannels', { url, listView: 'synthetic-list', channel: service().id });
     assert.ok(channels.some(option => option.value === service().id));
@@ -410,6 +415,78 @@ test('mapping preview and option reads affect only temporary RAM choices, not li
     assert.deepEqual(h.manager.entries.get(service().id).xmltvCache, cacheBefore);
     assert.deepEqual(h.manager.guide(), guideBefore);
     assert.equal(h.snapshot().xmltvMapping.xmltvId, 'fixture-a');
+});
+
+test('local configuration rows use the requested cached source and never download or modify live data', async t => {
+    const h = await harness(t, { config: { epgEnabled: false } });
+    const before = liveSnapshot(h);
+    const legacy = { [service().id]: 'explicit-preview-id', 'channels.tv.Previous': '' };
+    const request = { url: '', mappings: legacy, listView: 'synthetic-list' };
+    const first = await h.runtime.handleMessage('getEpgMappingRows', request);
+    const response = first.native._epgMappingResponse;
+    assert.deepEqual(Object.keys(first.native), ['_epgMappingResponse']);
+    assert.deepEqual(response.basis, request);
+    assert.equal(response.rows[0].mode, 'manual');
+    assert.equal(response.rows[0].xmltvId, 'explicit-preview-id');
+    assert.equal(response.rows[1].mode, 'disabled');
+    assert.match(response.status, /1 TV-Sender.*Quelle.*noch nicht geladen.*1 bisherige Korrekturen/u);
+    assert.deepEqual(liveSnapshot(h), before);
+    response.basis.mappings[service().id] = 'edited-response';
+    assert.equal(request.mappings[service().id], 'explicit-preview-id');
+    h.manager._previewCatalogue = { url: 'https://other.invalid/guide.xml', channels: [{ id: 'explicit-preview-id', names: ['Fixture HD'] }] };
+    const unrelated = await h.runtime.handleMessage('getEpgMappingRows', request);
+    assert.match(unrelated.native._epgMappingResponse.rows[0].assignment, /Quelle noch nicht geladen/u);
+    const matching = await h.runtime.handleMessage('getEpgMappingRows', { ...request, url: 'https://other.invalid/guide.xml' });
+    assert.match(matching.native._epgMappingResponse.rows[0].assignment, /Manuell: Fixture HD/u);
+    assert.deepEqual(liveSnapshot(h), before);
+});
+
+test('delayed preview replies carry an immutable draft basis and retain explicit and unavailable TV corrections', async t => {
+    const started = deferred();
+    const release = deferred();
+    const parse = parsedLoader(feed(), []);
+    const h = await harness(t, { xmltvLoader: async (url, options) => {
+        const result = await parse(url, options);
+        started.resolve();
+        await release.promise;
+        return result;
+    } });
+    const request = { url: FEED_URL, listView: 'synthetic-list', mappings: [
+        { channel: service().id, xmltvId: 'fixture-a' },
+        { channel: 'channels.tv.Previous', xmltvId: 'retained-id' },
+    ] };
+    const snapshot = structuredClone(request);
+    const pending = h.runtime.handleMessage('previewEpgMappings', request);
+    await started.promise;
+    request.mappings[0].xmltvId = 'changed-after-request';
+    const before = liveSnapshot(h);
+    release.resolve();
+    const reply = await pending;
+    assert.deepEqual(reply.native._epgMappingResponse.basis, snapshot);
+    assert.equal(reply.native._epgMappingResponse.rows[0].xmltvId, 'fixture-a');
+    assert.equal(reply.native._epgMappingResponse.rows[1].xmltvId, 'retained-id');
+    assert.deepEqual(liveSnapshot(h), before);
+});
+
+test('failed source checks leave the draft and prior catalogue intact while an empty valid source retains TV rows', async t => {
+    const h = await harness(t);
+    const request = { url: FEED_URL, listView: 'synthetic-list', mappings: [] };
+    const first = await h.runtime.handleMessage('previewEpgMappings', request);
+    const retained = structuredClone(first.native._epgMappingResponse);
+    const previousCatalogue = structuredClone(h.manager._previewCatalogue);
+    h.manager.xmltvLoader = async () => { throw failure('XMLTV_HTTP'); };
+    const before = liveSnapshot(h);
+    await assert.rejects(h.runtime.handleMessage('previewEpgMappings', request), { code: 'XMLTV_HTTP' });
+    assert.deepEqual(h.manager._previewCatalogue, previousCatalogue);
+    assert.deepEqual(first.native._epgMappingResponse, retained);
+    assert.deepEqual(liveSnapshot(h), before);
+    h.manager.xmltvLoader = parsedLoader(feed([]), []);
+    const empty = await h.runtime.handleMessage('previewEpgMappings', request);
+    assert.equal(empty.native._epgMappingResponse.rows.length, 1);
+    assert.equal(empty.native._epgMappingResponse.rows[0].mode, 'auto');
+    assert.match(empty.native._epgMappingResponse.status, /0 XMLTV-Sender geladen/u);
+    assert.match(empty.native._epgMappingResponse.rows[0].assignment, /Kein eindeutiger Treffer/u);
+    assert.deepEqual(liveSnapshot(h), before);
 });
 
 test('mapping editor replaces exactly one draft row and preserves unrelated and disabled rows without changing live data', async t => {
@@ -565,7 +642,7 @@ test('preview choices survive periodic source loading and preserve selections be
     const request = { url: previewUrl, listView: 'synthetic-list', mappings: [] };
     const first = await h.runtime.handleMessage('previewEpgMappings', request);
     const second = await h.runtime.handleMessage('previewEpgMappings', request);
-    assert.ok(second.native._epgMappingReload > first.native._epgMappingReload,
+    assert.ok(second.native._epgMappingResponse.rows[0].revision > first.native._epgMappingResponse.rows[0].revision,
         'Two explicit reloads remain distinguishable with an unchanged clock.');
     await h.manager.refresh({ manual: true });
     const before = liveSnapshot(h);

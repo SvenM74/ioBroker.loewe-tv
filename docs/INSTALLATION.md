@@ -19,7 +19,7 @@ Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://git
 Zum Erzeugen des Pakets brauchst du Git und Node.js ab 22. Öffne ein Terminal in einem eigenen Arbeitsverzeichnis und führe aus:
 
 ```bash
-git clone --branch fix/recording-timer-response https://github.com/SvenM74/ioBroker.loewe-tv.git
+git clone https://github.com/SvenM74/ioBroker.loewe-tv.git
 cd ioBroker.loewe-tv
 npm install
 npm test
@@ -40,11 +40,11 @@ mv iobroker.loewe-tv-0.1.12.tgz iobroker.loewe-tv-0.1.12-recording-fix.1.tgz
 
 ### Korrektur direkt aus GitHub installieren
 
-Für den Korrekturstand auf dem Branch `fix/recording-timer-response` kann die bestehende Instanz direkt aktualisiert werden:
+Version 0.1.12 ist im Hauptzweig `main` verfügbar. Die bestehende Instanz kann direkt über die normale GitHub-Projektadresse aktualisiert werden:
 
 ```bash
 iobroker stop loewe-tv.0
-iobroker url "SvenM74/ioBroker.loewe-tv#fix/recording-timer-response" loewe-tv
+iobroker url "https://github.com/SvenM74/ioBroker.loewe-tv" loewe-tv
 iobroker start loewe-tv.0
 ```
 

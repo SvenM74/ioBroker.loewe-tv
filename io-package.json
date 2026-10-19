@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.16",
+    "version": "0.1.17",
     "news": {
+      "0.1.17": {
+        "en": "Add a remote-control dialog inspired by the Loewe Assist handset to the programme guide. Send supported keys to the page's TV instance through the existing Admin, web or Cloud connection, including documented DR+ archive and BACK commands. Offer explicit power-on and standby actions, bounded ordered input and honest delivery status without replaying lost key presses.",
+        "de": "Die Programmübersicht um eine an der Loewe-Assist-Fernbedienung orientierte Bedienfläche ergänzen. Unterstützte Tasten über die bestehende Admin-, Web- oder Cloud-Verbindung an die TV-Instanz der geöffneten Seite senden, einschließlich belegtem DR+-Archiv und BACK-Befehl. Einschalten und Standby ausdrücklich auswählen, Eingaben begrenzt in Reihenfolge senden und verlorene Tastendrücke nicht wiederholen."
+      },
       "0.1.16": {
         "en": "Prevent duplicate programme-guide tiles on web and cloud start pages by declaring the Admin link as a URL string. Keep the working per-TV web links and Admin quick access. Standard adapter updates replace old link metadata while preserving configured web instances and recording requests.",
         "de": "Doppelte Programmübersichts-Kacheln auf Web- und Cloud-Startseiten durch einen als URL-Text hinterlegten Admin-Link verhindern. Funktionierende Web-Links je TV und Admin-Schnellzugriff erhalten. Reguläre Adapterupdates ersetzen die bisherigen Link-Metadaten und bewahren die gewählten Web-Instanzen sowie Aufnahmeaufträge."

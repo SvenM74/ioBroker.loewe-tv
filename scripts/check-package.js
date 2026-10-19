@@ -18,10 +18,10 @@ const catalog = readJson('docs/protocol-templates.json');
 const remote115 = readJson('docs/remote115-keys.json');
 
 assert.equal(pkg.name, `iobroker.${io.common.name}`);
-assert.equal(pkg.version, '0.1.16');
+assert.equal(pkg.version, '0.1.17');
 assert.equal(pkg.version, io.common.version);
 assert.ok(BUILD_ID.startsWith(`${pkg.version}-`), 'Build identifier must match package version');
-assert.equal(BUILD_ID, '0.1.16-web-links.1');
+assert.equal(BUILD_ID, '0.1.17-remote.1');
 assert.ok(!pkg.keywords.includes('xmltv'), 'Package keywords must describe the supported TV-only EPG');
 assert.equal(io.common.mode, 'daemon');
 assert.equal(io.common.messagebox, true, 'Admin list selection requires adapter messaging');
@@ -35,7 +35,7 @@ assert.equal(admin.i18n, true);
 assert.equal(io.common.globalDependencies.find(dependency => dependency.admin)?.admin, '>=7.7.28',
     'The embedded programme guide needs native iframeSendTo support');
 assert.equal(admin.items._programmeGuide.items._epgGuide.type, 'iframeSendTo');
-for (const asset of ['epg.html', 'epg.css', 'epg.js', 'epg-bridge.js']) {
+for (const asset of ['epg.html', 'epg.css', 'epg.js', 'epg-bridge.js', 'epg-remote.js']) {
     assert.ok(fs.statSync(path.join(root, 'admin', asset)).isFile(), `Missing programme guide asset: ${asset}`);
 }
 
@@ -109,8 +109,8 @@ for (const advanced of [false, true]) {
             }
         }
     }
-    assert.equal([...ids].filter(id => /^remote\.[^.]+$/.test(id)).length, 42);
-    assert.equal(objects.length, 92);
+    assert.equal([...ids].filter(id => /^remote\.[^.]+$/.test(id)).length, 44);
+    assert.equal(objects.length, 94);
     for (const id of retiredStaticStates) {
         assert.ok(!ids.has(id), `Retired static data point must not be recreated: ${id}`);
     }
@@ -150,7 +150,7 @@ for (const template of catalog.templates) {
 assert.deepEqual([...actions].sort(), [...TABLET_ACTIONS].sort());
 const sourceKeys = catalog.remote_keymap.map(key => `${key.alphabet}:${key.sent_code}`).sort();
 const clientKeys = Object.entries(KEYS).filter(([name]) => !/^digit_\d$/.test(name)
-    && !['epg_alt', 'power_on', 'tv_mode_on'].includes(name))
+    && !['epg_alt', 'power_on', 'tv_mode_on', 'dr_archive', 'back_step'].includes(name))
     .map(([, key]) => `${key.alphabet}:${key.value}`).sort();
 assert.deepEqual(clientKeys, sourceKeys, 'Original remote keys differ from Loewe App extraction');
 for (let digit = 0; digit <= 9; digit++) {
@@ -167,8 +167,11 @@ assert.deepEqual(KEYS.power_on, { alphabet: 'l2700', value: 22 });
 // Remote API 1.0.47, 9.4.1.1 documents the discrete mode keys.
 assert.equal(KEYS.radio_mode_on, undefined);
 assert.deepEqual(KEYS.tv_mode_on, { alphabet: 'l2700', value: 72 });
+// Remote API 1.0.47, 9.4.1.1, p. 25: DR_ARCHIVE=92, BACK=65; END=63 stays separate.
+assert.deepEqual(KEYS.dr_archive, { alphabet: 'l2700', value: 92 });
+assert.deepEqual(KEYS.back_step, { alphabet: 'l2700', value: 65 });
 assert.ok(!Object.values(KEYS).some(key => [1337, 1338].includes(key.value)), 'Local app UI actions are not TV keys');
-console.log(`APK contract valid: ${catalog.templates.length} exact XML templates, ${actions.size} actions, 29 original and 11 additional APK key mappings; TV_ON and TV_MODE_ON verified against Remote API 1.0.47, sections 9.4.3 and 9.4.1.1.`);
+console.log(`APK contract valid: ${catalog.templates.length} exact XML templates, ${actions.size} actions, 29 original and 11 additional APK key mappings; TV_ON, TV_MODE_ON, DR_ARCHIVE and BACK verified against Remote API 1.0.47, sections 9.4.3 and 9.4.1.1.`);
 
 // Check syntax without importing adapter-core or starting an ioBroker process.
 for (const directory of ['', 'lib', 'admin', 'scripts', 'test']) {

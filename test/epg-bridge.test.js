@@ -531,3 +531,160 @@ test('closing during socket script loading removes the script and leaves no pend
     assert.equal(view.scripts[0].removed, true);
     assert.equal(view.timers.size, 0);
 });
+
+test('remote keys retain each TV on Admin, web, proxy and both Cloud origins without guide data', async t => {
+    for (const instance of [0, 1]) {
+        for (const href of [
+            `https://broker.example/admin/adapter/loewe-tv/epg.html?instance=${instance}`,
+            `http://broker.example:8082/loewe-tv.${instance}/epg.html`,
+            `https://broker.example/proxy/web/loewe-tv.${instance}/epg.html`,
+            `https://iobroker.net/loewe-tv.${instance}/epg.html`,
+            `https://iobroker.pro/loewe-tv.${instance}/epg.html`,
+        ]) {
+            const view = browser({ href, regularSocketIo: true, respond: request => ({
+                ok: true, key: request.payload.key, status: 'sent', instance: request.instance,
+            }) });
+            t.after(view.dispose);
+            assert.equal(view.bridge.getInstance(), `loewe-tv.${instance}`);
+            assert.equal(view.connectionOptions.length, 0, 'Reading the target must not create a connection.');
+            for (const key of ['digit_1', 'digit_0', 'ok', 'record', 'dr_archive', 'power_off']) {
+                const result = await view.bridge.sendRemoteCommand(key);
+                assert.equal(result.status, 'sent');
+                assert.equal(result.key, key);
+                const request = view.requests.at(-1);
+                assert.equal(request.instance, `loewe-tv.${instance}`);
+                assert.equal(request.command, 'sendRemoteCommand');
+                assert.deepEqual(request.payload, { key });
+            }
+            assert.equal(view.connectionOptions[0].url, new URL(href).origin);
+            assert.equal(view.connectionOptions[0].options.reconnection, false);
+            assert.equal(view.timers.size, 0);
+        }
+    }
+});
+
+test('remote commands reject an ambiguous TV and anything except a bounded key name before sending', async t => {
+    for (const href of [
+        'https://broker/adapter/loewe-tv/epg.html',
+        'https://broker/adapter/loewe-tv/epg.html?instance=1&instance=0',
+        'https://broker/loewe-tv.1/epg.html?instance=0',
+        'https://broker/loewe-tv.01/epg.html',
+        'file:///loewe-tv.1/epg.html',
+    ]) {
+        const view = browser({ href });
+        t.after(view.dispose);
+        assert.throws(() => view.bridge.getInstance(), { code: 'EPG_GUIDE_INSTANCE' });
+        await assert.rejects(view.bridge.sendRemoteCommand('ok'), { code: 'EPG_GUIDE_INSTANCE', delivery: 'notSent' });
+        assert.equal(view.connectionOptions.length, 0);
+        assert.equal(view.requests.length, 0);
+    }
+    const view = browser();
+    t.after(view.dispose);
+    for (const key of [null, undefined, 1, true, [], {}, { key: 'ok', instance: 'loewe-tv.0' },
+        'OK', ' ok ', '', 'x'.repeat(33), 'ok\n', 'remote.ok']) {
+        await assert.rejects(view.bridge.sendRemoteCommand(key), { code: 'VALIDATION', delivery: 'notSent' });
+    }
+    assert.equal(view.requests.length, 0);
+    assert.equal(view.connectionOptions.length, 0);
+});
+
+test('remote success must identify the requested key, TV and type of acknowledgement', async t => {
+    for (const response of [
+        { ok: true, instance: 'loewe-tv.0', key: 'ok', status: 'sent' },
+        { ok: true, instance: 'loewe-tv.3', key: 'record', status: 'sent' },
+        { ok: true, instance: 'loewe-tv.3', key: 'ok', status: 'started' },
+        { ok: false, instance: 'loewe-tv.3', key: 'ok', status: 'sent' },
+        { accepted: true },
+    ]) {
+        const view = browser({ respond: () => response });
+        t.after(view.dispose);
+        await assert.rejects(view.bridge.sendRemoteCommand('ok'), { code: 'REMOTE_RESPONSE', delivery: 'unknown' });
+        assert.equal(view.requests.length, 1);
+    }
+    for (const status of ['started', 'alreadyRunning']) {
+        const view = browser({ respond: () => ({ ok: true, instance: 'loewe-tv.3', key: 'power_on', status }) });
+        t.after(view.dispose);
+        assert.equal((await view.bridge.sendRemoteCommand('power_on')).status, status);
+        assert.equal(view.requests.length, 1, 'Starting wake-up must not inject a browser-side power key.');
+    }
+});
+
+test('remote permission failures are known unsent, and an expired login never emits a TV command', async t => {
+    const unauthenticated = browser({ auth: false });
+    t.after(unauthenticated.dispose);
+    await assert.rejects(unauthenticated.bridge.sendRemoteCommand('record'), { delivery: 'notSent' });
+    assert.equal(unauthenticated.requests.length, 0);
+    for (const response of ['permissionError', { error: 'permissionError' }]) {
+        const view = browser({ respond: () => response });
+        t.after(view.dispose);
+        await assert.rejects(view.bridge.sendRemoteCommand('record'), {
+            code: 'EPG_GUIDE_PERMISSION', delivery: 'notSent',
+        });
+        await view.advance(60000);
+        assert.equal(view.requests.length, 1);
+    }
+});
+
+test('remote failures preserve delivery evidence and are never automatically resubmitted', async t => {
+    for (const [code, delivery] of [['VALIDATION', 'notSent'], ['BUSY', 'notSent'], ['NETWORK', 'unknown']]) {
+        const view = browser({ respond: () => ({ ok: false, error: 'Die Taste wurde nicht bestätigt.', code, delivery }) });
+        t.after(view.dispose);
+        await assert.rejects(view.bridge.sendRemoteCommand('record'), { code, delivery });
+        await view.advance(60000);
+        assert.deepEqual(view.requests.map(request => request.command), ['sendRemoteCommand']);
+        assert.equal(view.timers.size, 0);
+    }
+});
+
+test('a lost remote reply stays uncertain and a later status read cannot replay the key', async t => {
+    const snapshot = { ok: true, instance: 'loewe-tv.3', connected: false, commandPending: false, powerOn: null };
+    const view = browser({ respond: request => request.command === 'getRemoteStatus' ? snapshot : NO_RESPONSE });
+    t.after(view.dispose);
+    const result = view.bridge.sendRemoteCommand('record');
+    const rejected = assert.rejects(result, { delivery: 'unknown' });
+    await view.flush();
+    await view.advance(12000);
+    await rejected;
+    assert.equal(view.sockets[0].destroyed, true);
+    view.requests[0].callback({ ok: true, key: 'record', status: 'sent', instance: 'loewe-tv.3' });
+    await view.advance(60000);
+    assert.equal(view.requests.length, 1);
+    assert.equal(await view.bridge.requestRemoteStatus(), snapshot);
+    assert.deepEqual(view.requests.map(request => request.command), ['sendRemoteCommand', 'getRemoteStatus']);
+    assert.deepEqual(view.requests[1].payload, {});
+    assert.equal(view.timers.size, 0);
+});
+
+test('a remote connection timeout is unsent while disconnect after emission is uncertain', async t => {
+    const disconnected = browser({ connect: NO_RESPONSE });
+    t.after(disconnected.dispose);
+    const before = assert.rejects(disconnected.bridge.sendRemoteCommand('ok'), { delivery: 'notSent' });
+    await disconnected.flush();
+    await disconnected.advance(8000);
+    await before;
+    assert.equal(disconnected.requests.length, 0);
+
+    const view = browser({ respond: () => NO_RESPONSE });
+    t.after(view.dispose);
+    const after = assert.rejects(view.bridge.sendRemoteCommand('ok'), { delivery: 'unknown' });
+    await view.flush();
+    view.sockets[0].trigger('disconnect');
+    await after;
+    await view.advance(60000);
+    assert.equal(view.requests.length, 1);
+    assert.equal(view.timers.size, 0);
+});
+
+test('cached remote status cannot switch the bridge to a different TV or substitute guide data', async t => {
+    for (const response of [
+        { ok: true, instance: 'loewe-tv.0', connected: true, commandPending: false, powerOn: null },
+        { ok: true, instance: 'loewe-tv.3', connected: 'true', commandPending: false },
+        page(),
+    ]) {
+        const view = browser({ respond: () => response });
+        t.after(view.dispose);
+        await assert.rejects(view.bridge.requestRemoteStatus(), { code: 'REMOTE_RESPONSE' });
+        assert.equal(view.bridge.getInstance(), 'loewe-tv.3');
+        assert.deepEqual(view.requests.map(request => request.command), ['getRemoteStatus']);
+    }
+});

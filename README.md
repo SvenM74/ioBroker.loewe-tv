@@ -1,8 +1,12 @@
 # Loewe TV Adapter für ioBroker
 
-## Version 0.1.16
+## Version 0.1.17
 
-Build **`0.1.16-web-links.1`** entfernt die Ursache doppelter EPG-Kacheln auf der Web-/Cloud-Startseite. Pro TV bleibt der instanzbezogene Link **Loewe TV · Programmübersicht** unter `loewe-tv.N/epg.html` bestehen. Die zusätzlichen generischen Kacheln unter `adapter/loewe-tv/...` werden nicht mehr aus den Admin-Metadaten erzeugt. Die Admin-Verknüpfung bleibt erhalten und verwendet im Schnellzugriff den Adaptertitel **Loewe TV**. [Update und Bereinigung](docs/INSTALLATION.md#update-auf-0116) · [Prüfbericht](docs/PRUEFBERICHT_0.1.16.md).
+Build **`0.1.17-remote.1`** ergänzt den Button **Fernbedienung** neben **EPG aktualisieren**. Er öffnet eine Bedienfläche, deren Form und Tastenanordnung an der Loewe-Assist-Fernbedienung orientiert sind: Ziffern, Steuerkreuz und OK, Lautstärke, Programmwechsel, TV-Menüs, Farbtasten, Wiedergabe und Direktaufnahme. **DR+** öffnet das Archiv; **BACK** verwendet den dokumentierten Schritt-zurück-Befehl. Über das Power-Symbol wählst du ausdrücklich **Einschalten** oder **Ausschalten**. [Tasten, Bedienung und Grenzen](docs/REMOTE_CONTROL.md) · [Update](docs/INSTALLATION.md#update-auf-0117) · [Prüfbericht](docs/PRUEFBERICHT_0.1.17.md).
+
+Die Fernbedienung nutzt die bestehende Verbindung der EPG-Seite und bedient deren TV-Instanz, beispielsweise `loewe-tv.0` oder `loewe-tv.1`. Sie funktioniert auch ohne geladene Programmdaten. Eingaben werden begrenzt in Reihenfolge gesendet; nach einem Übertragungsfehler werden wartende Tasten verworfen. Eine TV-Antwort ist kein Nachweis der sichtbaren Ausführung. Die Geräteumschaltung auf fremde STB-/VIDEO-Geräte und nicht belegte Stern-/Quellenbefehle werden nicht als funktionslose Tasten eingeblendet.
+
+Die Korrektur aus **0.1.16** gegen doppelte EPG-Kacheln auf der Web-/Cloud-Startseite bleibt enthalten. Pro TV bleibt der instanzbezogene Link **Loewe TV · Programmübersicht** unter `loewe-tv.N/epg.html` bestehen. Die zusätzlichen generischen Kacheln unter `adapter/loewe-tv/...` werden nicht mehr aus den Admin-Metadaten erzeugt. Die Admin-Verknüpfung verwendet im Schnellzugriff den Adaptertitel **Loewe TV**. [Update und Bereinigung](docs/INSTALLATION.md#doppelte-web-cloud-kacheln-bei-zwei-fernsehern-bereinigen) · [Prüfbericht zu 0.1.16](docs/PRUEFBERICHT_0.1.16.md).
 
 Die Instanz-Konfiguration bietet weiterhin den Reiter **Web-Zugriff** mit dem Feld **Web-Adapter für die Programmübersicht**. Dort wählst du die vorhandene Web-Instanz, beispielsweise `web.0`, die die EPG-Seite darstellen soll. Eine bereits gespeicherte Auswahl bleibt erhalten. Auch deaktivierte Web-Instanzen bleiben sichtbar; für den Zugriff muss die ausgewählte Instanz laufen.
 

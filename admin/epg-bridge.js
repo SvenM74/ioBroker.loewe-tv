@@ -37,6 +37,7 @@
         response: 'Die Programmvorschau hat eine unvollständige oder ungültige Antwort erhalten.',
         changed: 'Die Senderliste wurde während des Ladens mehrfach geändert. Lade die Vorschau erneut.',
         busy: 'Eine Anfrage läuft bereits. Bitte warte kurz.',
+        remoteCommand: 'Die Fernbedienungstaste ist ungültig.',
     } : {
         unavailable: 'The connection to ioBroker is unavailable. Reload the programme guide.',
         timeout: 'ioBroker did not respond in time. Check that the adapter instance is running.',
@@ -45,6 +46,7 @@
         response: 'The programme guide received an incomplete or invalid response.',
         changed: 'The channel list changed repeatedly while loading. Reload the guide.',
         busy: 'A request is already running. Please wait a moment.',
+        remoteCommand: 'The remote-control key is invalid.',
     };
 
     function failure(key, code) {
@@ -195,7 +197,7 @@
                 current.socket.emit('authenticate', authenticated => {
                     if (connection !== current || disposed) return;
                     if (authenticated === true) current.finish();
-                    else release(failure('auth'));
+                    else release(failure('auth', 'EPG_GUIDE_PERMISSION'));
                 });
             };
             bind('connect', authenticate);
@@ -203,7 +205,7 @@
             bind('disconnect', () => release(failure('unavailable')));
             bind('error', () => release(failure('unavailable')));
             bind('connect_error', () => release(failure('unavailable')));
-            bind('reauthenticate', () => release(failure('auth')));
+            bind('reauthenticate', () => release(failure('auth', 'EPG_GUIDE_PERMISSION')));
             if (current.socket.connected) authenticate();
         }).catch(() => {
             if (connection === current) release(failure('unavailable'));
@@ -211,7 +213,7 @@
         return current.promise;
     }
 
-    async function send(command, message, timeout = REQUEST_TIMEOUT_MS) {
+    async function send(command, message, timeout = REQUEST_TIMEOUT_MS, transmission) {
         const ctx = context();
         if (pending.size >= MAX_PENDING) throw failure('busy');
         const socket = await connect(ctx);
@@ -231,10 +233,13 @@
             };
             pending.add(entry);
             try {
+                if (transmission) transmission.emitted = true;
                 socket.emit('sendTo', ctx.namespace, command, message, response => {
                     if (finished) return;
                     if (response === 'permissionError' || response?.error === 'permissionError') {
-                        entry.finish(failure('auth', 'EPG_GUIDE_PERMISSION'));
+                        const error = failure('auth', 'EPG_GUIDE_PERMISSION');
+                        error.delivery = 'notSent';
+                        entry.finish(error);
                     } else if (!response || typeof response !== 'object' || Array.isArray(response)) {
                         entry.finish(failure('response'));
                     } else if (response.error) {
@@ -243,6 +248,7 @@
                         const error = failure(code === 'EPG_GUIDE_CHANGED' ? 'changed' : 'response', code);
                         if (typeof response.message === 'string') error.message = response.message.slice(0, 500);
                         else if (typeof response.error === 'string' && response.error !== code) error.message = response.error.slice(0, 500);
+                        if (['notSent', 'unknown'].includes(response.delivery)) error.delivery = response.delivery;
                         entry.finish(error);
                     } else {
                         entry.finish(null, response);
@@ -252,6 +258,41 @@
                 release(failure('unavailable'));
             }
         });
+    }
+
+    async function sendRemoteCommand(key) {
+        const transmission = { emitted: false };
+        try {
+            const instance = context().namespace;
+            // Accept only a key name. The runtime owns the explicit allowlist;
+            // host, API parameters and another TV can never be supplied here.
+            if (typeof key !== 'string' || !/^[a-z][a-z0-9_]{0,31}$/.test(key)) {
+                throw failure('remoteCommand', 'VALIDATION');
+            }
+            const response = await send('sendRemoteCommand', { key }, ACTION_TIMEOUT_MS, transmission);
+            const statusValid = key === 'power_on' ? ['started', 'alreadyRunning'].includes(response.status)
+                : response.status === 'sent';
+            if (response.ok !== true || response.instance !== instance || response.key !== key || !statusValid) {
+                throw failure('response', 'REMOTE_RESPONSE');
+            }
+            return response;
+        } catch (cause) {
+            // release() can reject several requests with the same Error. Keep
+            // this command's delivery evidence separate from all other calls.
+            const error = new Error(cause?.message || words.response);
+            if (typeof cause?.code === 'string') error.code = cause.code;
+            error.delivery = ['notSent', 'unknown'].includes(cause?.delivery) ? cause.delivery
+                : transmission.emitted ? 'unknown' : 'notSent';
+            throw error;
+        }
+    }
+
+    async function requestRemoteStatus() {
+        const instance = context().namespace;
+        const response = await send('getRemoteStatus', {});
+        if (response.ok !== true || response.instance !== instance || typeof response.connected !== 'boolean' ||
+            typeof response.commandPending !== 'boolean') throw failure('response', 'REMOTE_RESPONSE');
+        return response;
     }
 
     async function collectGuide(range) {
@@ -334,6 +375,9 @@
     window.addEventListener('beforeunload', dispose);
     window.LoeweEpgBridge = Object.freeze({
         language: german ? 'de' : 'en',
+        getInstance: () => context().namespace,
+        sendRemoteCommand,
+        requestRemoteStatus,
         requestGuide: collectGuide,
         refresh: () => send('refreshEpgGuide', lastGuideReference ? { ...lastGuideReference } : {}),
         // Mutations are sent exactly once. A lost reply must not automatically

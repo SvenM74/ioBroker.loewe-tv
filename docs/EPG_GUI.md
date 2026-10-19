@@ -1,10 +1,10 @@
 # Programmübersicht und Aufnahmeaufträge
 
-**Version 0.1.16, Build `0.1.16-web-links.1`**, bietet getrennte Reiter für **EPG-Einstellungen** mit Aktivierung und Abrufintervall, **Web-Zugriff** mit der Web-Adapter-Auswahl sowie **Programmübersicht** mit Senderliste, Zeitachse und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
+**Version 0.1.17, Build `0.1.17-remote.1`**, bietet getrennte Reiter für **EPG-Einstellungen** mit Aktivierung und Abrufintervall, **Web-Zugriff** mit der Web-Adapter-Auswahl sowie **Programmübersicht** mit Senderliste, Zeitachse und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
 
 ## Öffnen und vorbereiten
 
-1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0116). `info.adapterBuild` muss **`0.1.16-web-links.1`** anzeigen.
+1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0117). `info.adapterBuild` muss **`0.1.17-remote.1`** anzeigen.
 2. Verwende **ioBroker Admin ab 7.7.28**. Lade Admin nach dem Update vollständig neu und öffne die Instanz-Konfiguration erneut.
 3. Starte die betreffende Instanz, beispielsweise **`loewe-tv.0`**. Prüfe unter **Verbindung** und **Senderlisten** die TV-Adresse und die gewünschte TV-Senderliste.
 4. Aktiviere unter **EPG-Einstellungen** die **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**. Speichere Änderungen, bevor du die Übersicht verwendest.
@@ -16,7 +16,7 @@ Ein EPG-Intervall von `0` deaktiviert automatische EPG-Abfragen einschließlich 
 
 Die große TV-Kanal-/Detailfläche ist entfernt. In der kompakten Auswahlzeile stehen Sender, Titel, Zeitraum und Status der gewählten Sendung. Unter **Sendungsdetails** lässt sich die Beschreibung aufklappen. Livevideo ist nicht integriert.
 
-Die gemeinsame Bedienleiste enthält Datum, Stundenpfeile, **Jetzt**, die Stundenauswahl, **Jetzt ansehen / Aufnahme planen**, **EPG aktualisieren** und anschließend die Sendersuche. Auf schmalen Bildschirmen bricht sie in dieser Reihenfolge um. Die Programmtabelle nutzt die verbleibende Höhe und ordnet die Sender nach ihrer gespeicherten Position, die Sendungen nach der Uhrzeit an. Mehrere Plätze desselben TV-Dienstes teilen sich eine Zeile; die kleinste gültige Position bestimmt die Einordnung. Sender ohne passende EPG-Daten bleiben sichtbar.
+Die gemeinsame Bedienleiste enthält Datum, Stundenpfeile, **Jetzt**, die Stundenauswahl, **Jetzt ansehen / Aufnahme planen**, **EPG aktualisieren**, **Fernbedienung** und anschließend die Sendersuche. Auf schmalen Bildschirmen bricht sie in dieser Reihenfolge um. Die Programmtabelle nutzt die verbleibende Höhe und ordnet die Sender nach ihrer gespeicherten Position, die Sendungen nach der Uhrzeit an. Mehrere Plätze desselben TV-Dienstes teilen sich eine Zeile; die kleinste gültige Position bestimmt die Einordnung. Sender ohne passende EPG-Daten bleiben sichtbar.
 
 Senderlogos ersetzen den Namen in der linken Tabellenspalte, wenn ein Bild verfügbar ist. Die Sendernummer bleibt sichtbar; der vollständige Name bleibt für Suche, Tooltip und Screenreader verfügbar. Eine TV-Bildadresse hat Vorrang vor dem mitgelieferten Logo. Bei Ladefehlern fällt die Anzeige auf das mitgelieferte Logo oder den Sendernamen zurück. Unter HTTPS werden unverschlüsselte TV-Bilder übersprungen. Die [Logoquellen und Grenzen](CHANNEL_LOGOS.md) sind einzeln dokumentiert.
 
@@ -31,11 +31,20 @@ Senderlogos ersetzen den Namen in der linken Tabellenspalte, wenn ein Bild verf�
 | **2 Stunden / 3 Stunden / 6 Stunden** | Wählt die Breite der Zeitachse; Standard sind drei Stunden. |
 | **Jetzt ansehen / Aufnahme planen** | Führt nach Auswahl der Sendung zur passenden TV-Aktion beziehungsweise zum Bestätigungsdialog. |
 | **EPG aktualisieren** | Fordert den vorhandenen TV-Abgleich an. Ein bereits laufender Abgleich wird weiterverwendet. |
+| **Fernbedienung** | Öffnet die TV-Fernbedienung der jeweiligen Instanz, auch ohne ausgewählte Sendung oder geladene EPG-Daten. |
 | **Aufnahmeaufträge** | Zeigt vorgemerkte Aufträge, ihren Übertragungszustand und gegebenenfalls einen Fehler. |
 
 Tab erreicht die Bedienelemente; Pfeiltasten wechseln innerhalb der Programmtabelle zwischen Sendungen und Zeilen. **Pos1** und **Ende** führen zur ersten beziehungsweise letzten angezeigten Sendung der Zeile. Die Uhrzeiten erscheinen in der lokalen Zeitzone des Browsers. Für Aktionsprüfungen verwendet der Adapter die Uhrzeit des ioBroker-Rechners; diese muss stimmen.
 
 Suche, Blättern und reine Detailauswahl ändern keine Einstellungen. Die Übersicht verwendet die **gespeicherte** TV-Adresse und Liste. Ungespeicherte Formularänderungen werden erst nach dem Speichern wirksam.
+
+## Fernbedienung öffnen
+
+Seit **0.1.17** öffnet **Fernbedienung** einen eigenen Dialog im Stil der Loewe-Assist-Fernbedienung. Das Ziel steht im Kopf der Bedienfläche. Jede TV-Taste verwendet die bestehende Verbindung und die Instanz der Seite; eine zweite TV-Instanz bekommt ihre eigene Bedienung über ihren EPG-Link. Die vollständige [Tastenübersicht](REMOTE_CONTROL.md) erklärt DR+, BACK, Power-Auswahl, Tastaturbedienung sowie das Verhalten bei Verbindungsfehlern.
+
+**EPG** auf der Fernbedienung bedient die Programmübersicht am TV. **EPG aktualisieren** bleibt der Datenabgleich der Webseite. **Direktaufnahme am TV** sendet den kurzen Aufnahmetastendruck; die nachfolgend beschriebene **Aufnahmeplanung** erstellt dagegen eine bestätigte Vormerkung für eine zukünftige Sendung.
+
+Nach dem Update die ausgewählte Web-Instanz neu starten und die Seite vollständig neu laden, damit der neue Fernbedienungs-Code geladen wird. Die vorhandene Web-/Cloud-Auswahl bleibt bestehen.
 
 ## Laufende Sendung ansehen
 
@@ -150,9 +159,9 @@ Der TV-Abruf reicht ungefähr 24 Stunden voraus; nur tatsächlich gelieferte und
 | Instanz oder Ansicht nicht erreichbar | Instanz starten, Build und Admin-Version prüfen; Admin nach dem Update neu laden. |
 | Admin-/Web-Sitzung abgelaufen oder nicht berechtigt | Am jeweils verwendeten Admin-/Web-Zugang anmelden und die Benutzerrechte zum Senden von Adapter-Nachrichten prüfen. |
 | Web-Seite meldet eine fehlende integrierte Socket-Verbindung | In der gewählten Web-Instanz die integrierte Verbindung aktivieren und speichern. |
-| Kein Feld zur Web-Auswahl sichtbar | `info.adapterBuild = 0.1.16-web-links.1` prüfen, Admin mit Strg+F5 neu laden und den Reiter **Web-Zugriff** öffnen. Eine Web-Instanz muss bereits installiert sein. |
+| Kein Feld zur Web-Auswahl sichtbar | `info.adapterBuild = 0.1.17-remote.1` prüfen, Admin mit Strg+F5 neu laden und den Reiter **Web-Zugriff** öffnen. Eine Web-Instanz muss bereits installiert sein. |
 | Cloud zeigt keine EPG-Seite oder einen anderen Fernseher | In LOEWE-TV und Cloud dieselbe Web-Instanz auswählen und speichern; den instanzbezogenen Link auf der Cloud-Web-Startseite öffnen. |
-| Zusätzlich zu den LOEWE-Kacheln erscheinen **Programmübersicht.0/.1** mit `adapter/loewe-tv/...` | Auf 0.1.16 aktualisieren, den Build beider TV-Instanzen prüfen, die ausgewählte Web-Instanz neu starten und die Cloud-Web-Startseite neu öffnen. |
+| Zusätzlich zu den LOEWE-Kacheln erscheinen **Programmübersicht.0/.1** mit `adapter/loewe-tv/...` | Auf 0.1.17 aktualisieren, den Build beider TV-Instanzen prüfen, die ausgewählte Web-Instanz neu starten und die Cloud-Web-Startseite neu öffnen. |
 | Cloud meldet Anmeldung, HTTPS oder einen anderen Host als Fehler | Die separate Web-Instanz wie oben auf dem Host des Cloud-Adapters einrichten und **Test web** erneut ausführen. |
 | Kein Senderlogo | Senderliste bei eingeschaltetem TV über `channels.refresh` neu abrufen; nicht jeder TV und nicht jeder Sender liefert ein Bild. Der Sendername bleibt als Ersatz sichtbar. |
 | **An TV übertragen** | Der TV hat geantwortet; der automatische Timerabgleich ist noch offen. **Details zum Timerabgleich** öffnet die Diagnose. Der Auftrag wird nicht erneut übertragen. |

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="epg.css">
     <script src="epg-bridge.js" defer></script>
     <script src="epg.js" defer></script>
+    <script src="epg-remote.js" defer></script>
 </head>
 <body>
     <main class="guide" id="epgGuide" aria-busy="true">
@@ -54,6 +55,10 @@
                 <button class="button refresh-button" id="refreshGuide" type="button" disabled>
                     <span class="refresh-symbol" aria-hidden="true">↻</span>
                     <span data-i18n="refresh">EPG aktualisieren</span>
+                </button>
+                <button class="button remote-open-button" id="openRemote" type="button" aria-haspopup="dialog" aria-controls="remoteDialog">
+                    <svg aria-hidden="true" viewBox="0 0 20 24"><rect x="4" y="1" width="12" height="22" rx="3"></rect><circle cx="10" cy="8" r="2.5"></circle><path d="M7 15h1m4 0h1m-6 4h1m4 0h1"></path></svg>
+                    <span id="remoteOpenLabel">Fernbedienung</span>
                 </button>
             </div>
             <label class="channel-search">
@@ -126,6 +131,27 @@
             <button class="button" id="cancelRecordingConfirm" type="button" data-i18n="cancel">Abbrechen</button>
             <button class="button programme-action" id="confirmRecording" type="button" data-i18n="confirmRecording">Aufnahme vormerken</button>
         </div>
+    </dialog>
+
+    <dialog class="remote-dialog" id="remoteDialog" aria-modal="true" aria-labelledby="remoteTitle" aria-describedby="remoteTarget remoteKeyboardHelp">
+        <header class="remote-heading">
+            <div>
+                <h2 id="remoteTitle">Fernbedienung</h2>
+                <p id="remoteTarget">Fernseher wird zugeordnet …</p>
+            </div>
+            <button class="remote-close-button" id="closeRemote" type="button" aria-label="Fernbedienung schließen" title="Fernbedienung schließen">×</button>
+        </header>
+        <div class="remote-body">
+            <div class="remote-device" id="remoteDevice">
+                <p class="remote-brand" aria-hidden="true">LOEWE.</p>
+                <div id="remoteKeys"></div>
+            </div>
+            <p class="remote-keyboard-help" id="remoteKeyboardHelp">Die Pfeiltasten steuern den Fernseher, solange eine Fernbedienungstaste den Fokus hat. Ziffern wählen einen Sender. Escape schließt die Fernbedienung.</p>
+        </div>
+        <footer class="remote-feedback">
+            <p class="remote-status" id="remoteStatus" role="status" aria-live="polite" aria-atomic="true">Wähle eine Taste.</p>
+            <p class="remote-queue-count" id="remoteQueueCount" hidden></p>
+        </footer>
     </dialog>
 </body>
 </html>

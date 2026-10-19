@@ -56,7 +56,7 @@ test('web extension only activates for the enabled TV and explicitly selected we
 
 test('selected web instance serves the existing Admin assets without a second UI copy', () => {
     const service = web();
-    for (const file of ['epg.html', 'epg.css', 'epg.js', 'epg-bridge.js', 'loewe-tv.png']) {
+    for (const file of ['epg.html', 'epg.css', 'epg.js', 'epg-bridge.js', 'epg-remote.js', 'loewe-tv.png']) {
         const response = service.request(`/loewe-tv.3/${file}`);
         assert.equal(response.code, 200, file);
         assert.equal(response.next, false);
@@ -164,7 +164,8 @@ test('Admin extension links redirect to the matching TV and retain the reverse-p
 
 test('authenticated web hosts do not release pages or redirects without their established login', () => {
     const service = web({ auth: true });
-    for (const url of ['/loewe-tv.3/epg.html', '/loewe-tv.3/epg.js', '/adapter/loewe-tv/epg.html?instance=3']) {
+    for (const url of ['/loewe-tv.3/epg.html', '/loewe-tv.3/epg.js', '/loewe-tv.3/epg-remote.js',
+        '/adapter/loewe-tv/epg.html?instance=3']) {
         assert.equal(service.request(url).code, 401);
         assert.equal(service.request(url, { isAuthenticated: () => false, user: 'admin' }).code, 401,
             'An explicit failed login is not replaced by a stale user property.');

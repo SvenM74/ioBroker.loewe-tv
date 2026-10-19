@@ -86,6 +86,82 @@ h1 { font-size: 22px; font-weight: 400; letter-spacing: -.025em; margin: 0; }
 .recording-confirm-time { color: #d9e5f7 !important; }
 .recording-confirm-note { font-size: 12px !important; border-top: 1px solid #3a4b62; padding-top: 13px; }
 .recording-dialog-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; padding-top: 9px; }
+.remote-open-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.remote-open-button svg { width: 15px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.remote-dialog { width: min(420px,calc(100% - 24px)); max-width: none; max-height: calc(100vh - 28px); max-height: calc(100dvh - 28px); padding: 0; margin: auto; border: 1px solid #606b7d; border-radius: 16px; color: var(--text); background: #171d27; box-shadow: 0 22px 90px #000c; }
+.remote-dialog[open] { display: flex; flex-direction: column; position: fixed; inset: 0; z-index: 1000; }
+.remote-dialog::backdrop { background: #060a12cf; }
+.remote-heading { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; padding: 17px 18px 13px; border-bottom: 1px solid #354053; }
+.remote-heading h2 { margin: 0 0 5px; font-size: 19px; font-weight: 500; }
+.remote-heading p { margin: 0; color: #b9c9de; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+.remote-close-button { flex: 0 0 44px; width: 44px; height: 44px; margin: -5px -6px 0 0; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #dce6f5; font-size: 29px; line-height: 1; }
+.remote-close-button:hover { background: #303c4e; }
+.remote-body { min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 16px 16px 12px; scrollbar-color: #728095 #171d27; scrollbar-width: thin; }
+.remote-device { width: min(100%,310px); margin: 0 auto; padding: 17px 21px 24px; border: 1px solid #5c6068; border-radius: 17px 17px 34px 34px; background: linear-gradient(100deg,#303339,#42454b 48%,#292d32); box-shadow: inset 1px 0 1px #c8ced33d,inset -2px 0 4px #0008,0 7px 17px #0005; }
+.remote-brand { margin: 0 0 15px; color: #d3d5d9; font-size: 21px; font-weight: 750; letter-spacing: -.04em; text-align: center; }
+.remote-key { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 0; min-height: 44px; padding: 6px; border: 1px solid #15181d; border-radius: 18px; background: linear-gradient(#41454d,#25292f); color: #f4f5f7; box-shadow: inset 0 1px 1px #ffffff25,0 2px 2px #141619a8; font-size: 12px; line-height: 1.2; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.remote-key:hover:not(:disabled) { background: linear-gradient(#565d68,#363d48); border-color: #8793a4; }
+.remote-key:active:not(:disabled) { background: #1e232a; box-shadow: inset 0 2px 4px #0008; transform: translateY(1px); }
+.remote-key.is-sending { box-shadow: inset 0 0 0 2px #a5d4ff,0 2px 2px #141619a8; }
+.remote-key:focus-visible, .remote-close-button:focus-visible { outline: 2px solid #a5d4ff; outline-offset: 3px; }
+.remote-key-face { pointer-events: none; }
+.remote-top { display: flex; justify-content: space-between; gap: 15px; margin: 0 1px 12px; }
+.remote-round { width: 48px; height: 48px; border-radius: 50%; font-size: 26px; }
+.remote-power { background: linear-gradient(#6b717a,#454b55); }
+.remote-mute svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.remote-power-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 10px; margin: 0 -5px 13px; border: 1px solid #8296b0; border-radius: 10px; background: #1d2939; }
+.remote-power-options p { grid-column: 1/-1; margin: 0 0 2px; color: #e0eaf8; font-size: 12px; line-height: 1.4; }
+.remote-power-options .remote-key { border-radius: 7px; font-size: 12px; }
+.remote-power-options .remote-power-on { background: #395474; }
+.remote-power-options .remote-power-cancel { grid-column: 1/-1; justify-self: center; width: 100%; background: transparent; box-shadow: none; border-color: #526177; }
+.remote-modes { display: flex; justify-content: center; gap: 13px; padding-bottom: 12px; margin-bottom: 13px; border-bottom: 1px solid #646972; box-shadow: 0 1px #23272e; }
+.remote-modes .remote-key { width: 82px; }
+.remote-digits { display: grid; grid-template-columns: repeat(3,1fr); justify-items: center; gap: 8px 18px; margin: 0 4px 15px; }
+.remote-digit { width: 49px; height: 49px; border-radius: 50%; padding: 3px; }
+.remote-digit .remote-key-face { font-size: 20px; font-weight: 600; }
+.remote-key-letters { font-size: 9px; line-height: 1; color: #d0d6df; pointer-events: none; }
+.remote-zero { grid-column: 2; }
+.remote-menus { margin-bottom: 14px; }
+.remote-menu-three, .remote-menu-four { display: grid; gap: 6px; }
+.remote-menu-three { grid-template-columns: repeat(3,minmax(0,1fr)); margin-bottom: 6px; }
+.remote-menu-four { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.remote-menu-four .remote-key { font-size: 10px; padding-left: 3px; padding-right: 3px; }
+.remote-navigation { display: grid; grid-template-columns: 44px minmax(132px,1fr) 44px; gap: 3px; align-items: stretch; margin: 0 -4px 15px; }
+.remote-rocker { display: flex; flex-direction: column; gap: 4px; justify-content: space-between; }
+.remote-rocker .remote-key { flex: 1; min-height: 58px; padding: 5px 2px; font-size: 13px; border-radius: 11px; }
+.remote-dpad { display: grid; grid-template-columns: repeat(3,44px); grid-template-rows: repeat(3,44px); width: 132px; height: 132px; align-self: center; justify-self: center; border-radius: 50%; background: linear-gradient(#373b42,#292d34); box-shadow: inset 0 0 0 1px #171b20,0 2px 3px #0008; }
+.remote-direction { padding: 0; border: 0; background: transparent; box-shadow: none; border-radius: 50%; font-size: 12px; }
+.remote-up { grid-column: 2; grid-row: 1; }
+.remote-left { grid-column: 1; grid-row: 2; }
+.remote-ok { grid-column: 2; grid-row: 2; background: linear-gradient(#515660,#333942); box-shadow: inset 0 0 0 1px #9aa3b063,0 2px 4px #0008; font-size: 15px; }
+.remote-right { grid-column: 3; grid-row: 2; }
+.remote-down { grid-column: 2; grid-row: 3; }
+.remote-colours { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 7px; margin-bottom: 11px; }
+.remote-colour { gap: 5px; font-size: 10px; border-radius: 12px; }
+.remote-colour::before { content: ""; width: 24px; height: 8px; border-radius: 3px; background: var(--remote-key-colour); box-shadow: inset 0 1px 1px #ffffff45; }
+.remote-colour-red { --remote-key-colour: #dd6475; }
+.remote-colour-green { --remote-key-colour: #48a28b; }
+.remote-colour-yellow { --remote-key-colour: #ebd35e; }
+.remote-colour-blue { --remote-key-colour: #6199d9; }
+.remote-transport { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+.remote-transport .remote-key { font-size: 17px; }
+.remote-transport-play { background: linear-gradient(#2c9c91,#246f69); }
+.remote-transport-pause { background: linear-gradient(#ba6476,#843f52); }
+.remote-transport-record { color: #f38e9c; }
+.remote-keyboard-help { max-width: 310px; margin: 13px auto 2px; color: #a9b8ce; font-size: 11px; line-height: 1.5; }
+.remote-feedback { flex: 0 0 auto; padding: 12px 18px 14px; border-top: 1px solid #354053; background: #1b2533; }
+.remote-status { margin: 0; color: #c6d5e9; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.remote-status[data-tone="success"] { color: #b4dbc7; }
+.remote-status[data-tone="warning"] { color: #eed5a0; }
+.remote-status[data-tone="error"], .remote-status[data-tone="setup"] { color: #f2c2c2; }
+.remote-queue-count { margin: 5px 0 0; font-size: 11px; line-height: 1.4; color: #a8bfda; }
+@media (max-width: 370px) {
+    .remote-dialog { width: calc(100% - 12px); max-height: calc(100vh - 12px); max-height: calc(100dvh - 12px); }
+    .remote-heading, .remote-feedback { padding-left: 12px; padding-right: 12px; }
+    .remote-body { padding: 12px 8px; }
+    .remote-device { padding-left: 16px; padding-right: 16px; }
+    .remote-digits { column-gap: 12px; }
+}
 .guide-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 9px 16px; padding: 11px 0; border-top: 1px solid var(--line); }
 .date-controls, .time-controls { display: flex; align-items: center; gap: 5px; }
 .guide-action-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }

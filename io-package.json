@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.19",
+    "version": "0.1.20",
     "news": {
+      "0.1.20": {
+        "en": "Handle shortened Admin links at /loewe-tv/ in the selected web instance. Open the programme guide directly for one TV or offer a TV selector for multiple instances. Preserve per-TV Web and Cloud links, authentication and proxy paths.",
+        "de": "Verkürzte Admin-Links unter /loewe-tv/ auf der ausgewählten Web-Instanz abfangen. Bei einem TV direkt die Programmübersicht öffnen, bei mehreren eine TV-Auswahl anzeigen. Instanzbezogene Web- und Cloud-Links, Anmeldung und Proxy-Pfade erhalten."
+      },
       "0.1.19": {
         "en": "Populate XMLTV configuration from the saved TV channel list, preserve older mappings, remove optional source save blockers, and display square station logos with ARTE, RTLZWEI and VOX assets.",
         "de": "XMLTV-Zuordnung aus der gespeicherten TV-Senderliste aufbauen, ältere Korrekturen erhalten, optionale Quellenfehler ohne Speichersperre anzeigen und quadratische Senderlogos mit ARTE, RTLZWEI und VOX ergänzen."

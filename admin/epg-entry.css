@@ -1,0 +1,24 @@
+:root {
+    color-scheme: dark;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: #ecf0f7;
+    background: #101319;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+.tv-picker { width: min(780px, 100%); margin: 0 auto; padding: 48px 24px; }
+.eyebrow { color: #abb8cb; letter-spacing: .23em; font-size: 11px; font-weight: 600; margin: 0 0 10px; }
+h1 { margin: 0; font-size: clamp(24px, 5vw, 32px); font-weight: 400; letter-spacing: -.025em; }
+.description { color: #b9c5d6; line-height: 1.6; margin: 14px 0 26px; }
+.tv-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; padding: 0; margin: 0; list-style: none; }
+.tv-list a { display: flex; flex-direction: column; gap: 8px; height: 100%; padding: 22px; color: inherit; text-decoration: none; background: #171c25; border: 1px solid #414b5b; border-radius: 8px; overflow-wrap: anywhere; }
+.tv-list a:hover { background: #202936; border-color: #91a5c1; }
+.tv-list a:focus-visible { outline: 3px solid #93c9ff; outline-offset: 4px; }
+.tv-name { font-size: 20px; line-height: 1.4; }
+.tv-instance { color: #a2adbd; font-size: 13px; }
+.tv-open { margin-top: auto; padding-top: 18px; color: #d5e4f8; font-size: 14px; line-height: 1.5; }
+.note { color: #a2adbd; font-size: 13px; line-height: 1.6; margin: 24px 0 0; }
+@media (max-width: 420px) {
+    .tv-picker { padding: 32px 18px; }
+    .tv-list a { padding: 20px; }
+}

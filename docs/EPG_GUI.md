@@ -1,10 +1,10 @@
 # Programmübersicht und Aufnahmeaufträge
 
-**Version 0.1.19, Build `0.1.19-epg-config.1`**, bietet getrennte Reiter für **EPG-Einstellungen** mit Aktivierung, Abrufintervall, Quellenwahl und XMLTV-Zuordnung, **Web-Zugriff** mit der Web-Adapter-Auswahl sowie **Programmübersicht** mit Senderliste, Zeitachse und Aktionen. Die Vorschau bleibt an die gespeicherte TV-Senderliste gebunden. Programmdaten können vom TV, aus einer selbst eingetragenen XMLTV-Quelle oder aus beiden Quellen stammen. XMLTV ermöglicht eine aktuelle Vorschau auch bei ausgeschaltetem Fernseher.
+**Version 0.1.20, Build `0.1.20-web-entry.1`**, bietet getrennte Reiter für **EPG-Einstellungen** mit Aktivierung, Abrufintervall, Quellenwahl und XMLTV-Zuordnung, **Web-Zugriff** mit der Web-Adapter-Auswahl sowie **Programmübersicht** mit Senderliste, Zeitachse und Aktionen. Die Vorschau bleibt an die gespeicherte TV-Senderliste gebunden. Programmdaten können vom TV, aus einer selbst eingetragenen XMLTV-Quelle oder aus beiden Quellen stammen. XMLTV ermöglicht eine aktuelle Vorschau auch bei ausgeschaltetem Fernseher.
 
 ## Öffnen und vorbereiten
 
-1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0119). `info.adapterBuild` muss **`0.1.19-epg-config.1`** anzeigen.
+1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0120). `info.adapterBuild` muss **`0.1.20-web-entry.1`** anzeigen.
 2. Verwende **ioBroker Admin ab 7.7.28**. Lade Admin nach dem Update vollständig neu und öffne die Instanz-Konfiguration erneut.
 3. Starte die betreffende Instanz, beispielsweise **`loewe-tv.0`**. Prüfe unter **Verbindung** und **Senderlisten** die TV-Adresse und die gewünschte TV-Senderliste.
 4. Aktiviere unter **EPG-Einstellungen** die **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**, die Quelle **Nur TV**. Für externe Programme **TV mit XMLTV-Ergänzung** oder **Nur XMLTV** auswählen, eigene XMLTV-Adresse eintragen und die [Senderzuordnung prüfen](EPG_XMLTV.md#einrichten). Speichere die gewünschten Änderungen.
@@ -98,7 +98,7 @@ Jeder Auftrag wird höchstens einmal möglicherweise wirksam an den TV gesendet.
 
 ## Instanzübersicht und Schnellzugriff
 
-Der bisherige Button **Separat öffnen** ist aus der Konfiguration entfernt. Die Instanz hinterlegt einen Link für Instanzübersicht und **Admin-Schnellzugriff** mit dem Adaptertitel **Loewe TV**. Unter **Admin 8** kann dessen automatischer Resolver den Link auf die ausgewählte Web-Instanz umschreiben, dabei eine unbrauchbare Adresse bilden oder die TV-Instanzzuordnung verlieren. **Version 0.1.19 behebt dieses Admin-Problem nicht.** Die [Analyse der Admin-Links](ADMIN_LINKS.md) erklärt die geprüften Fälle und den aktuellen Prüfstand.
+Der bisherige Button **Separat öffnen** ist aus der Konfiguration entfernt. Die Instanz hinterlegt einen Link für Instanzübersicht und **Admin-Schnellzugriff** mit dem Adaptertitel **Loewe TV**. Unter **Admin 8** kann dessen automatischer Resolver den Link auf die ausgewählte Web-Instanz umschreiben und dabei den Dateinamen und die TV-Nummer entfernen. **Version 0.1.20 bedient den dabei entstehenden Pfad `/loewe-tv/`**: Bei einem verfügbaren TV wird dessen Programmübersicht geöffnet, bei mehreren erscheint eine Auswahl mit Namen und Instanznummern. Nach dem Update die ausgewählte Web-Instanz neu starten. Die [Analyse der Admin-Links](ADMIN_LINKS.md) erklärt den nachgewiesenen Fehler und die verbleibenden Grenzen bei unerreichbaren Web-Adressen.
 
 Die direkte Admin-Seite bleibt nutzbar und lässt sich als Lesezeichen speichern. Eine normale Admin-Installation auf Port 8081 verwendet beispielsweise:
 
@@ -121,7 +121,7 @@ Für einen funktionierenden Schnellzugriff kannst du im Bearbeitungsmodus von Ad
 http://IOBROKER-HOST:8082/loewe-tv.0/epg.html
 ```
 
-Der Port `8082` ist ein Beispiel; maßgeblich ist die Konfiguration deiner Web-Instanz. Für die zweite TV-Instanz lautet der Pfad `/loewe-tv.1/epg.html`. Mehrere TVs können dieselbe Web-Instanz verwenden und bekommen getrennte Links. Verwende deren Startseitenlink oder die direkte passende Adresse; zum getrennten Problem der automatisch umgeschriebenen Admin-Links siehe [oben](#instanzübersicht-und-schnellzugriff).
+Der Port `8082` ist ein Beispiel; maßgeblich ist die Konfiguration deiner Web-Instanz. Für die zweite TV-Instanz lautet der Pfad `/loewe-tv.1/epg.html`. Mehrere TVs können dieselbe Web-Instanz verwenden und bekommen getrennte Links. Der zusätzliche Einstieg `/loewe-tv/` bietet ab 0.1.20 eine Auswahl der verfügbaren TVs. Die Startseitenlinks führen weiterhin direkt zum jeweiligen TV; weitere Hinweise stehen [oben](#instanzübersicht-und-schnellzugriff).
 
 Läuft die Web-Instanz auf einem anderen ioBroker-Host, muss das LOEWE-TV-Adapterpaket auch dort verfügbar sein, damit der Web-Adapter die Erweiterungsdatei laden kann.
 
@@ -149,7 +149,7 @@ Der EPG-Web-Link und seine JS-, CSS- und mitgelieferten Logo-Dateien werden an d
 
 Die Web-Instanz auf `127.0.0.1` ist vom Browser eines anderen LAN-Geräts nicht direkt erreichbar. Öffne die lokale Ansicht deshalb im Reiter **Programmübersicht** der LOEWE-TV-Instanzeinstellungen oder über die [oben angegebene direkte Admin-Adresse](#instanzübersicht-und-schnellzugriff). Neuere Admin-Versionen können den automatisch erzeugten Instanz-/Schnellzugrifflink auf die ausgewählte Web-Instanz umstellen; ein dort enthaltenes `127.0.0.1` ist für einen anderen LAN-Browser nicht das ioBroker-Gerät. Mitgelieferte Logos sind über die EPG-Seite auch remote erreichbar. Eine private TV-Bildadresse kann außerhalb des Heimnetzes nicht erreichbar sein; dann greift der vorhandene Logo-/Text-Ersatz.
 
-**Prüfstand:** Der Nutzer hat am **19. Oktober 2026** den erfolgreichen Remote-Aufruf beider konfigurierten TV-Instanzen bestätigt. Der damalige Screenshot zeigte die beiden korrekten Web-Links und zwei zusätzliche generische Admin-Links. Die Änderung des zusätzlichen Web-Linkimports seit 0.1.16 ist automatisiert geprüft und vom weiterhin offenen Admin-8-Resolverproblem zu unterscheiden. Eine neuere Rückmeldung bestätigt erste Remote-Tests der Fernbedienung sowie die Übertragung wartender Aufträge nach dem Einschalten. Sie belegt weder alle Tasten noch einen erfolgreichen Aufnahmeabschluss oder die direkte Timerübertragung im Schnellstart-Standby. Der Adapter ändert keine Web- oder Cloud-Einstellungen selbstständig.
+**Prüfstand:** Der Nutzer hat am **19. Oktober 2026** den erfolgreichen Remote-Aufruf beider konfigurierten TV-Instanzen bestätigt. Der damalige Screenshot zeigte die beiden korrekten Web-Links und zwei zusätzliche generische Admin-Links. Die Änderung des zusätzlichen Web-Linkimports seit 0.1.16 ist automatisiert geprüft und vom nun auf Web abgefangenen Admin-8-Pfadverlust zu unterscheiden. Eine neuere Rückmeldung bestätigt erste Remote-Tests der Fernbedienung sowie die Übertragung wartender Aufträge nach dem Einschalten. Sie belegt weder alle Tasten noch einen erfolgreichen Aufnahmeabschluss oder die direkte Timerübertragung im Schnellstart-Standby. Der Adapter ändert keine Web- oder Cloud-Einstellungen selbstständig.
 
 ### Zusätzliche Programmübersichts-Kacheln entfernen
 
@@ -171,14 +171,16 @@ Der TV-Abruf reicht ungefähr 24 Stunden voraus, die XMLTV-Auswahl bis 48 Stunde
 | Programmdaten veraltet | Nach mehr als 24 Stunden seit dem letzten gültigen Abruf wird der Plan ausgeblendet; erneut abrufen. |
 | Auswahl inzwischen geändert | Übersicht neu laden und die Sendung erneut auswählen. |
 | Instanz oder Ansicht nicht erreichbar | Instanz starten, Build und Admin-Version prüfen; Admin nach dem Update neu laden. |
-| Automatischer Admin-Link zeigt `127.0.0.1`, `localhost` oder den falschen TV | Die direkte Admin-Adresse mit passendem `instance`-Parameter oder eine [eigene Schnellzugriffskachel](ADMIN_LINKS.md) verwenden. Der Admin-8-Linkresolver ist mit diesem Adapterupdate nicht repariert. |
+| Schnellzugriff auf `/loewe-tv/` meldet „Datei index.html nicht gefunden“ | Auf 0.1.20 aktualisieren und die ausgewählte Web-Instanz neu starten. Der Pfad bietet dann die TV-Auswahl oder bei einem TV die direkte Weiterleitung. |
+| Automatischer Admin-Link zeigt auf `127.0.0.1` oder `localhost` eines anderen Rechners | Die direkte Admin-Adresse mit passendem `instance`-Parameter oder eine [eigene Schnellzugriffskachel](ADMIN_LINKS.md) verwenden. Der neue Web-Einstieg kann nur Anfragen beantworten, die seinen Server erreichen. |
+| Beide automatischen Admin-Kacheln öffnen dieselbe TV-Auswahl | Der Admin-Resolver hat beide TV-Nummern entfernt. Den gewünschten TV auswählen oder für jeden TV eine eigene Kachel mit seiner direkten URL anlegen. |
 | XMLTV-Sender fehlt oder passt nicht | **Quelle laden und Zuordnung prüfen** öffnen; in der betreffenden TV-Zeile **Manuell** wählen und die passende XMLTV-ID eintragen beziehungsweise auswählen. Danach speichern. **Deaktiviert** schaltet alternative Programme aus; **Automatisch** setzt eine manuelle Entscheidung zurück. |
 | `EPG_XMLTV_CONFIG` trotz sichtbarer TV-Programme | Die optionalen XMLTV-Einstellungen korrigieren. Der TV-Betrieb bleibt währenddessen verfügbar. |
 | Admin-/Web-Sitzung abgelaufen oder nicht berechtigt | Am jeweils verwendeten Admin-/Web-Zugang anmelden und die Benutzerrechte zum Senden von Adapter-Nachrichten prüfen. |
 | Web-Seite meldet eine fehlende integrierte Socket-Verbindung | In der gewählten Web-Instanz die integrierte Verbindung aktivieren und speichern. |
-| Kein Feld zur Web-Auswahl sichtbar | `info.adapterBuild = 0.1.19-epg-config.1` prüfen, Admin mit Strg+F5 neu laden und den Reiter **Web-Zugriff** öffnen. Eine Web-Instanz muss bereits installiert sein. |
+| Kein Feld zur Web-Auswahl sichtbar | `info.adapterBuild = 0.1.20-web-entry.1` prüfen, Admin mit Strg+F5 neu laden und den Reiter **Web-Zugriff** öffnen. Eine Web-Instanz muss bereits installiert sein. |
 | Cloud zeigt keine EPG-Seite oder einen anderen Fernseher | In LOEWE-TV und Cloud dieselbe Web-Instanz auswählen und speichern; den instanzbezogenen Link auf der Cloud-Web-Startseite öffnen. |
-| Zusätzlich zu den LOEWE-Kacheln erscheinen **Programmübersicht.0/.1** mit `adapter/loewe-tv/...` | Auf 0.1.19 aktualisieren, den Build beider TV-Instanzen prüfen, die ausgewählte Web-Instanz neu starten und die Cloud-Web-Startseite neu öffnen. Das betrifft den zusätzlichen Web-Import, nicht den Admin-Linkresolver. |
+| Zusätzlich zu den LOEWE-Kacheln erscheinen **Programmübersicht.0/.1** mit `adapter/loewe-tv/...` | Auf 0.1.20 aktualisieren, den Build beider TV-Instanzen prüfen, die ausgewählte Web-Instanz neu starten und die Cloud-Web-Startseite neu öffnen. Das betrifft den zusätzlichen Web-Import, nicht den Admin-Linkresolver. |
 | Cloud meldet Anmeldung, HTTPS oder einen anderen Host als Fehler | Die separate Web-Instanz wie oben auf dem Host des Cloud-Adapters einrichten und **Test web** erneut ausführen. |
 | Kein Senderlogo | TV-Senderliste über `channels.refresh` erneuern, XMLTV-Zuordnung prüfen oder unter **Senderlogos** eine passende HTTPS-Bildadresse hinterlegen. Nicht jede Quelle liefert ein Bild; der Sendername bleibt als Ersatz sichtbar. |
 | **An TV übertragen** | Der TV hat geantwortet; der automatische Timerabgleich ist noch offen. **Details zum Timerabgleich** öffnet die Diagnose. Der Auftrag wird nicht erneut übertragen. |

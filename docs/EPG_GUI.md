@@ -1,10 +1,10 @@
 # Programmübersicht und Aufnahmeaufträge
 
-**Version 0.1.14, Build `0.1.14-epg-web.1`**, bietet zwei getrennte Reiter: **EPG-Einstellungen** für Aktivierung und Abrufintervall sowie **Programmübersicht** für die Senderliste mit Zeitachse, Sendungsdetails und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
+**Version 0.1.15, Build `0.1.15-web-cloud.1`**, bietet getrennte Reiter für **EPG-Einstellungen** mit Aktivierung und Abrufintervall, **Web-Zugriff** mit der Web-Adapter-Auswahl sowie **Programmübersicht** mit Senderliste, Zeitachse und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
 
 ## Öffnen und vorbereiten
 
-1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0114). `info.adapterBuild` muss **`0.1.14-epg-web.1`** anzeigen.
+1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0115). `info.adapterBuild` muss **`0.1.15-web-cloud.1`** anzeigen.
 2. Verwende **ioBroker Admin ab 7.7.28**. Lade Admin nach dem Update vollständig neu und öffne die Instanz-Konfiguration erneut.
 3. Starte die betreffende Instanz, beispielsweise **`loewe-tv.0`**. Prüfe unter **Verbindung** und **Senderlisten** die TV-Adresse und die gewünschte TV-Senderliste.
 4. Aktiviere unter **EPG-Einstellungen** die **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**. Speichere Änderungen, bevor du die Übersicht verwendest.
@@ -90,7 +90,7 @@ http://IOBROKER-HOST:8081/adapter/loewe-tv/epg.html?instance=0
 ## Über ioBroker.web öffnen
 
 1. Eine vorhandene **web-Instanz**, zum Beispiel `web.0`, aktivieren. In dieser Instanz die **integrierte Socket-Verbindung** verwenden.
-2. In der LOEWE-TV-Konfiguration unter **EPG-Einstellungen → Programmübersicht in ioBroker.web** diese Web-Instanz auswählen.
+2. In der LOEWE-TV-Konfiguration unter **Web-Zugriff → Web-Adapter für die Programmübersicht** diese Web-Instanz auswählen.
 3. **Speichern**. ioBroker.web kann beim Laden der Erweiterung neu starten. Die TV-Adapterinstanz muss für die Daten und Aktionen laufen.
 4. Auf der Startseite der gewählten Web-Instanz den Schnellzugriff **Loewe TV · Programmübersicht (0)** öffnen. Alternativ den direkten instanzbezogenen Pfad verwenden:
 
@@ -102,9 +102,31 @@ Der Port `8082` ist ein Beispiel; maßgeblich ist die Konfiguration deiner Web-I
 
 Läuft die Web-Instanz auf einem anderen ioBroker-Host, muss das LOEWE-TV-Adapterpaket auch dort verfügbar sein, damit der Web-Adapter die Erweiterungsdatei laden kann.
 
-Die Auswahl ist zunächst **deaktiviert**. Ohne gewählte Web-Instanz steht die Programmübersicht über Admin bereit. Der Web-Zugriff übernimmt **HTTP/HTTPS, Anmeldung und Benutzerrechte** der ausgewählten Web-Instanz. Der Benutzer benötigt das Recht zum Senden von Adapter-Nachrichten. Eine deaktivierte oder separat ausgelagerte Socket-Verbindung wird mit einem Konfigurationshinweis gemeldet. Es entsteht kein zusätzlicher Server oder Port; die Seite verwendet dieselben Daten und Aufnahmeaufträge wie die Admin-Ansicht.
+Die Auswahl ist zunächst **deaktiviert**. Ohne gewählte Web-Instanz steht die Programmübersicht über Admin bereit. Eine in 0.1.14 gespeicherte Auswahl bleibt erhalten; der Schlüssel `native.webInstance` und das Format `web.N` ändern sich nicht. Auch vorhandene deaktivierte Web-Instanzen sind auswählbar, damit eine gespeicherte Auswahl sichtbar bleibt. Für den Zugriff muss die gewählte Instanz aktiviert sein und laufen.
+
+Der **direkte lokale Web-Zugriff** übernimmt HTTP/HTTPS, Anmeldung und Benutzerrechte der ausgewählten Web-Instanz. Der Benutzer benötigt das Recht zum Senden von Adapter-Nachrichten. Eine deaktivierte oder separat ausgelagerte Socket-Verbindung wird mit einem Konfigurationshinweis gemeldet. Es entsteht kein zusätzlicher Server oder Port; die Seite verwendet dieselben Daten und Aufnahmeaufträge wie die Admin-Ansicht. Für den Fernzugriff gelten die folgenden Cloud-Einstellungen.
 
 Je nach Admin-Version kann die Instanz bei aktiviertem Web-Zugriff zusätzlich als Web-Erweiterung erscheinen. Für die Verbindung zum Fernseher bleiben `info.connection` und der Verbindungsstatus in der Programmübersicht maßgeblich; die Web-Erreichbarkeit allein belegt keine TV-Verbindung.
+
+## Über ioBroker.cloud remote öffnen
+
+**LOEWE-TV und der Cloud-Adapter müssen dieselbe Web-Instanz auswählen.** Beispiel: Wenn `cloud.0` seine Webseiten von `web.1` lädt, wähle auch bei `loewe-tv.0` unter **Web-Zugriff → Web-Adapter für die Programmübersicht** den Eintrag **`web.1`**. Die Cloud-Einrichtung und das vorhandene Cloud-Konto bleiben im Cloud-Adapter; LOEWE-TV benötigt dafür weder App-Key noch Cloud-Passwort.
+
+Der geprüfte **Cloud-Adapter 6.2.11** ruft die ausgewählte Web-Instanz lokal ab. Er lehnt dabei Web-Instanzen mit eigener Anmeldung oder HTTPS ausdrücklich ab. Die offizielle Empfehlung ist eine zusätzliche Web-Instanz, die nur an `localhost` gebunden ist. Deshalb ist für diese Einrichtung eine separate Instanz auf demselben ioBroker-Host wie `cloud.0` vorgesehen. [Offizielle Cloud-Anleitung](https://github.com/ioBroker/ioBroker.cloud/blob/bd9dc1ebf6cce755deb80532b59ad9ad4d4d2ae1/README.md) · [Prüfung im Cloud-Code](https://github.com/ioBroker/ioBroker.cloud/blob/bd9dc1ebf6cce755deb80532b59ad9ad4d4d2ae1/src/main.ts#L745-L894).
+
+1. Erstelle oder verwende auf diesem Host eine zusätzliche **Web-Instanz**, etwa `web.1`, und aktiviere sie. Stelle die **Bind-Adresse auf `127.0.0.1`**, wähle einen freien lokalen Port und lasse **HTTPS** sowie die **lokale Web-Anmeldung** ausgeschaltet. Die Verbindung nach außen wird über die Cloud-Anmeldung geschützt. Eine bereits anders genutzte Web-Instanz muss dafür nicht umkonfiguriert werden.
+2. Wähle für die hier beschriebene EPG-Anbindung die **integrierte Socket.IO-Verbindung**: Socket-Instanz integriert (`socketio: ""`), **reine WebSockets aus** (`usePureWebSockets: false`). Lasse den Web-Stammpfad leer (`rootPath: ""`) und Web-Erweiterungen aktiviert (`disableExtensions: false`). Dies legt den hier geprüften Client- und Pfadvertrag fest; die reine WebSocket-Variante des Cloud-Portals ist noch nicht am echten Zugang geprüft.
+3. Wähle in **LOEWE-TV → Web-Zugriff → Web-Adapter für die Programmübersicht** diese Instanz und **speichere**. Ein bereits laufender Web-Adapter kann zum Laden der Erweiterung neu starten. Die LOEWE-TV-Instanz muss anschließend ebenfalls laufen.
+4. Wähle in **cloud.0** bei der **Web-Instanz** denselben Eintrag, beispielsweise **`web.1`**, und speichere. Verwende die vorhandene Cloud-Konto-/App-Key-Konfiguration. Bei Cloud 6.2.11 kannst du mit **Test web** die lokale Verbindung und die ausgelieferte Web-Startseite prüfen.
+5. Melde dich über den für dein Konto verfügbaren Cloud-Web-Zugang an und öffne auf dessen Web-Startseite **Loewe TV · Programmübersicht (0)**. Verwende den angebotenen Link. Für `loewe-tv.0` endet der EPG-Pfad auf **`/loewe-tv.0/epg.html`**, für `loewe-tv.1` auf **`/loewe-tv.1/epg.html`**. Den lokalen Port der Web-Instanz brauchst du für diesen Fernzugriff nicht in eine öffentliche URL einzutragen.
+
+Der EPG-Web-Link und seine JS-, CSS- und mitgelieferten Logo-Dateien werden an die ausgewählte Web-Instanz weitergeleitet. Ein Pfad unter `/adapter/` gehört beim Cloud-Adapter dagegen zum Admin-Zugang. Öffne die entfernte EPG-Seite deshalb über den **Web-Startseitenlink**. Die EPG-Webseite benötigt keine Freigabe des gesamten Admin-Bereichs und keinen Eintrag in der Dienste-Whitelist. [HTTP-Routing und Dienste im Cloud-Code](https://github.com/ioBroker/ioBroker.cloud/blob/bd9dc1ebf6cce755deb80532b59ad9ad4d4d2ae1/src/main.ts).
+
+**Die Cloud-Anmeldung ist von einem lokalen Web-Login getrennt.** Die EPG-Bedienbefehle verwenden den bestehenden Socket-Kontext des Cloud-Adapters. Dieser übernimmt nicht automatisch die Benutzerrechte einer lokalen Web-Sitzung. Die EPG-Seite kopiert keine Zugangsdaten und verwendet dieselbe öffentliche Adresse wie die geöffnete Seite. [Cloud-Socket](https://github.com/ioBroker/ioBroker.cloud/blob/bd9dc1ebf6cce755deb80532b59ad9ad4d4d2ae1/src/lib/socketCloud.ts) · [Client-Auswahl im Web-Adapter](https://github.com/ioBroker/ioBroker.web/blob/e6402003159b17f41c0db1b4004fb37b7edfa684/src/main.ts#L1478-L1539).
+
+Die Web-Instanz auf `127.0.0.1` ist vom Browser eines anderen LAN-Geräts nicht direkt erreichbar. Öffne die lokale Ansicht deshalb im Reiter **Programmübersicht** der LOEWE-TV-Instanzeinstellungen oder über die [oben angegebene direkte Admin-Adresse](#instanzübersicht-und-schnellzugriff). Neuere Admin-Versionen können den automatisch erzeugten Instanz-/Schnellzugrifflink auf die ausgewählte Web-Instanz umstellen; ein dort enthaltenes `127.0.0.1` ist für einen anderen LAN-Browser nicht das ioBroker-Gerät. Mitgelieferte Logos sind über die EPG-Seite auch remote erreichbar. Eine private TV-Bildadresse kann außerhalb des Heimnetzes nicht erreichbar sein; dann greift der vorhandene Logo-/Text-Ersatz.
+
+**Prüfstand:** Auswahlfeld, Linkauflösung, EPG-Asset-Routen und Socket-Aufrufe sind automatisiert geprüft und mit den genannten offiziellen Quellen abgeglichen. Ein vollständiger Aufruf mit dem Cloud-Konto und Fernseher des Nutzers steht noch aus. Der Adapter ändert keine Web- oder Cloud-Einstellungen selbstständig.
 
 ## Datenumfang und Hilfe
 
@@ -120,6 +142,9 @@ Der TV-Abruf reicht ungefähr 24 Stunden voraus; nur tatsächlich gelieferte und
 | Instanz oder Ansicht nicht erreichbar | Instanz starten, Build und Admin-Version prüfen; Admin nach dem Update neu laden. |
 | Admin-/Web-Sitzung abgelaufen oder nicht berechtigt | Am jeweils verwendeten Admin-/Web-Zugang anmelden und die Benutzerrechte zum Senden von Adapter-Nachrichten prüfen. |
 | Web-Seite meldet eine fehlende integrierte Socket-Verbindung | In der gewählten Web-Instanz die integrierte Verbindung aktivieren und speichern. |
+| Kein Feld zur Web-Auswahl sichtbar | `info.adapterBuild = 0.1.15-web-cloud.1` prüfen, Admin mit Strg+F5 neu laden und den Reiter **Web-Zugriff** öffnen. Eine Web-Instanz muss bereits installiert sein. |
+| Cloud zeigt keine EPG-Seite oder einen anderen Fernseher | In LOEWE-TV und Cloud dieselbe Web-Instanz auswählen und speichern; den instanzbezogenen Link auf der Cloud-Web-Startseite öffnen. |
+| Cloud meldet Anmeldung, HTTPS oder einen anderen Host als Fehler | Die separate Web-Instanz wie oben auf dem Host des Cloud-Adapters einrichten und **Test web** erneut ausführen. |
 | Kein Senderlogo | Senderliste bei eingeschaltetem TV über `channels.refresh` neu abrufen; nicht jeder TV und nicht jeder Sender liefert ein Bild. Der Sendername bleibt als Ersatz sichtbar. |
 | **An TV übertragen** | Der TV hat geantwortet; der automatische Timerabgleich ist noch offen. **Details zum Timerabgleich** öffnet die Diagnose. Der Auftrag wird nicht erneut übertragen. |
 | **Übertragung unklar** oder **Timerabgleich offen** | Timerliste direkt am TV prüfen. Für die Protokollanpassung wird eine echte, auswertbare Timerantwort benötigt. |

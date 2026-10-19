@@ -2,7 +2,7 @@
 
 ## Aktueller Stand
 
-**Version 0.1.14, Build `0.1.14-epg-web.1`**, ergänzt Senderlogos, eine kompakte Aktionsleiste sowie Instanz- und Schnellzugriffe über Admin und optional ioBroker.web. Die Aufnahme- und Statuskorrekturen aus 0.1.12/0.1.13 bleiben erhalten. Die automatische Suche nach Sendungen anhand eigener Regeln bleibt das nächste Ausbauziel.
+**Version 0.1.15, Build `0.1.15-web-cloud.1`**, macht die Auswahl des Web-Adapters in einem eigenen Reiter **Web-Zugriff** sichtbar und dokumentiert die gemeinsame Web-Instanz für ioBroker.cloud. Der echte Cloud-Fernzugriff bleibt als Praxistest offen. Senderlogos, kompakte Aktionsleiste, Instanz- und Schnellzugriffe aus 0.1.14 sowie Aufnahme- und Statuskorrekturen aus 0.1.12/0.1.13 bleiben erhalten. Die automatische Suche nach Sendungen anhand eigener Regeln bleibt das nächste Ausbauziel.
 
 | Baustein | Implementierter Stand |
 |---|---|

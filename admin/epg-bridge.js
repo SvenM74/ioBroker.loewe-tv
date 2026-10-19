@@ -2,13 +2,16 @@
 'use strict';
 
 // Keep the guide independent of Admin's React version. Admin or the selected
-// web instance serves this page and its socket client with the user's own
-// existing session and ACLs. The web extension only serves static UI files.
+// web instance serves this page and its socket client. Local access uses that
+// host's existing session and ACLs. Remote access uses the cloud account and
+// Cloud's socket context, which does not inherit a local web user's ACLs.
+// The web extension only serves static UI files.
 // Primary transport contract:
 // https://github.com/ioBroker/ioBroker.admin/blob/v7.7.28/src-admin/public/lib/js/socket.io.js
 // https://github.com/ioBroker/ioBroker.socket-classes/blob/v2.2.21/src/lib/socketCommon.ts
 // https://github.com/ioBroker/ioBroker.socket-classes/blob/v2.2.21/README.md
 // https://github.com/ioBroker/ioBroker.web/blob/e6402003159b17f41c0db1b4004fb37b7edfa684/src/main.ts
+// https://github.com/ioBroker/ioBroker.cloud/blob/bd9dc1ebf6cce755deb80532b59ad9ad4d4d2ae1/src/main.ts
 (function initializeEpgBridge() {
     const CONNECT_TIMEOUT_MS = 8000;
     const REQUEST_TIMEOUT_MS = 8000;

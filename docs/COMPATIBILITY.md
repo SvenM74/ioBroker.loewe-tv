@@ -1,14 +1,20 @@
 # Gerätekompatibilität und bestätigte Tests
 
-Stand: **19. Oktober 2026**. Diese Fassung beschreibt **0.1.14**, Build **`0.1.14-epg-web.1`**.
+Stand: **19. Oktober 2026**. Diese Fassung beschreibt **0.1.15**, Build **`0.1.15-web-cloud.1`**.
 
 Seit Version 0.1.11 stehen **EPG-Einstellungen** und **Programmübersicht** in eigenen Reitern. Die [Programmübersicht](EPG_GUI.md) zeigt den TV-EPG-Cache der gespeicherten Senderliste und kann separat über die bestehende Admin-Adresse geöffnet werden. Laufende Sendungen lassen sich zum Umschalten auswählen; zukünftige Sendungen können nach Bestätigung zur Aufnahme vorgemerkt werden. Ein dauerhaftes Journal hält noch nicht übertragene Aufträge bis zur Erreichbarkeit des Fernsehers vor. Der Adapter verwendet dafür die in der App belegten Befehle `ProgramTimer` und `GetTimerList`; die [Aufnahme-Protokollbeschreibung](recording-protocol.md) nennt die Belege und Grenzen.
 
-Die [Netzwerksuche](NETWORK_DISCOVERY.md), die Mindestversion Admin 7.7.28 und der ausschließliche EPG-Abruf vom TV bleiben erhalten. Die [Updateanleitung](INSTALLATION.md#update-auf-0113) beschreibt den Build mit verbesserter Statusanzeige. Der [Prüfbericht zu 0.1.12](PRUEFBERICHT_0.1.12.md) dokumentiert die vorherige Timerkorrektur und ihre automatisierten Prüfungen. Der [Prüfbericht zu 0.1.11](PRUEFBERICHT_0.1.11.md) bleibt ebenfalls als Nachweis für den damaligen Stand erhalten.
+Die [Netzwerksuche](NETWORK_DISCOVERY.md), die Mindestversion Admin 7.7.28 und der ausschließliche EPG-Abruf vom TV bleiben erhalten. Die [Updateanleitung](INSTALLATION.md#update-auf-0115) beschreibt den aktuellen Build. Der [Prüfbericht zu 0.1.12](PRUEFBERICHT_0.1.12.md) dokumentiert die vorherige Timerkorrektur und ihre automatisierten Prüfungen. Der [Prüfbericht zu 0.1.11](PRUEFBERICHT_0.1.11.md) bleibt ebenfalls als Nachweis für den damaligen Stand erhalten.
 
 **Am 19. Oktober 2026 bestätigt der Nutzer, dass beide Aufnahmeaufträge am Fernseher angekommen sind und die erste Aufnahme tatsächlich gestartet ist.** Eine erfolgreiche Fertigstellung ist damit noch nicht bestätigt. Diese Rückmeldung nennt kein konkretes Modell und wird deshalb keinem der unten aufgeführten Geräte einzeln oder pauschal beiden bild-Geräten zugeschrieben. Die originale `GetTimerList`-XML-Antwort liegt weiterhin nicht vor. Die Rückmeldung entstand vor der Anzeigeverbesserung in **`0.1.13-recording-status.1`**; deren Darstellung im tatsächlichen Admin ist noch zu prüfen. Die folgenden EPG-Bestätigungen stammen vom früher bereitgestellten 0.1.8-Stand und bleiben als historische Geräteergebnisse erhalten.
 
-## Senderlogos und Web-Zugriff in 0.1.14
+## Web-Auswahl und Cloud-Einrichtung in 0.1.15
+
+Der Reiter **Web-Zugriff** enthält die ausdrückliche Auswahl **Web-Adapter für die Programmübersicht**. Das Verschieben aus den bisherigen EPG-Einstellungen ändert weder `native.webInstance` noch einen gespeicherten Wert wie `web.0`. Die Wertebildung wurde gegen JSONConfig 8.1.1 aus Admin 7.7.28 und JSONConfig 10.1.3 geprüft. [Offizielles Auswahlfeld](https://github.com/ioBroker/json-config/blob/v8.1.1/src/JsonConfigComponent/ConfigInstanceSelect.tsx).
+
+Die [Cloud-Anleitung](EPG_GUI.md#über-iobrokercloud-remote-öffnen) und die automatisierten Pfadprüfungen beziehen sich auf Web 9.1.15 und Cloud 6.2.11. Die gemeinsame Web-Instanz, deren lokaler Zugriff über `127.0.0.1` und der getrennte Cloud-Socket-Kontext sind aus den dort verlinkten offiziellen Quellen abgeleitet. Der tatsächliche Cloud-Zugang des Nutzers wurde nicht aufgerufen; damit sind weder ein vollständiger Fernzugriff noch TV-Bedienung über dieses Konto als Gerätetest bestätigt. [Prüfbericht zu 0.1.15](PRUEFBERICHT_0.1.15.md).
+
+## Senderlogos und Web-Zugriff seit 0.1.14
 
 Das optionale `thumbnailUrl`-Feld der TV-Senderliste wird bis zur Programmübersicht durchgereicht. Eine gefüllte Bildadresse wurde für die unten aufgeführten Geräte noch nicht durch eine echte Antwort belegt. Die mitgelieferten Logos funktionieren unabhängig davon; fehlende oder nicht ladbare Bilder lassen den Sendernamen sichtbar. [Quellen und Verhalten](CHANNEL_LOGOS.md).
 

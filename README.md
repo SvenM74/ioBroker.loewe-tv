@@ -1,12 +1,16 @@
 # Loewe TV Adapter für ioBroker
 
-## Version 0.1.14
+## Version 0.1.15
 
-Build **`0.1.14-epg-web.1`** vergrößert die nutzbare Programmfläche und ergänzt Senderlogos sowie den Zugriff über **ioBroker.web**. Die große TV-Kanalfläche entfällt. **Jetzt ansehen / Aufnahme planen** und **EPG aktualisieren** stehen zwischen Stundenauswahl und Sendersuche. Sender, Titel und Zeit bleiben in einer kompakten Auswahlzeile sichtbar; die Beschreibung lässt sich bei Bedarf aufklappen.
+Build **`0.1.15-web-cloud.1`** bietet in der Instanz-Konfiguration einen eigenen Reiter **Web-Zugriff** mit dem Feld **Web-Adapter für die Programmübersicht**. Dort wählst du die vorhandene Web-Instanz, beispielsweise `web.0`, die die EPG-Seite darstellen soll. Eine bereits gespeicherte Auswahl bleibt erhalten. Auch deaktivierte Web-Instanzen bleiben sichtbar; für den Zugriff muss die ausgewählte Instanz laufen.
+
+Für den Fernzugriff über **ioBroker.cloud** wählst du in LOEWE-TV und Cloud **dieselbe Web-Instanz**. Die [Cloud-Anleitung](docs/EPG_GUI.md#über-iobrokercloud-remote-öffnen) beschreibt eine zusätzliche, nur über `localhost` erreichbare Web-Instanz und den passenden EPG-Link. Lokal gelten die Anmeldung und Rechte von Admin beziehungsweise Web; remote gilt der bestehende Cloud-Zugang. Der Cloud-Adapter verwendet einen eigenen Socket-Kontext. Ein Test mit dem tatsächlichen Cloud-Konto steht noch aus.
+
+Die kompakte Programmfläche und die Senderlogos aus 0.1.14 bleiben enthalten. **Jetzt ansehen / Aufnahme planen** und **EPG aktualisieren** stehen zwischen Stundenauswahl und Sendersuche. Sender, Titel und Zeit bleiben in einer kompakten Auswahlzeile sichtbar; die Beschreibung lässt sich bei Bedarf aufklappen.
 
 Die Senderzeilen verwenden zuerst eine vom TV gelieferte Bildadresse, danach ein mitgeliefertes Logo. Für jedes mitgelieferte Logo sind Quelle und der dort ausgewiesene gemeinfreie Status dokumentiert. Kann kein Bild geladen werden, erscheint der Sendername. Ob die optionalen Bildadressen beim jeweiligen Loewe-Modell gefüllt sind, muss der tatsächliche Senderlistenabruf zeigen. [Logos und Quellen](docs/CHANNEL_LOGOS.md).
 
-Ein Link **Programmübersicht** ist direkt an der Adapterinstanz und im **Admin-Schnellzugriff** erreichbar. Unter **EPG-Einstellungen → Programmübersicht in ioBroker.web** kann zusätzlich eine vorhandene Web-Instanz gewählt werden. Dort erscheint die Übersicht unter `loewe-tv.0/epg.html` und als Schnellzugriff auf der Web-Startseite. Die bestehende Anmeldung und Benutzerrechte gelten weiter. [Zugriff und Bedienung](docs/EPG_GUI.md) · [Update und Installation](docs/INSTALLATION.md#update-auf-0114) · [Prüfbericht](docs/PRUEFBERICHT_0.1.14.md).
+Ein Link **Programmübersicht** ist direkt an der Adapterinstanz und im **Admin-Schnellzugriff** erreichbar. Auf der ausgewählten Web-Instanz erscheint die Übersicht unter `loewe-tv.0/epg.html` und als Schnellzugriff auf der Web-Startseite. [Zugriff und Bedienung](docs/EPG_GUI.md) · [Update und Installation](docs/INSTALLATION.md#update-auf-0115) · [Prüfbericht](docs/PRUEFBERICHT_0.1.15.md).
 
 **EPG-Einstellungen** und **Programmübersicht** haben seit 0.1.11 eigene Reiter. **Jetzt ansehen** schaltet auf eine zeitlich eindeutig laufende Sendung; zukünftige Sendungen lassen sich nach Bestätigung zur Aufnahme vormerken. Aufträge werden dauerhaft in **`recordings.jobs`** gespeichert. Ist der TV offline, wartet der Adapter auf seine Erreichbarkeit, ohne ihn aufzuwecken. Ein möglicherweise bereits übertragener Auftrag wird nicht automatisch erneut gesendet. **`scheduled`** bedeutet, dass ein passender Timer in der TV-Timerliste nachgewiesen wurde.
 

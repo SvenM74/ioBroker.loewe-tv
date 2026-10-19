@@ -229,12 +229,12 @@ test('Admin lists use the saved native selection and a temporary reload trigger'
     assert.equal(translations[reload.label], 'Senderlisten neu laden');
 });
 
-test('EPG configuration keeps TV source settings and adds optional web-instance selection', () => {
+test('EPG configuration keeps TV source settings separate from web access', () => {
     const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
     const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
     const panel = config.items._epg;
     const items = panel.items;
-    const expected = { epgEnabled: true, epgRefreshInterval: 900, webInstance: '' };
+    const expected = { epgEnabled: true, epgRefreshInterval: 900 };
     assert.equal(panel.type, 'panel');
     assert.deepEqual(Object.keys(items).filter(key => !key.startsWith('_')).sort(), Object.keys(expected).sort());
     for (const [key, value] of Object.entries(expected)) {
@@ -261,21 +261,73 @@ test('EPG configuration keeps TV source settings and adds optional web-instance 
 test('web access uses the official instance selector without making old settings invalid', () => {
     const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
     const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
-    const field = config.items._epg.items.webInstance;
+    const field = config.items._webAccess.items.webInstance;
     assert.equal(field.type, 'instance');
     assert.equal(field.adapter, 'web');
     assert.equal(field.allowDeactivate, true);
-    assert.equal(field.onlyEnabled, true);
+    assert.equal(field.onlyEnabled, false, 'A saved, temporarily disabled web instance must remain visible in the options.');
+    // Admin 7.7.28 uses json-config 8.1.1; the same value contract exists in
+    // json-config 10.1.3. Default values strip only "system.adapter."; short
+    // would save only "0" and long would retain "system.adapter.web.0".
+    // https://github.com/ioBroker/json-config/blob/v8.1.1/src/JsonConfigComponent/ConfigInstanceSelect.tsx
+    // https://github.com/ioBroker/json-config/blob/v10.1.3/src/JsonConfigComponent/ConfigInstanceSelect.tsx
+    assert.equal(field.short, undefined);
+    assert.equal(field.long, undefined);
     assert.equal(field.all, undefined, 'A saved web selection identifies one existing instance.');
+    assert.equal(field.default, '');
+    assert.notEqual(field.doNotSave, true);
+    assert.equal(field.onChange, undefined, 'Opening a different tab must not replace the saved selection.');
+    assert.equal(field.hidden, undefined);
+    assert.equal(field.disabled, undefined, 'Web access can be configured before either adapter starts.');
     assert.equal(io.native.webInstance, '');
-    for (const webInstance of [undefined, '', 'web.0', 'web.12']) {
+    for (const webInstance of [undefined, '', 'web.0', 'web.12', 'web.123456789']) {
         const data = { ...clone(io.native), host: 'tv.example', webInstance };
         const before = clone(data);
         assert.deepEqual(adminValidationErrors(config, data), [], `Valid selection: ${webInstance}`);
         assert.deepEqual(clone(data), before);
     }
-    for (const webInstance of [null, false, 0, '*', 'web.01', 'web.-1', 'admin.0', 'system.adapter.web.0', 'web.0/other', 'http://host:8082']) {
-        assert.deepEqual(adminValidationErrors(config, { ...clone(io.native), host: 'tv.example', webInstance }), ['_epg.webInstance']);
+    for (const webInstance of [null, false, 0, '0', '*', 'web.01', 'web.-1', 'web.1234567890', 'admin.0', 'system.adapter.web.0', 'web.0/other', 'http://host:8082']) {
+        assert.deepEqual(adminValidationErrors(config, { ...clone(io.native), host: 'tv.example', webInstance }), ['_webAccess.webInstance']);
+    }
+});
+
+test('web access has a discoverable tab and distinct local and Cloud instructions in both languages', () => {
+    const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
+    const panel = config.items._webAccess;
+    const tabs = Object.keys(config.items);
+    assert.equal(panel.type, 'panel');
+    assert.equal(panel.label, 'Web access');
+    assert.equal(panel.hidden, undefined);
+    assert.equal(panel.disabled, undefined);
+    assert.equal(tabs.indexOf('_webAccess') + 1, tabs.indexOf('_programmeGuide'));
+    assert.equal(config.items._epg.items.webInstance, undefined);
+    assert.deepEqual(Object.keys(panel.items).filter(key => !key.startsWith('_')), ['webInstance']);
+    assert.equal([...JSON.stringify(config).matchAll(/"webInstance":\{/gu)].length, 1,
+        'The new panel keeps one native webInstance field; it must not add a second saved selection.');
+    const guideHelp = config.items._programmeGuide.items._epgGuideHelp.text;
+    assert.match(guideHelp, /configured under Web access/u);
+    const field = panel.items.webInstance;
+    assert.equal(field.label, 'Web adapter for the programme guide');
+    for (const language of ['de', 'en']) {
+        const translations = JSON.parse(fs.readFileSync(path.join(root, `admin/i18n/${language}/translations.json`), 'utf8'));
+        for (const item of [panel, ...Object.values(panel.items)]) {
+            for (const key of ['label', 'text', 'help', 'validatorErrorText']) {
+                if (item[key]) assert.ok(translations[item[key]], `${language} translation missing: ${item[key]}`);
+            }
+        }
+        assert.equal(translations[panel.label], language === 'de' ? 'Web-Zugriff' : 'Web access');
+        assert.equal(translations[field.label], language === 'de'
+            ? 'Web-Adapter für die Programmübersicht' : 'Web adapter for the programme guide');
+        assert.ok(translations[guideHelp].includes(translations[panel.label]));
+        const local = translations[panel.items._webGuideHelp.text];
+        const cloud = translations[panel.items._cloudGuideHelp.text];
+        assert.match(local, /Socket|socket/u);
+        assert.match(cloud, /127\.0\.0\.1/u);
+        assert.match(cloud, /HTTP/u);
+        assert.match(cloud, /Socket\.IO/u);
+        assert.match(cloud, language === 'de' ? /Cloud-Anmeldung/u : /Cloud login/u);
+        assert.doesNotMatch(cloud, /user permissions|Benutzerrechte/u,
+            'Cloud access must not be described as inheriting a local web user session.');
     }
 });
 

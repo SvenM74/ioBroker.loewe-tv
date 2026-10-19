@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.14",
+    "version": "0.1.15",
     "news": {
+      "0.1.15": {
+        "en": "Give the programme guide a dedicated Web access tab with an explicit web-adapter selector. Preserve saved selections and show existing disabled instances. Document selecting the same web instance in ioBroker.cloud, the localhost setup and the programme-guide link for remote access.",
+        "de": "Einen eigenen Reiter Web-Zugriff mit ausdrücklicher Auswahl des Web-Adapters für die Programmübersicht bereitstellen. Gespeicherte Auswahl erhalten und vorhandene deaktivierte Instanzen anzeigen. Die gemeinsame Web-Instanz in ioBroker.cloud, die Einrichtung über localhost und den EPG-Link für den Fernzugriff dokumentieren."
+      },
       "0.1.14": {
         "en": "Show optional channel logos from the TV with individually documented public-domain logo fallbacks. Add programme-guide links in the instance overview and optional access through an existing ioBroker.web instance. Move watching, recording and EPG refresh beside the time-window selector; replace the large details panel with a compact selection and expandable description. Preserve recording delivery status and duplicate-submission protection.",
         "de": "Optionale Senderlogos des TVs mit einzeln dokumentierten gemeinfreien Ersatzgrafiken anzeigen. Die Programmübersicht aus der Instanzübersicht und optional über eine bestehende ioBroker.web-Instanz öffnen. Ansehen, Aufnahmeplanung und EPG-Aktualisierung neben die Stundenauswahl verschieben; die große Detailfläche durch eine kompakte Auswahl mit aufklappbarer Beschreibung ersetzen. Aufnahmestatus und Schutz vor doppelter Übertragung bleiben erhalten."

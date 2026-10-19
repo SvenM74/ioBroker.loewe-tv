@@ -222,16 +222,28 @@ test('web instance paths cannot be overridden by query parameters or default to 
     matching.dispose();
 });
 
-test('regular Socket.IO uses the root namespace and puts a web proxy prefix only in its transport path', async () => {
-    const view = browser({ regularSocketIo: true, loadScript: true,
-        href: 'https://broker.example/proxy/web/loewe-tv.3/epg.html' });
-    await view.bridge.requestGuide({});
-    assert.equal(view.scripts[0].src, 'https://broker.example/proxy/web/lib/js/socket.io.js');
-    assert.equal(view.connectionOptions[0].url, 'https://broker.example');
-    assert.equal(view.connectionOptions[0].options.path, '/proxy/web/socket.io');
-    assert.equal(view.requests[0].instance, 'loewe-tv.3');
-    view.dispose();
-    assert.equal(view.timers.size, 0);
+test('regular Socket.IO uses the root namespace for local proxies and Cloud web access', async () => {
+    // Cloud forwards /loewe-tv.N/ and /lib/js/ to its selected web instance;
+    // its /adapter/ route belongs to Admin. These are mocked routing contracts,
+    // not connections to the live portals.
+    for (const [base, socketPath] of [
+        ['https://broker.example/proxy/web/', '/proxy/web/socket.io'],
+        ['https://iobroker.pro/', '/socket.io'],
+        ['https://iobroker.net/', '/socket.io'],
+    ]) {
+        const view = browser({ regularSocketIo: true, loadScript: true,
+            href: `${base}loewe-tv.3/epg.html` });
+        await view.bridge.requestGuide({});
+        assert.equal(view.scripts[0].src, `${base}lib/js/socket.io.js`);
+        assert.equal(view.connectionOptions[0].url, new URL(base).origin);
+        assert.equal(view.connectionOptions[0].options.path, socketPath);
+        assert.equal(view.requests[0].instance, 'loewe-tv.3');
+        assert.equal(view.connectionOptions[0].options.reconnection, false);
+        assert.equal(Object.hasOwn(view.connectionOptions[0].options, 'token'), false);
+        assert.equal(Object.hasOwn(view.connectionOptions[0].options, 'auth'), false);
+        view.dispose();
+        assert.equal(view.timers.size, 0);
+    }
 });
 
 test('all 2000 channels can be collected from small pages without a 32-page truncation', async () => {

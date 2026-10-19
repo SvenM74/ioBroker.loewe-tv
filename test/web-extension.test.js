@@ -70,17 +70,45 @@ test('selected web instance serves the existing Admin assets without a second UI
     assert.equal(head.ended, true);
 });
 
-test('web welcome-page entry identifies the TV and has a usable relative link in both languages', () => {
+test('web welcome-page entries keep the TV and assets on local, proxied and Cloud origins', () => {
     for (const language of ['de', 'en']) {
-        const entry = web({ language }).extension.welcomePage();
-        assert.equal(entry.link, 'loewe-tv.3/epg.html');
-        assert.equal(entry.localLink, entry.link, 'Older web welcome pages read localLink directly.');
-        assert.equal(entry.id, 'system.adapter.loewe-tv.3');
-        assert.equal(entry.instance, 3);
-        assert.match(entry.name, language === 'de' ? /Programmübersicht \(3\)/ : /Programme guide \(3\)/);
-        assert.equal(entry.img, 'loewe-tv.3/loewe-tv.png');
-        assert.equal(new URL(entry.link, 'https://broker/proxy/web/').href,
-            'https://broker/proxy/web/loewe-tv.3/epg.html');
+        for (const instance of [0, 3]) {
+            const service = web({ language, id: `system.adapter.loewe-tv.${instance}` });
+            const entry = service.extension.welcomePage();
+            const prefix = `/loewe-tv.${instance}/`;
+            assert.equal(entry.link, `loewe-tv.${instance}/epg.html`);
+            assert.equal(entry.localLink, entry.link, 'Older web welcome pages read localLink directly.');
+            assert.equal(entry.id, `system.adapter.loewe-tv.${instance}`);
+            assert.equal(entry.instance, instance);
+            assert.match(entry.name, language === 'de' ? /Programmübersicht/ : /Programme guide/);
+            assert.ok(entry.name.endsWith(` (${instance})`));
+            assert.equal(entry.img, `loewe-tv.${instance}/loewe-tv.png`);
+            assert.equal(entry.pro, false, 'Older web pages hide pro-only cards on iobroker.net.');
+            assert.equal(new URL(entry.link, 'https://broker/proxy/web/').href,
+                `https://broker/proxy/web${prefix}epg.html`);
+
+            for (const origin of ['https://iobroker.net', 'https://iobroker.pro']) {
+                for (const link of [entry.link, entry.localLink, entry.img]) {
+                    const url = new URL(link, `${origin}/`);
+                    assert.equal(url.origin, origin, 'Cloud links must not contain a LAN host or port.');
+                    assert.ok(url.pathname.startsWith(prefix), url.href);
+                    assert.doesNotMatch(url.pathname, /\/adapter\//, 'Cloud routes adapter paths to Admin.');
+                    assert.equal(service.request(url.pathname).code, 200, url.href);
+                }
+                const page = new URL(entry.link, `${origin}/`);
+                const html = service.request(page.pathname).body.toString('utf8');
+                const assets = [...html.matchAll(/\b(?:src|href)="([^"]+)"/g)].map(match => match[1]);
+                assert.ok(assets.length > 0, 'Check the asset references actually served in the guide.');
+                assets.push('logos/das-erste.svg');
+                for (const asset of assets) {
+                    const url = new URL(asset, page);
+                    assert.equal(url.origin, origin);
+                    assert.ok(url.pathname.startsWith(prefix), url.href);
+                    assert.doesNotMatch(url.pathname, /\/adapter\//);
+                    assert.equal(service.request(url.pathname).code, 200, url.href);
+                }
+            }
+        }
     }
 });
 

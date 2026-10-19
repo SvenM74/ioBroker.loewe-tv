@@ -343,9 +343,9 @@ test('Admin metadata declares per-TV programme pages as URL strings', () => {
     const link = io.common.localLinks._default;
     // Admin accepts string links; Intro defaults to intro:true and the adapter
     // title. An object here is also imported as an extra card by older web.
-    // This checks our declaration, not every Admin resolver version. Admin 8
-    // can redirect Web-extension links before opening them; see ADMIN_LINKS.md
-    // and docs/upstream/repro-admin-links.cjs for executed upstream evidence.
+    // The released Admin resolvers and actual per-TV Web routes are checked
+    // together in admin-link-routing.test.js. Admin >=8.0.22 retains the path
+    // and the instance; earlier Admin 8 builds could collapse both TV links.
     // https://github.com/ioBroker/ioBroker.admin/blob/v7.7.28/src-admin/src/tabs/Instances.tsx#L431-L460
     // https://github.com/ioBroker/ioBroker.admin/blob/v7.7.28/src-admin/src/tabs/Intro.tsx#L920-L981
     // https://github.com/ioBroker/ioBroker.web/blob/v9.0.0/src/main.ts#L824-L850

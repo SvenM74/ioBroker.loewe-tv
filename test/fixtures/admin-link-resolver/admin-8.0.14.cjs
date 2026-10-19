@@ -1,0 +1,595 @@
+'use strict';
+
+// ioBroker.admin 8.0.14; MIT license, see LICENSE.
+// Original source: https://github.com/ioBroker/ioBroker.admin/blob/e4b39b810f5f12cd6e969e25a39ff6f3188a6608/src-admin/src/helpers/utils.ts
+// Generated with build.cjs: only TypeScript types and ES module exports are removed.
+
+/** Url where controller changelog is reachable */
+const CONTROLLER_CHANGELOG_URL = 'https://github.com/ioBroker/ioBroker.js-controller/blob/master/CHANGELOG.md';
+
+/** All possible auto upgrade settings */
+const AUTO_UPGRADE_SETTINGS                               = ['none', 'patch', 'minor', 'major'];
+
+/** Mapping to make it more understandable which upgrades are allowed */
+const AUTO_UPGRADE_OPTIONS_MAPPING                                             = {
+    none: 'none',
+    patch: 'patch',
+    minor: 'patch & minor',
+    major: 'patch, minor & major',
+};
+
+function ip2int(ip        )         {
+    return ip.split('.').reduce((ipInt, octet) => (ipInt << 8) + parseInt(octet, 10), 0) >>> 0;
+}
+
+function findNetworkAddressOfHost(obj                     , localIp        )                {
+    const networkInterfaces = obj?.native?.hardware?.networkInterfaces;
+    if (!networkInterfaces) {
+        return null;
+    }
+
+    let hostIp                = null;
+    for (const networkInterface of Object.values(networkInterfaces)) {
+        if (!networkInterface) {
+            continue;
+        }
+        for (let i = 0; i < networkInterface.length; i++) {
+            const ip = networkInterface[i];
+            if (ip.internal) {
+                continue;
+            }
+            if (localIp.includes(':') && ip.family !== 'IPv6') {
+                continue;
+            }
+            if (localIp.includes('.') && !localIp.match(/[^.\d]/) && ip.family !== 'IPv4') {
+                continue;
+            }
+            if (localIp === '127.0.0.0' || localIp === 'localhost' || localIp.match(/[^.\d]/)) {
+                // if DNS name
+                hostIp = ip.address;
+            } else if (
+                ip.family === 'IPv4' &&
+                localIp.includes('.') &&
+                (ip2int(localIp) & ip2int(ip.netmask)) === (ip2int(ip.address) & ip2int(ip.netmask))
+            ) {
+                hostIp = ip.address;
+            }
+        }
+    }
+
+    if (!hostIp) {
+        for (const networkInterface of Object.values(networkInterfaces)) {
+            if (!networkInterface) {
+                continue;
+            }
+            for (let i = 0; i < networkInterface.length; i++) {
+                const ip = networkInterface[i];
+                if (ip.internal) {
+                    continue;
+                }
+                if (localIp.includes(':') && ip.family !== 'IPv6') {
+                    continue;
+                }
+                if (localIp.includes('.') && !localIp.match(/[^.\d]/) && ip.family !== 'IPv4') {
+                    continue;
+                }
+                if (localIp === '127.0.0.0' || localIp === 'localhost' || localIp.match(/[^.\d]/)) {
+                    // if DNS name
+                    hostIp = ip.address;
+                }
+            }
+        }
+    }
+
+    if (!hostIp) {
+        for (const networkInterface of Object.values(networkInterfaces)) {
+            if (!networkInterface) {
+                continue;
+            }
+            for (let i = 0; i < networkInterface.length; i++) {
+                const ip = networkInterface[i];
+                if (ip.internal) {
+                    continue;
+                }
+                hostIp = ip.address;
+            }
+        }
+    }
+
+    return hostIp;
+}
+
+function getHostname(
+    instanceObj                         ,
+    objects                                         ,
+    hosts                                     ,
+    currentHostname        ,
+    adminInstance        ,
+)                {
+    if (!instanceObj?.common) {
+        return null;
+    }
+
+    let hostname;
+    // check if the adapter from the same host as admin
+    const adminHost = objects[`system.adapter.${adminInstance}`]?.common?.host;
+    if (instanceObj.common.host !== adminHost) {
+        // find IP address
+        const host = hosts[`system.host.${instanceObj.common.host}`];
+        if (host) {
+            const ip = findNetworkAddressOfHost(host, currentHostname);
+            if (ip) {
+                hostname = ip;
+            } else {
+                console.warn(`Cannot find suitable IP in host ${instanceObj.common.host} for ${instanceObj._id}`);
+                return null;
+            }
+        } else {
+            console.warn(`Cannot find host ${instanceObj.common.host} for ${instanceObj._id}`);
+            return null;
+        }
+    } else {
+        hostname = currentHostname;
+    }
+
+    return hostname;
+}
+
+/**
+ * Build the link(s) for an adapter that runs as a web-extension.
+ *
+ * Such adapters have no own web-server and therefore no reachable own port.
+ * They are served by their host web instance(s) under the path `/<adapterName>/`.
+ * `native.webInstance` contains the target web instance (e.g. `web.0`) or `*` for all web instances.
+ *
+ * @param adapter adapter name (e.g. `rest-api`)
+ * @param instanceObj the web-extension instance object
+ * @param context Context object
+ * @param context.instances Object with all instances
+ * @param context.hostname Actual host name
+ * @param context.adminInstance Actual admin instance
+ * @param context.hosts Object with all hosts
+ */
+function getWebExtensionLinks(
+    adapter        ,
+    instanceObj                         ,
+    context   
+                                                           
+                         
+                              
+                                                   
+     ,
+)                                                                 {
+    const webInstance         = instanceObj.native.webInstance;
+
+    // Determine which web instance(s) serve this extension
+    let webInstanceIds          ;
+    if (webInstance === '*') {
+        webInstanceIds = Object.keys(context.instances)
+            .filter(id => id.startsWith('system.adapter.web.') && context.instances[id].common.enabled)
+            .map(id => id.substring('system.adapter.'.length));
+        // fall back to disabled web instances if none is enabled
+        if (!webInstanceIds.length) {
+            webInstanceIds = Object.keys(context.instances)
+                .filter(id => id.startsWith('system.adapter.web.'))
+                .map(id => id.substring('system.adapter.'.length));
+        }
+    } else {
+        webInstanceIds = [webInstance];
+    }
+
+    const urls                                                                 = [];
+
+    for (const webId of webInstanceIds) {
+        const webObj = context.instances[`system.adapter.${webId}`];
+        const webNative = webObj?.native;
+        if (!webNative) {
+            continue;
+        }
+
+        const protocolVal                   = webNative.secure === undefined ? webNative.protocol : webNative.secure;
+        const protocol                   = protocolVal === true || protocolVal === 'true' ? 'https' : 'http';
+
+        let ip                = webNative.bind || webNative.ip;
+        if (!ip || ip === '0.0.0.0') {
+            ip = getHostname(webObj, context.instances, context.hosts, context.hostname, context.adminInstance);
+        }
+
+        const port                     = webNative.port;
+
+        urls.push({
+            url: `${protocol}://${ip || ''}${port ? `:${port}` : ''}/${adapter}/`,
+            port,
+            instance: webId,
+        });
+    }
+
+    return urls;
+}
+
+// internal use
+function _replaceLink(
+    link        ,
+    objects                                         ,
+    adapterInstance        ,
+    attr        ,
+    placeholder        ,
+    hosts                                     ,
+    hostname        ,
+    adminInstance        ,
+)         {
+    if (attr === 'protocol') {
+        attr = 'secure';
+    }
+
+    try {
+        const object = objects[`system.adapter.${adapterInstance}`];
+
+        if (link && object) {
+            if (attr === 'secure') {
+                link = link.replace(`%${placeholder}%`, object.native[attr] ? 'https' : 'http');
+            } else {
+                let value = object.native[attr];
+                // workaround for port
+                if ((attr === 'webinterfacePort' || attr === 'port') && (!value || value === '0')) {
+                    if (object.native.secure === true) {
+                        value = 443;
+                    } else {
+                        value = 80;
+                    }
+                }
+
+                if (attr === 'bind' || attr === 'ip') {
+                    let ip = object.native.bind || object.native.ip;
+                    if (ip === '0.0.0.0') {
+                        ip = getHostname(object, objects, hosts, hostname, adminInstance);
+                    }
+                    if (!link.includes(`%${placeholder}%`)) {
+                        link = link.replace(`%native_${placeholder}%`, ip || '');
+                    } else {
+                        link = link.replace(`%${placeholder}%`, ip || '');
+                    }
+                } else if (!link.includes(`%${placeholder}%`)) {
+                    link = link.replace(`%native_${placeholder}%`, value);
+                } else {
+                    link = link.replace(`%${placeholder}%`, value);
+                }
+            }
+        } else {
+            console.log(`Cannot get link ${attr}`);
+            link = link.replace(`%${placeholder}%`, '');
+        }
+    } catch (error) {
+        console.log(error);
+    }
+    return link;
+}
+
+/**
+ * Convert the template link to string
+ *
+ * Possible placeholders:
+ * `%ip%` - `native.bind` or `native.ip` of this adapter. If it is '0.0.0.0', we are trying to find the host IP that is reachable from the current browser.
+ * `%protocol%` - `native.protocol` or `native.secure` of this adapter. The result is 'http' or 'https'.
+ * `%s%` - `native.protocol` or `native.secure` of this adapter. The result is '' or 's'. The idea is to use the pattern like "http%s%://..."
+ * `%instance%` - instance number
+ * `%adapterName_nativeAttr%` - Takes the native value `nativeAttr` of all instances of adapterName. This generates many links if more than one instance installed
+ * `%adapterName.x_nativeAttr%` - Takes the native value `nativeAttr` of adapterName.x instance
+ *
+ * @param link pattern for link
+ * @param adapter adapter name
+ * @param instance adapter instance number
+ * @param context Context object
+ * @param context.instances Object with all instances
+ * @param context.hostname Actual host name
+ * @param context.adminInstance Actual admin instance
+ * @param context.hosts Object with all hosts
+ */
+function replaceLink(
+    link        ,
+    adapter        ,
+    instance        ,
+    context   
+                                                           
+                         
+                              
+                                                   
+     ,
+)   
+                
+                             
+                      
+    {
+    const _urls   
+                    
+                                 
+                          
+        = [];
+    let port                    ;
+
+    if (link) {
+        const instanceObj = context.instances[`system.adapter.${adapter}.${instance}`];
+        const native = instanceObj?.native || {};
+
+        // Adapters running as web-extension have no own web-server / port.
+        // They are served by their host web instance(s) under the path /<adapterName>/.
+        if (instanceObj?.common.webExtension && native.webInstance) {
+            const webExtensionUrls = getWebExtensionLinks(adapter, instanceObj, context);
+            if (webExtensionUrls.length) {
+                return webExtensionUrls;
+            }
+        }
+
+        const placeholders = link.match(/%(\w+)%/g);
+
+        if (placeholders) {
+            for (let p = 0; p < placeholders.length; p++) {
+                let placeholder = placeholders[p];
+
+                if (placeholder === '%ip%') {
+                    let ip                = (native.bind || native.ip)          ;
+                    if (!ip || ip === '0.0.0.0') {
+                        // Check host
+                        ip = getHostname(
+                            instanceObj,
+                            context.instances,
+                            context.hosts,
+                            context.hostname,
+                            context.adminInstance,
+                        );
+                    }
+
+                    if (_urls.length) {
+                        _urls.forEach(item => (item.url = item.url.replace('%ip%', ip || '')));
+                    } else {
+                        link = link.replace('%ip%', ip || '');
+                    }
+                } else if (placeholder === '%protocol%') {
+                    const protocolVal                   = native.secure === undefined ? native.protocol : native.secure;
+                    let protocol                  ;
+                    if (protocolVal === true || protocolVal === 'true') {
+                        protocol = 'https';
+                    } else if (protocolVal === false || protocolVal === 'false' || !protocolVal) {
+                        protocol = 'http';
+                    } else {
+                        protocol = protocolVal.toString().replace(/:$/, '')                    ;
+                    }
+
+                    if (_urls.length) {
+                        _urls.forEach(item => (item.url = item.url.replace('%protocol%', protocol)));
+                    } else {
+                        link = link.replace('%protocol%', protocol);
+                    }
+                } else if (placeholder === '%s%') {
+                    const protocolVal                   = native.secure === undefined ? native.protocol : native.secure;
+                    let protocol          ;
+                    if (protocolVal === true || protocolVal === 'true') {
+                        protocol = 's';
+                    } else if (protocolVal === false || protocolVal === 'false' || !protocolVal) {
+                        protocol = '';
+                    } else {
+                        protocol = protocolVal.toString().replace(/:$/, '')            ;
+                    }
+
+                    if (_urls.length) {
+                        _urls.forEach(item => (item.url = item.url.replace('%s%', protocol)));
+                    } else {
+                        link = link.replace('%s%', protocol);
+                    }
+                } else if (placeholder === '%instance%') {
+                    link = link.replace('%instance%', instance.toString());
+                    if (_urls.length) {
+                        _urls.forEach(item => (item.url = item.url.replace('%instance%', instance.toString())));
+                    } else {
+                        link = link.replace('%instance%', instance.toString());
+                    }
+                } else {
+                    // remove %%
+                    placeholder = placeholder.replace(/%/g, '');
+
+                    if (placeholder.startsWith('native_')) {
+                        placeholder = placeholder.substring(7);
+                    }
+
+                    // like web.0_port or web_protocol
+                    if (!placeholder.includes('_')) {
+                        // if only one instance
+                        const adapterInstance = `${adapter}.${instance}`;
+                        if (_urls.length) {
+                            _urls.forEach(
+                                item =>
+                                    (item.url = _replaceLink(
+                                        item.url,
+                                        context.instances,
+                                        adapterInstance,
+                                        placeholder,
+                                        placeholder,
+                                        context.hosts,
+                                        context.hostname,
+                                        context.adminInstance,
+                                    )),
+                            );
+                        } else {
+                            link = _replaceLink(
+                                link,
+                                context.instances,
+                                adapterInstance,
+                                placeholder,
+                                placeholder,
+                                context.hosts,
+                                context.hostname,
+                                context.adminInstance,
+                            );
+                            port = context.instances[`system.adapter.${adapterInstance}`]?.native?.port;
+                        }
+                    } else {
+                        const [adapterInstance, attr] = placeholder.split('_');
+
+                        // if instance number not found
+                        if (!adapterInstance.match(/\.[0-9]+$/)) {
+                            // list all possible instances
+                            let ids          ;
+                            if (adapter === adapterInstance) {
+                                // take only this one instance and that's all
+                                ids = [`${adapter}.${instance}`];
+                            } else {
+                                ids = Object.keys(context.instances)
+                                    .filter(
+                                        id =>
+                                            id.startsWith(`system.adapter.${adapterInstance}.`) &&
+                                            context.instances[id].common.enabled,
+                                    )
+                                    .map(id => id.substring(15));
+
+                                // try to get disabled instances
+                                if (!ids.length) {
+                                    ids = Object.keys(context.instances)
+                                        .filter(id => id.startsWith(`system.adapter.${adapterInstance}.`))
+                                        .map(id => id.substring(15));
+                                }
+                            }
+
+                            for (const id of ids) {
+                                if (_urls.length) {
+                                    const item = _urls.find(t => t.instance === id);
+                                    if (item) {
+                                        item.url = _replaceLink(
+                                            item.url,
+                                            context.instances,
+                                            id,
+                                            attr,
+                                            placeholder,
+                                            context.hosts,
+                                            context.hostname,
+                                            context.adminInstance,
+                                        );
+                                    } else {
+                                        // add new
+                                        const _link = _replaceLink(
+                                            link,
+                                            context.instances,
+                                            id,
+                                            attr,
+                                            placeholder,
+                                            context.hosts,
+                                            context.hostname,
+                                            context.adminInstance,
+                                        );
+                                        const _port         = context.instances[`system.adapter.${id}`]?.native
+                                            ?.port          ;
+
+                                        _urls.push({ url: _link, port: _port, instance: id });
+                                    }
+                                } else {
+                                    const _link = _replaceLink(
+                                        link,
+                                        context.instances,
+                                        id,
+                                        attr,
+                                        placeholder,
+                                        context.hosts,
+                                        context.hostname,
+                                        context.adminInstance,
+                                    );
+
+                                    const _port         = context.instances[`system.adapter.${id}`]?.native
+                                        ?.port          ;
+                                    _urls.push({ url: _link, port: _port, instance: id });
+                                }
+                            }
+                        } else {
+                            link = _replaceLink(
+                                link,
+                                context.instances,
+                                adapterInstance,
+                                attr,
+                                placeholder,
+                                context.hosts,
+                                context.hostname,
+                                context.adminInstance,
+                            );
+
+                            port = context.instances[`system.adapter.${adapterInstance}`]?.native?.port          ;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (_urls.length) {
+        return _urls;
+    }
+    return [{ url: link, port }];
+}
+
+                                   
+                       
+                                                
+ 
+
+/**
+ * Public path of this admin instance from the reverse-proxy table.
+ * Looks up `admin.0` and joins it with `globalPath`.
+ * Returns `/` when the instance is not listed.
+ */
+function getAdminPublicPath(reverseProxy                                       , adminInstance        )         {
+    if (!reverseProxy?.length) {
+        return '/';
+    }
+    for (const group of reverseProxy) {
+        const entry = group.paths?.find(item => item.instance === adminInstance);
+        if (entry) {
+            // The paths are typed by hand, so normalize them: exactly one leading and one trailing slash
+            return `/${group.globalPath || ''}/${entry.path || ''}/`.replace(/\/+/g, '/');
+        }
+    }
+    return '/';
+}
+
+/**
+ * `adminHref('oauth/token')` → `/admin/oauth/token` when the public path of this admin instance is `/admin/`.
+ * The public path is delivered by the server as `socketPath` (index.html and `_socket/info.js`),
+ * the same global that `@iobroker/socket-client` uses to build the web-socket URL.
+ */
+function adminHref(path        )         {
+    // allow / don't modify absolute URLs f.e. CustomTab href from adminTab.link
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+        return path;
+    }
+    // `globalThis` and not `window`, because this file is used by the back-end too.
+    // In the dev mode (vite) the '@@socketPath@@' placeholder is not replaced, so ignore it.
+    const publicPath = (globalThis                                      ).socketPath;
+    return (publicPath && !publicPath.startsWith('@@') ? publicPath : '/') + path.replace(/^\//, '');
+}
+
+// New util returning rewritten link (used by Intro & Instances simplified usage)
+function applyReverseProxyToLink(
+    link                    ,
+    instanceId        ,
+    instances                                         ,
+    webReverseProxyPath                         ,
+)                     {
+    if (!link || !webReverseProxyPath) {
+        return link;
+    }
+    webReverseProxyPath.paths.forEach(item => {
+        if (item.instance === instanceId) {
+            link = item.path;
+        } else if (item.instance.startsWith('web.')) {
+            const webObj = instances[`system.adapter.${item.instance}`];
+            if (webObj?.native?.port && link?.includes(`:${webObj.native.port}`)) {
+                const regExp = new RegExp(`^.*:${webObj.native.port}/`);
+                link = link.replace(regExp, item.path);
+            }
+        }
+    });
+    return link;
+}
+
+module.exports = {
+    replaceLink,
+    applyReverseProxyToLink,
+    detectRemoteAccess: typeof detectRemoteAccess === "function" ? detectRemoteAccess : null,
+    applyRemoteAccessToLink: typeof applyRemoteAccessToLink === "function" ? applyRemoteAccessToLink : null,
+};

@@ -1,69 +1,81 @@
 # Admin-Links und direkter Zugriff auf die Programmübersicht
 
-Stand der Quellenprüfung: 19.10.2026. Ab **0.1.20**, Build
-**`0.1.20-web-entry.1`**, behandelt die Web-Erweiterung auch den allgemeinen
-Einstieg `/loewe-tv/`. Die automatisch erzeugten Links in der Instanzübersicht
-und im Admin-Schnellzugriff können diesen Pfad erzeugen, obwohl die
-Programmübersicht bisher nur unter den instanzbezogenen Web-Pfaden erreichbar
-war.
+Stand der Quellenprüfung: 19.10.2026. Ab **0.1.21**, Build
+**`0.1.21-direct-links.1`**, setzt LOEWE-TV **ioBroker.admin ab 8.0.22** voraus.
+Der Öffnen-Pfeil in der Zeile `loewe-tv.0` führt zur Programmübersicht von TV 0;
+der Pfeil in der Zeile `loewe-tv.1` führt zur Programmübersicht von TV 1.
+**Zwischen dem Anklicken eines Instanz-Links und seiner EPG-Seite ist keine
+TV-Auswahl nötig.** Dasselbe gilt für die automatisch erzeugten
+instanzbezogenen Kacheln im Admin-Schnellzugriff.
 
-Inzwischen wurde der konkrete Fehler gemeldet: Der Schnellzugriff öffnet die
-erreichbare Web-Adresse auf Port 8083 mit `/loewe-tv/`; Web antwortet mit
-**404, Datei `index.html` nicht gefunden**. Dieser Pfad ist mit dem unveränderten
-offiziellen Linkresolver von Admin 8.0.14 exakt reproduziert. Die tatsächlich
-installierte Admin-Version ist weiterhin nicht bekannt. Die folgende Reparatur
-behandelt den gemeldeten Einstieg im LOEWE-TV-Adapter und setzt kein Admin-Update
-voraus.
+Die Voraussetzung betrifft den Linkaufbau in Admin: Manche ältere
+Admin-8-Versionen entfernen den Dateinamen und die TV-Nummer, bevor der Browser
+die LOEWE-Seite überhaupt anfordert. Der dafür veröffentlichte Fix ist seit
+[Admin 8.0.22 vom 02.10.2026](https://github.com/ioBroker/ioBroker.admin/releases/tag/v8.0.22)
+verfügbar. **Ein LOEWE-TV-Update allein ändert eine noch laufende alte
+Admin-Oberfläche nicht.**
 
-Die vom Nutzer zunächst bestätigte Cloud-Programmübersicht und Fernbedienung
-verwenden weiterhin die vorhandenen Web-Links je TV. Diese erste Rückmeldung ist
-keine Bestätigung der beiden Admin-Links.
+## Installation und Prüfung der Instanz-Links
 
-## Allgemeiner Web-Einstieg ab 0.1.20
+1. **Zuerst Admin auf mindestens 8.0.22 aktualisieren.** Zum Zeitpunkt der
+   Quellenprüfung ist
+   [8.3.0](https://github.com/ioBroker/ioBroker.admin/releases/tag/v8.3.0)
+   die aktuelle veröffentlichte Version. Die Voraussetzungen der gewählten
+   Admin-Version müssen zur eigenen ioBroker-Installation passen.
+2. LOEWE-TV auf **0.1.21** aktualisieren und die vorhandenen LOEWE-TV-Instanzen
+   starten. Unter `info.adapterBuild` muss jeweils
+   **`0.1.21-direct-links.1`** stehen.
+3. Die in der LOEWE-Konfiguration ausgewählte **Web-Adapterinstanz neu starten**,
+   damit auch dort der installierte Erweiterungscode geladen wird. Sind die TVs
+   verschiedenen Web-Instanzen zugeordnet, beide betroffenen Web-Instanzen neu
+   starten.
+4. Admin im Browser mit **`Strg` + `F5` vollständig neu laden**. Ein vor dem
+   Admin-Update geöffneter Browser-Tab kann noch den alten Linkaufbau verwenden.
+5. In der Instanzübersicht die Öffnen-Pfeile für `loewe-tv.0` und `loewe-tv.1`
+   einzeln prüfen. Jeder Pfeil muss die zugehörige Programmübersicht ohne
+   Auswahlmenü öffnen. Anschließend die entsprechenden Schnellzugriffskacheln
+   prüfen.
 
-Die folgenden Adressen unter der ausgewählten Web-Instanz führen jetzt zur
-Programmübersicht beziehungsweise zur TV-Auswahl:
+Die vorhandene Auswahl des Web-Adapters in jeder LOEWE-Konfiguration und die
+funktionierenden Web-/Cloud-Kacheln bleiben erhalten. Eigene zusätzliche
+Kacheln sind für den normalen Instanzzugriff nicht erforderlich.
 
-- `/loewe-tv`
-- `/loewe-tv/`
-- `/loewe-tv/index.html`
-- `/loewe-tv/epg.html`
+## So bleibt die angeklickte TV-Instanz erhalten
 
-Ist dort genau eine aktive LOEWE-TV-Erweiterung geladen, wird direkt zu deren
-Programmübersicht weitergeleitet. Bei mehreren erscheint eine Auswahl mit den
-konfigurierten Namen und den Instanzkennungen, beispielsweise `loewe-tv.0` und
-`loewe-tv.1`. Die Auswahl enthält nur die tatsächlich auf dieser Web-Instanz
-geladenen LOEWE-TV-Erweiterungen. Ein gültiges `?instance=N` führt gezielt zur
-angegebenen Instanz, sofern sie dort vorhanden ist. Ungültige, mehrdeutige oder
-auf diesem Web-Adapter nicht verfügbare Instanzen wählen keinen anderen TV aus.
+Der Adapter behält den offiziellen String-Link bei:
 
-Bei dem geprüften Admin-8.0.14-Verhalten geht die Information über die
-ursprünglich angeklickte TV-Kachel bereits in Admin verloren. Der LOEWE-Adapter
-kann sie aus `/loewe-tv/` nicht wiederherstellen. Deshalb erfolgt bei zwei TVs
-eine ausdrückliche Auswahl. Wer weiterhin mit einem Klick einen bestimmten TV
-öffnen möchte, verwendet dessen direkten Link oder eine eigene
-Schnellzugriffskachel aus den folgenden Abschnitten.
+```text
+adapter/loewe-tv/epg.html?instance=%instance%
+```
 
-Die vorhandenen Web-/Cloud-Kacheln pro TV und die Pfade
-`/loewe-tv.0/epg.html`, `/loewe-tv.1/epg.html` bleiben bestehen. Die neuen
-Einstiegsadressen erzeugen keine zusätzlichen Web-Kacheln. Weiterleitungen und
-Auswahllinks sind relativ, damit der Browser die bestehende Adresse, das
-Protokoll und einen vorhandenen Proxy-Unterpfad behält. Für Cloud muss wie bisher
-die Web-Instanz ausgewählt sein, auf der die jeweiligen LOEWE-TV-Erweiterungen
-geladen sind.
+Admin ersetzt `%instance%` durch die Nummer der angeklickten Zeile. Ist ein
+Web-Adapter ausgewählt, verwenden die korrigierten Admin-Versionen dessen
+Adresse und erhalten den gesamten Dateipfad einschließlich TV-Nummer. Die
+LOEWE-Web-Erweiterung leitet anschließend gezielt zur instanzbezogenen EPG-Seite
+weiter. Dies ist eine HTTP-Weiterleitung ohne zusätzliche Seite oder
+Benutzerentscheidung.
 
-### Nach dem Update
+Beispiel für einen Web-Adapter unter `http://broker.example:8083/`:
 
-Nach der Installation von 0.1.20 **auch die in der LOEWE-Konfiguration ausgewählte
-Web-Adapterinstanz neu starten**. Der Code der Web-Erweiterung läuft im
-Web-Prozess; ein Neustart nur der LOEWE-TV-Instanzen lädt ihn dort nicht neu.
-Sind die beiden TVs unterschiedlichen Web-Instanzen zugeordnet, die jeweils
-betroffenen Web-Instanzen neu starten. Anschließend den Schnellzugriff im Browser
-neu laden, bei Bedarf mit `Strg` + `F5`.
+| Angeklickter Instanz-Link | Von Admin erzeugter Pfad | Direkt geöffnete EPG-Seite |
+| --- | --- | --- |
+| `loewe-tv.0` | `adapter/loewe-tv/epg.html?instance=0` | `loewe-tv.0/epg.html` |
+| `loewe-tv.1` | `adapter/loewe-tv/epg.html?instance=1` | `loewe-tv.1/epg.html` |
+
+Die Prüfungen verwenden den unveränderten Resolver aus veröffentlichten
+Admin-Versionen zusammen mit der LOEWE-Web-Erweiterung. Sie verfolgen beide
+TV-Instanzen getrennt durch Linkaufbau und Weiterleitung bis zur passenden
+EPG-Seite. Damit wird auch geprüft, dass die beiden Instanz-Links nicht wieder
+auf denselben allgemeinen Einstieg zusammenfallen.
+
+Die Stringform von `common.localLinks._default` bleibt bestehen, weil ältere
+Web-Versionen bei der Objektform zusätzliche allgemeine Kacheln importieren
+würden. Die Erweiterung liefert weiterhin genau ihre vorhandene Web-Kachel
+pro TV.
 
 ## Direkter Zugriff über Web und Cloud
 
-Unter der bereits funktionierenden **Web-Adresse** gelten folgende Pfade:
+Die bestehenden direkten Pfade unter der ausgewählten **Web-Adresse** lauten:
 
 | TV-Instanz | Pfad unter der Web-Adresse |
 | --- | --- |
@@ -72,164 +84,135 @@ Unter der bereits funktionierenden **Web-Adresse** gelten folgende Pfade:
 
 Beispiel: Für Web unter `http://broker.example:8083/` lautet der erste Link
 `http://broker.example:8083/loewe-tv.0/epg.html`. Ein vorhandener Proxy-Unterpfad
-gehört zur Web-Adresse und bleibt vor diesem Pfad stehen. Die Instanz muss in
-ihrer LOEWE-Konfiguration genau diesen Web-Adapter ausgewählt haben.
+steht vor diesem Pfad. Jede TV-Instanz muss in ihrer LOEWE-Konfiguration genau
+den Web-Adapter ausgewählt haben, über dessen Adresse sie geöffnet wird.
 
-Für den vorhandenen Cloud-Zugang können weiterhin dessen funktionierende
-Web-Kacheln `loewe-tv.0/epg.html` und `loewe-tv.1/epg.html` verwendet werden.
-Ein vollständiger lokaler Link wird durch das Eintragen als eigene Kachel nicht
-automatisch zu einem Cloud-Link.
+Für den bestehenden Cloud-Zugang bleiben die funktionierenden Web-Kacheln je TV
+verwendbar. Die korrigierten Admin-Versionen können auch ihre Instanz- und
+Schnellzugriffslinks dem vorhandenen Cloud-Zugang zuordnen, sofern dieser die
+ausgewählte Web-Instanz veröffentlicht. Der geprüfte Admin-Resolver erhält
+dabei die TV-Nummer. Die tatsächliche Weiterleitung übernimmt Cloud; insbesondere
+behandelt Cloud Pfade unter `/adapter/` als Admin-Zugang. Die Tests prüfen die
+URL-Aufbereitung getrennt von den bestehenden Web-Kacheln und ersetzen keinen
+Live-Test des Cloud-Zugangs. [Admin-8.0.22-Releasehinweise](https://github.com/ioBroker/ioBroker.admin/releases/tag/v8.0.22)
+· [Web-/Cloud-Zugang](EPG_GUI.md#über-iobrokercloud-remote-öffnen).
 
-## Direkter Zugriff über Admin
+## Allgemeiner Einstieg für alte oder unvollständige Lesezeichen
 
-Falls Admin eine falsche Web-Zieladresse erzeugt, beispielsweise `127.0.0.1`
-oder `localhost` auf dem Browsergerät, erreicht die Anfrage die Erweiterung
-weiterhin nicht. Die neue Behandlung von `/loewe-tv/` kann einen solchen
-Adressfehler nicht korrigieren. Der direkte Admin-Zugriff steht dafür weiterhin
-zur Verfügung.
+Die in 0.1.20 ergänzten allgemeinen Adressen bleiben erreichbar:
 
-Im lokalen Browser die bestehende **Admin-Adresse** verwenden und folgenden Pfad
-anhängen:
+- `/loewe-tv`
+- `/loewe-tv/`
+- `/loewe-tv/index.html`
+- `/loewe-tv/epg.html`
+
+Diese Adressen enthalten von sich aus **keine TV-Nummer**. Bei genau einer
+geladenen TV-Erweiterung öffnet sich deren Programmübersicht direkt. Bei
+mehreren TVs erscheint weiterhin eine Auswahl, damit ein altes allgemeines
+Lesezeichen nicht versehentlich den falschen Fernseher steuert. Ein gültiges
+`?instance=N` öffnet die angegebene Instanz direkt, sofern sie auf diesem
+Web-Adapter verfügbar ist.
+
+**Dieser allgemeine Einstieg ist ab 0.1.21 nicht das vorgesehene Ziel eines
+normalen Instanz-Pfeils.** Er dient alten oder unvollständigen Lesezeichen. Wenn
+ein Instanz-Pfeil weiterhin nur `/loewe-tv/` öffnet, zunächst die installierte
+Admin-Version und das vollständige Neuladen der Admin-Oberfläche prüfen.
+
+Die Auswahl enthält nur die tatsächlich auf dieser Web-Instanz geladenen
+LOEWE-Erweiterungen. Ungültige, mehrdeutige oder dort nicht verfügbare
+Instanznummern wählen keinen anderen TV aus. Es entstehen durch den allgemeinen
+Einstieg keine zusätzlichen Web-Kacheln.
+
+## Geprüfte Admin-Versionen und Ursache des früheren Fehlers
+
+| Geprüfter Admin-Stand | Verhalten des unveränderten Resolvers bei ausgewähltem Web-Adapter |
+| --- | --- |
+| **7.7.28** | Ersetzt `%instance%` und behält den relativen Admin-Pfad. Diese ältere Version war von der späteren Web-Umschreibung nicht betroffen. |
+| **8.0.14** | Gibt sofort die Web-Adresse mit `/loewe-tv/` zurück. Dateiname und TV-Nummer gehen verloren; beide TV-Zeilen erzeugen denselben Link. |
+| **8.0.21** | Der Verlust von Dateipfad und TV-Nummer besteht weiterhin. |
+| **8.0.22**, Commit `4dbd23e4` | Erster veröffentlichter Fix: erhält Dateipfad, Queryparameter und `%instance%`; die vorhandene LOEWE-Weiterleitung erreicht die richtige TV-Seite ohne Auswahl. |
+| **8.3.0** | Aktueller veröffentlichter Stand am 19.10.2026; der korrigierte Linkaufbau bleibt enthalten. |
+
+Obwohl Admin 7.7.28 den früheren relativen Link richtig behandelte, setzt
+LOEWE-TV 0.1.21 nun **Admin ab 8.0.22** voraus. So schließt die
+Versionsvoraussetzung die zwischenzeitliche Regression aus, statt eine bereits
+bekannt fehlerhafte Admin-Version weiterhin als ausreichend auszuweisen.
+
+Offizielle Quellen:
+[7.7.28](https://github.com/ioBroker/ioBroker.admin/blob/v7.7.28/src-admin/src/helpers/utils.ts),
+[8.0.14](https://github.com/ioBroker/ioBroker.admin/blob/v8.0.14/src-admin/src/helpers/utils.ts),
+[8.0.21](https://github.com/ioBroker/ioBroker.admin/blob/v8.0.21/src-admin/src/helpers/utils.ts),
+[8.0.22](https://github.com/ioBroker/ioBroker.admin/blob/4dbd23e49ed8d177f2bda06f9a40f4d490bffd58/src-admin/src/helpers/utils.ts),
+[8.3.0](https://github.com/ioBroker/ioBroker.admin/blob/v8.3.0/src-admin/src/helpers/utils.ts).
+Der ursprüngliche Pfadverlust ist außerdem in
+[Upstream-Issue 3661](https://github.com/ioBroker/ioBroker.admin/issues/3661)
+dokumentiert und in den
+[Releasehinweisen zu 8.0.22](https://github.com/ioBroker/ioBroker.admin/releases/tag/v8.0.22)
+als behoben beschrieben. Die tatsächlich beim Nutzer installierte
+Admin-Version lässt sich aus dem gemeldeten `/loewe-tv/`-Pfad allein nicht
+bestimmen.
+
+## Falls die Web-Zieladresse selbst falsch ist
+
+Ein korrekt erhaltener Dateipfad macht eine falsche Zieladresse nicht
+erreichbar. Insbesondere übernehmen die geprüften Admin-Versionen eine explizite
+Web-Bindung an `127.0.0.1` oder `localhost` weiterhin in den Link. Im Browser
+bezeichnet diese Adresse dessen eigenen Rechner. Das ist ein eigenständiges
+Adressproblem und wird durch den Fix für Dateipfad und Instanznummer nicht
+gelöst.
+
+Für einen direkten Zugriff über die bereits erreichbare **Admin-Adresse**
+können diese Pfade als Lesezeichen oder eigene Schnellzugriffskacheln verwendet
+werden:
 
 | TV-Instanz | Pfad unter der Admin-Adresse |
 | --- | --- |
 | `loewe-tv.0` | `adapter/loewe-tv/epg.html?instance=0` |
 | `loewe-tv.1` | `adapter/loewe-tv/epg.html?instance=1` |
 
-Beispiel: Wird Admin unter `https://broker.example/proxy/admin/` geöffnet, lautet
-der erste Link
+Ein vorhandener Admin-Unterpfad gehört davor, beispielsweise
 `https://broker.example/proxy/admin/adapter/loewe-tv/epg.html?instance=0`.
-Protokoll, Adresse, Port und ein vorhandener Admin-Unterpfad gehören zur bereits
-funktionierenden Admin-Adresse. Die Fernseher-IP und die Bind-Adresse eines nur
-für Cloud verwendeten Web-Adapters sind dafür nicht vorgesehen.
+Eigene Schnellzugriffskacheln werden über den Bearbeitungsmodus und **+**
+angelegt. Ihr URL-Text durchläuft den automatischen Adapter-Linkresolver nicht.
+Ein darin eingetragener lokaler vollständiger Link wird dadurch nicht
+automatisch zu einem Cloud-Link. [Quelle:
+Admin-Schnellzugriff](https://github.com/ioBroker/ioBroker.admin/blob/727bb83247192c151de8bb2abde049f0fd90c84b/src-admin/src/tabs/Intro.tsx).
 
-## Eigene Kacheln im Admin-Schnellzugriff
+## Warum die vorhandene Web-Erweiterung bestehen bleibt
 
-1. In Admin **Schnellzugriff** öffnen und den Bearbeitungsmodus über den Stift
-   einschalten.
-2. Über **+** einen eigenen Link hinzufügen. Als Namen beispielsweise
-   `Loewe TV 0 – Programmübersicht` und als URL den vollständigen Admin-Link für
-   `instance=0` oder den vollständigen direkten Web-Link für `loewe-tv.0`
-   eintragen. Mit **Hinzufügen** bestätigen.
-3. Für TV 1 wiederholen und den passenden Link mit `instance=1` beziehungsweise
-   `loewe-tv.1/epg.html` verwenden.
-4. Die Änderungen des Schnellzugriffs über das Häkchen speichern. Anschließend
-   beide Kacheln einzeln öffnen.
-
-Eigene Links werden in `system.config.native.introLinks` gespeichert und direkt
-an die Link-Komponente übergeben. Sie durchlaufen den automatischen
-`replaceLink()`-Resolver der Adapter-Kacheln nicht. Der Editor speichert den
-URL-Text unverändert. Das ist sowohl für Admin 7.7.28 als auch für die geprüften
-Admin-8-Stände im Quelltext belegt. Die Kacheln lassen sich bei Bedarf später
-wieder löschen. [Quellen: Admin 7 –
-Intro](https://github.com/ioBroker/ioBroker.admin/blob/2c53eab88ab8dc5d1bef6104aeffd8748c3181bc/src-admin/src/tabs/Intro.tsx),
-[Link-Komponente](https://github.com/ioBroker/ioBroker.admin/blob/2c53eab88ab8dc5d1bef6104aeffd8748c3181bc/src-admin/src/components/Intro/IntroCard.tsx),
-[Editor](https://github.com/ioBroker/ioBroker.admin/blob/2c53eab88ab8dc5d1bef6104aeffd8748c3181bc/src-admin/src/components/Intro/EditIntroLinkDialog.tsx);
-[aktueller Admin –
-Intro](https://github.com/ioBroker/ioBroker.admin/blob/727bb83247192c151de8bb2abde049f0fd90c84b/src-admin/src/tabs/Intro.tsx),
-[Link-Komponente](https://github.com/ioBroker/ioBroker.admin/blob/727bb83247192c151de8bb2abde049f0fd90c84b/src-admin/src/components/Intro/IntroCard.tsx),
-[Editor](https://github.com/ioBroker/ioBroker.admin/blob/727bb83247192c151de8bb2abde049f0fd90c84b/src-admin/src/components/Intro/EditIntroLinkDialog.tsx).
-
-Alternativ ist in einer eigenen Kachel auch der relative **Admin-Pfad** aus der
-entsprechenden Tabelle möglich. Er übernimmt die Adresse und das Verzeichnis der
-geöffneten Admin-Seite und eignet sich damit für HTTP, HTTPS und einen korrekt eingerichteten
-Proxy-Unterpfad. Ein vollständiger lokaler Link bleibt dagegen ein lokaler Link;
-er wird von einer eigenen Kachel nicht automatisch in einen Cloud-Link umgewandelt.
-Ein bloßer relativer Web-Pfad gehört dagegen unter die Web-Adresse und sollte
-nicht als relativer Link unter Admin eingetragen werden.
-
-Falls die fehlerhaften automatisch erzeugten Admin-Kacheln ausgeblendet werden
-sollen, dies **erst nach dem Speichern der eigenen Kacheln in einem neuen
-Bearbeitungsvorgang** erledigen. In den geprüften Admin-Quellen behandelt
-`saveCards()` das Ausblenden und das Speichern eigener Links in getrennten
-Bedingungen; gleichzeitige Änderungen können deshalb eine der beiden Änderungen
-nicht speichern. Es müssen weder globale Web-Bindungen noch andere
-Adapterinstanzen geändert werden. [Quelle:
-`saveCards()`](https://github.com/ioBroker/ioBroker.admin/blob/727bb83247192c151de8bb2abde049f0fd90c84b/src-admin/src/tabs/Intro.tsx#L944-L964).
-
-## Nachgewiesene Unterschiede zwischen Admin-Versionen
-
-Die Tabelle beschreibt den unveränderten Admin-Resolver. Das LOEWE-TV-Update
-0.1.20 verändert diesen Resolver nicht; es ergänzt die Behandlung des verlorenen
-Dateipfads auf der erreichbaren Web-Instanz. Die Analyse in 0.1.18 und 0.1.19
-hatte den allgemeinen Einstieg noch nicht ergänzt.
-
-Der Adapter hinterlegt den offiziellen String-Link
-`adapter/loewe-tv/epg.html?instance=%instance%`. Die Instanzübersicht und die
-automatischen Schnellzugriffskacheln verwenden dafür denselben Admin-Resolver.
-Die Stringform bleibt erforderlich, damit ältere Web-Versionen keine zusätzliche
-allgemeine Kachel neben jeder vorhandenen Web-Erweiterung erzeugen.
-
-| Geprüfter Admin-Stand | Verhalten bei gesetztem `native.webInstance` und `common.webExtension` |
-| --- | --- |
-| **7.7.28**, Commit `2c53eab8` | Ersetzt `%instance%` und lässt den relativen Admin-Pfad bestehen. Die untersuchte Web-Umschreibung findet hier nicht statt. |
-| **8.0.14**, Commit `e4b39b81` | Gibt sofort die Adresse der Web-Instanz mit `/<Adaptername>/` zurück. Pfad, Dateiname und TV-Nummer gehen verloren. Für beide TVs entsteht derselbe Link. Dies entspricht dem inzwischen gemeldeten `/loewe-tv/`-Ziel. Ab LOEWE-TV 0.1.20 behandelt der allgemeine Einstieg diese Anfrage mit Weiterleitung oder TV-Auswahl. |
-| **Aktueller Quellstand**, Commit `727bb832` | Erhält Pfad und TV-Nummer, setzt davor aber die Adresse der ausgewählten Web-Instanz. `127.0.0.1` und `localhost` bleiben dabei unverändert. Die aktuelle Cloud-Zuordnung kann anschließend den generischen `/adapter/...`-Pfad erzeugen. |
-
-Eine Loopback-Adresse bezeichnet im Browser dessen eigenen Rechner. Sie erreicht
-nicht den ioBroker-Server, wenn der Browser auf einem anderen Gerät läuft.
-Die Web-Erweiterung kann das nicht nachträglich korrigieren: Bei einer falschen
-Zieladresse erreicht die Anfrage ihren Server gar nicht. In Admin 8.0.14 ist
-zusätzlich die Information über die angeklickte TV-Instanz bereits verloren.
-
-Die vollständigen geprüften Resolver stehen in den offiziellen Quellen:
-[7.7.28](https://github.com/ioBroker/ioBroker.admin/blob/2c53eab88ab8dc5d1bef6104aeffd8748c3181bc/src-admin/src/helpers/utils.ts),
-[8.0.14](https://github.com/ioBroker/ioBroker.admin/blob/e4b39b810f5f12cd6e969e25a39ff6f3188a6608/src-admin/src/helpers/utils.ts),
-[aktueller Stand](https://github.com/ioBroker/ioBroker.admin/blob/727bb83247192c151de8bb2abde049f0fd90c84b/src-admin/src/helpers/utils.ts).
-Der Pfadverlust wurde auch für eine andere Web-Erweiterung unter Admin 8.0.14 in
-[Upstream-Issue 3661](https://github.com/ioBroker/ioBroker.admin/issues/3661)
-gemeldet. Ein späterer
-[Admin-Fix für fremde Dienst-Adressen](https://github.com/ioBroker/ioBroker.admin/commit/c63750b08943bce2ac75b9876df89fe91e1866ab)
-fügt keine Ausnahme für relative Admin-Seiten hinzu.
-
-## Warum der Adapter keine Web-Einstellungen umschreibt
-
-Ein Wechsel zu `./adapter/...`, einem führenden `/` oder expliziten
-`%admin_protocol%`-/`%admin_port%`-Platzhaltern behebt die geprüften
-Admin-8-Fälle nicht. Admin 8.0.14 wertet den individuellen Link in diesem Fall
-überhaupt nicht aus. Auch der aktuelle Resolver schreibt explizite
-Admin-Platzhalter auf den Web-Host um.
-
-Das Entfernen oder Umbenennen von `native.webInstance` wäre ebenfalls keine
-kompatible Reparatur. Der offizielle Web-Loader lädt eine Erweiterung nur bei
-exakter Auswahl seiner Instanz oder bei `*`. Eine statische `www`-Seite würde
-andere Pfade und eine andere Auswahl der Web-Server erhalten. Deshalb bleiben
-die funktionierenden Web-Erweiterungen und ihre beiden TV-Routen erhalten.
+Der offizielle Web-Loader benötigt `common.webExtension` und die Auswahl in
+`native.webInstance`, um die Erweiterung auf der richtigen Web-Instanz zu
+laden. Das Entfernen dieser Angaben würde auch die funktionierenden
+instanzbezogenen Web-/Cloud-Zugänge verändern. Die Korrektur verwendet deshalb
+den veröffentlichten Admin-Fix und erhält die vorhandene Web-Anbindung.
 [Quelle:
 Web-Loader und Dateiauslieferung](https://github.com/ioBroker/ioBroker.web/blob/e6402003159b17f41c0db1b4004fb37b7edfa684/src/main.ts).
 
-## Reviewbarer Vorschlag für ioBroker.admin
+## Historische Vorschläge für relative Admin-Adressen
 
-Unter [upstream/](upstream/) liegen zwei kleine **nicht installierte und bei
-ioBroker.admin nicht eingereichte** Patchvorschläge: für den geprüften aktuellen Admin-Stand und
-als Rückübertragung auf 8.0.14. Sie behandeln relative Admin-Assetpfade
-`adapter/<name>/...` beziehungsweise `./adapter/<name>/...` vor der automatischen
-Web-Erweiterungszuordnung. Danach ersetzt die vorhandene Logik `%instance%`;
-der Browser behält den tatsächlich geöffneten Admin-Ursprung und Unterpfad.
-Gewöhnliche Links auf Web-Erweiterungen durchlaufen weiterhin die bisherige Logik.
+Unter [upstream/](upstream/) bleiben zwei frühere **nicht installierte und bei
+ioBroker.admin nicht eingereichte** Patchvorschläge zur Quellenanalyse
+erhalten. Sie würden relative Admin-Assetpfade zusätzlich am geöffneten
+Admin-Ursprung belassen, statt sie auf die Web-Adresse umzuschreiben:
 
 - [Vorschlag für Commit 727bb832](upstream/admin-relative-links.patch)
 - [Vorschlag für Admin 8.0.14](upstream/admin-8.0.14-relative-links.patch)
 - [Offline-Reproduktion und Gegenproben](upstream/repro-admin-links.cjs)
 
-Die Reproduktion benötigt eine lokale Kopie der offiziellen
-`src-admin/src/helpers/utils.ts` und Node.js mit eingebautem
-`node:module.stripTypeScriptTypes`. Beispiel aus dem Adapterverzeichnis:
+Für den **Verlust von Dateipfad und TV-Nummer** sind diese Vorschläge durch den
+bereits veröffentlichten Fix in Admin 8.0.22 überholt. Die weitergehende Frage,
+ob eine relative Admin-Seite grundsätzlich ihren Admin-Ursprung behalten
+sollte, ist davon getrennt. Keiner dieser Vorschläge wird vom LOEWE-Update in
+eine fremde Admin-Installation eingespielt.
+
+Die historische Reproduktion kann weiterhin mit einer lokalen offiziellen
+Quelldatei ausgeführt werden:
 
 ```sh
 node docs/upstream/repro-admin-links.cjs /pfad/ioBroker.admin/src-admin/src/helpers/utils.ts
 ```
 
-Das Skript führt den unveränderten Resolver und die vorgeschlagene enge Änderung
-im Arbeitsspeicher aus. Es prüft TVs 0/1, Web-Bindungen `127.0.0.1`, `localhost`
-und `0.0.0.0`, HTTP/HTTPS sowie Admin im Proxy- und Cloud-Unterpfad. Es schreibt
-keine Admin-Datei, installiert nichts und ändert keine Live-Objekte. Der gleiche
-Aufruf mit der Quelle aus 7.7.28 dient als Gegenprobe ohne Web-Umschreibungszweig.
-
-Diese Vorschläge ersetzen keinen veröffentlichten Admin-Fix. Insbesondere wird
-ein installiertes Admin nicht durch ein Update des LOEWE-TV-Adapters gepatcht.
-Der allgemeine Web-Einstieg ab 0.1.20 fängt den gemeldeten Pfadverlust auf der
-erreichbaren Web-Adresse ab. Er kann weder eine falsche Zieladresse noch die in
-Admin verlorene Zuordnung zur ursprünglich angeklickten TV-Instanz reparieren.
-Die direkten URLs, eigenen Schnellzugriffskacheln und die Programmübersicht in
-der Adapterkonfiguration bleiben dafür verfügbar.
+Sie vergleicht unveränderten Quelltext und Vorschlag ausschließlich im
+Arbeitsspeicher. Sie schreibt keine Admin-Datei, installiert nichts und ändert
+keine Live-Objekte. Für die direkten Instanz-Links in LOEWE-TV 0.1.21 ist die
+veröffentlichte Admin-Version ab 8.0.22 maßgeblich.

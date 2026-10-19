@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.20",
+    "version": "0.1.21",
     "news": {
+      "0.1.21": {
+        "en": "Require the published Admin 8.0.22 link fix so each instance arrow opens its own programme guide without a TV-selection menu. Verify the full route with original Admin resolvers; retain existing per-TV Web and Cloud access.",
+        "de": "Den veröffentlichten Linkfix aus Admin 8.0.22 voraussetzen, damit jeder Instanz-Pfeil ohne TV-Auswahl seine eigene Programmübersicht öffnet. Den vollständigen Aufruf mit originalen Admin-Resolvern prüfen; vorhandenen Web- und Cloud-Zugriff je TV erhalten."
+      },
       "0.1.20": {
         "en": "Handle shortened Admin links at /loewe-tv/ in the selected web instance. Open the programme guide directly for one TV or offer a TV selector for multiple instances. Preserve per-TV Web and Cloud links, authentication and proxy paths.",
         "de": "Verkürzte Admin-Links unter /loewe-tv/ auf der ausgewählten Web-Instanz abfangen. Bei einem TV direkt die Programmübersicht öffnen, bei mehreren eine TV-Auswahl anzeigen. Instanzbezogene Web- und Cloud-Links, Anmeldung und Proxy-Pfade erhalten."
@@ -126,7 +130,7 @@
     ],
     "globalDependencies": [
       {
-        "admin": ">=7.7.28"
+        "admin": ">=8.0.22"
       }
     ],
     "stopTimeout": 500

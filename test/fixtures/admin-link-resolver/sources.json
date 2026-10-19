@@ -1,0 +1,48 @@
+{
+  "repository": "ioBroker/ioBroker.admin",
+  "license": {
+    "file": "LICENSE",
+    "commit": "2f0bf3e7ef3f11cb03a04b0305bb00674080a88d",
+    "path": "LICENSE",
+    "blobSha": "22d8d7254deef1035b90425f2e76adf7b9590b8e"
+  },
+  "resolvers": [
+    {
+      "version": "8.0.14",
+      "tag": "v8.0.14",
+      "commit": "e4b39b810f5f12cd6e969e25a39ff6f3188a6608",
+      "path": "src-admin/src/helpers/utils.ts",
+      "blobSha": "9f095ef4c0270aa2ba295fa8889b634183b48ea0",
+      "url": "https://github.com/ioBroker/ioBroker.admin/blob/e4b39b810f5f12cd6e969e25a39ff6f3188a6608/src-admin/src/helpers/utils.ts",
+      "sourceFile": "admin-8.0.14-utils.ts",
+      "fixture": "admin-8.0.14.cjs",
+      "sourceSha256": "e57d46af246879a3f9ab643966b8ce49bc0cdbec0870a90df42bf94a9082ee0b",
+      "fixtureSha256": "6bee68cae6b71e97d0e7bf1ea0884b23f27fde97885e6389d7310debeed288c3"
+    },
+    {
+      "version": "8.0.22",
+      "tag": "v8.0.22",
+      "commit": "4dbd23e49ed8d177f2bda06f9a40f4d490bffd58",
+      "path": "src-admin/src/helpers/utils.ts",
+      "blobSha": "d6df636aaa139f30ec8a982402794629008a0fe8",
+      "url": "https://github.com/ioBroker/ioBroker.admin/blob/4dbd23e49ed8d177f2bda06f9a40f4d490bffd58/src-admin/src/helpers/utils.ts",
+      "sourceFile": "admin-8.0.22-utils.ts",
+      "fixture": "admin-8.0.22.cjs",
+      "sourceSha256": "41680d3296f31bca8b0f0d60e50cd34fdc474bb040c4f015a0845d9c7205eb7d",
+      "fixtureSha256": "0f8d7e7df86ec52d6cd4e15dc1d3d56e142705449609393483f24b54dccd14cd"
+    },
+    {
+      "version": "8.3.0",
+      "tag": "v8.3.0",
+      "commit": "2f0bf3e7ef3f11cb03a04b0305bb00674080a88d",
+      "path": "src-admin/src/helpers/utils.ts",
+      "blobSha": "ed939c36665449f8dc7d426921eb7b85eb2583f9",
+      "url": "https://github.com/ioBroker/ioBroker.admin/blob/2f0bf3e7ef3f11cb03a04b0305bb00674080a88d/src-admin/src/helpers/utils.ts",
+      "sourceFile": "admin-8.3.0-utils.ts",
+      "fixture": "admin-8.3.0.cjs",
+      "sourceSha256": "b68937ae7c4bcc1b73a4b05d943f9bf7d691ba819a71b62f5cef43c4419b3231",
+      "fixtureSha256": "b0ce7e0672c0c4a146b999de6371a3c5d0cf2c848a276d713ad21da92672d043"
+    }
+  ],
+  "generatedWith": "Node.js v24.19.0, node:module.stripTypeScriptTypes, mode strip"
+}

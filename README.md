@@ -1,8 +1,8 @@
 # Loewe TV Adapter für ioBroker
 
-## Version 0.1.20
+## Version 0.1.21
 
-Build **`0.1.20-web-entry.1`** behebt den gemeldeten **404-Fehler „Datei index.html nicht gefunden“** beim Schnellzugriff auf **`/loewe-tv/`**. Die Web-Erweiterung bietet dort einen Einstieg: Bei einem verfügbaren TV öffnet sie dessen Programmübersicht direkt; bei mehreren TVs zeigt sie eine Auswahl mit Namen und Instanznummern. Nach dem Update muss die ausgewählte **Web-Instanz neu gestartet** werden. [Update](docs/INSTALLATION.md#update-auf-0120) · [Linkanleitung](docs/ADMIN_LINKS.md) · [Prüfbericht](docs/PRUEFBERICHT_0.1.20.md).
+Build **`0.1.21-direct-links.1`** sichert den **direkten EPG-Aufruf über die Instanz-Pfeile ohne TV-Auswahlmenü** ab. Voraussetzung ist jetzt **ioBroker Admin ab 8.0.22**: Dieser veröffentlichte Admin-Fix erhält die TV-Nummer beim Linkaufbau. Der Pfeil von `loewe-tv.0` öffnet die Programmübersicht von TV 0, der Pfeil von `loewe-tv.1` die von TV 1. **Zuerst Admin prüfen beziehungsweise aktualisieren und dessen Browserseite vollständig neu laden.** Ein LOEWE-Update allein ersetzt den alten Admin-Linkaufbau nicht. [Update](docs/INSTALLATION.md#update-auf-0121) · [Linkanleitung](docs/ADMIN_LINKS.md) · [Prüfbericht](docs/PRUEFBERICHT_0.1.21.md).
 
 Die XMLTV-Konfiguration aus 0.1.19 verwendet weiterhin die gespeicherte TV-Senderliste als Zuordnungstabelle, auch bei ausgeschaltetem TV. Ältere manuelle Zuordnungen werden übernommen; Hinweise zu einer fehlenden optionalen Quelle blockieren das Speichern der übrigen Konfiguration nicht. [XMLTV einrichten](docs/EPG_XMLTV.md).
 
@@ -12,9 +12,9 @@ Unter **EPG-Einstellungen** stehen **Nur TV**, **TV mit XMLTV-Ergänzung** und *
 
 ### Instanzlink und Schnellzugriff
 
-Der inzwischen gemeldete Zielpfad **`/loewe-tv/`** entspricht genau dem im offiziellen **Admin-8.0.14-Resolver** reproduzierten Pfadverlust: Dateiname und TV-Instanznummer werden bei der Umschreibung auf die Web-Adresse entfernt. Die tatsächlich installierte Admin-Version ist weiterhin unbekannt. Version 0.1.20 bedient diesen Pfad auf der ausgewählten Web-Instanz. Weil beide TV-Kacheln dabei dieselbe URL erhalten können, ist bei mehreren TVs eine Auswahl nötig; die ursprüngliche Instanznummer lässt sich aus dieser URL nicht zurückgewinnen.
+Der gemeldete Zielpfad **`/loewe-tv/`** entspricht dem Pfadverlust im Admin-8.0.14-Resolver, der auch noch in 8.0.21 enthalten ist. **Admin 8.0.22 behebt diesen Fehler bereits offiziell.** Der Adapter verlangt deshalb diesen Mindeststand und prüft die tatsächliche Linkauflösung mit veröffentlichtem Admin-Code. Die Vorlage `adapter/loewe-tv/epg.html?instance=%instance%` erhält damit die jeweilige TV-Nummer; auf Web folgt eine direkte Weiterleitung zur passenden `/loewe-tv.N/epg.html`. Dabei wird kein Auswahlmenü geöffnet. [Offizieller Admin-Fix](https://github.com/ioBroker/ioBroker.admin/releases/tag/v8.0.22).
 
-Für einen direkten Aufruf ohne Auswahl die instanzbezogenen Web-/Cloud-Links **`loewe-tv.0/epg.html`** beziehungsweise **`loewe-tv.1/epg.html`** verwenden. Eigene Schnellzugriffskacheln können diese vollständigen URLs übernehmen. Erzeugt Admin dagegen eine vom Browser nicht erreichbare Adresse wie `127.0.0.1`, bleibt die direkte Admin-Seite der passende Zugang; eine Web-Erweiterung kann nur Anfragen an ihren erreichbaren Server beantworten. Die [Linkanleitung](docs/ADMIN_LINKS.md) beschreibt diese Fälle. In LOEWE-TV und ioBroker.cloud bleibt dieselbe vorhandene Web-Instanz ausgewählt. [Web-/Cloud-Zugang](docs/EPG_GUI.md#über-iobrokercloud-remote-öffnen).
+Die instanzbezogenen Web-/Cloud-Links **`loewe-tv.0/epg.html`** und **`loewe-tv.1/epg.html`** bleiben erhalten. Der allgemeine Einstieg `/loewe-tv/` aus 0.1.20 bleibt für ältere, tatsächlich mehrdeutige Lesezeichen verfügbar; er ist nicht das Ziel der regulären Instanz-Pfeile unter unterstützten Admin-Versionen. Erzeugt Admin eine vom Browser nicht erreichbare Web-Adresse wie `127.0.0.1`, die direkte Admin-Seite verwenden. Die [Linkanleitung](docs/ADMIN_LINKS.md) erklärt diesen getrennten Adressfehler. In LOEWE-TV und ioBroker.cloud bleibt dieselbe vorhandene Web-Instanz ausgewählt. [Web-/Cloud-Zugang](docs/EPG_GUI.md#über-iobrokercloud-remote-öffnen).
 
 ### Fernbedienung und Aufnahmevormerkungen
 
@@ -37,7 +37,7 @@ Die folgenden Ergebnisse stammen aus den Gerätetests des Nutzers. Sie gelten f�
 ## Voraussetzungen
 
 - Node.js ab **22**.
-- ioBroker js-controller ab **6.0.11** und Admin ab **7.7.28**.
+- ioBroker js-controller ab **6.0.11** und Admin ab **8.0.22**.
 - Ein Loewe-Fernseher, der die Tablet-Schnittstelle auf TCP-Port **905** anbietet.
 - Eine Netzwerkverbindung vom ioBroker-Rechner zum Fernseher. Zum Einrichten den Fernseher einschalten.
 - Für Einschalten aus dem Standby: **Schnellstart am Fernseher aktivieren**, eine passende TV-MAC-Adresse und Unterstützung für Wake-on-LAN im Fernseher und im Netzwerk. Ohne Schnellstart ist das Einschalten per Datenpunkt laut Gerätetest nicht möglich; siehe [Hinweise zum Einschalten](docs/COMPATIBILITY.md#einschalten-aus-dem-standby).

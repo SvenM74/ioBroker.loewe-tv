@@ -6,7 +6,7 @@ Die Suche wird vom **ioBroker-Rechner** ausgeführt. Die Netzwerkverbindung des 
 
 ## Suchen und auswählen
 
-1. Installiere das neue Paket nach der [Updateanleitung](INSTALLATION.md#update-auf-0110). Lade Admin danach vollständig neu und prüfe `info.adapterBuild`: Für das aktuelle Paket muss dort **`0.1.10-epg-guide.1`** stehen.
+1. Installiere das neue Paket nach der [Updateanleitung](INSTALLATION.md#update-auf-0125). Lade Admin danach vollständig neu und prüfe `info.adapterBuild`: Für das aktuelle Paket muss dort **`0.1.25-tv-names.1`** stehen.
 2. Aktiviere die gewünschte Instanz, beispielsweise **`loewe-tv.0`**, in der Instanzübersicht und warte ihren Start ab.
 3. Öffne **Instanzen → loewe-tv.0 → Einstellungen → Verbindung** und betätige **Fernseher suchen**.
 4. Warte einige Sekunden. Öffne danach **Gefundene Fernseher** und wähle den gewünschten Eintrag. Jeder Treffer enthält die IP-Adresse und die verfügbaren Geräteangaben.
@@ -15,7 +15,19 @@ Die Suche wird vom **ioBroker-Rechner** ausgeführt. Die Netzwerkverbindung des 
 
 **Eine neue Instanz kann schon mit leerer TV-Adresse aktiviert werden.** Dafür ist keine vorläufige Adresse nötig. Die Suche steht dann zur Verfügung, während die TV-Steuerung auf eine gültige Konfiguration wartet. `info.connection=false` und der Hinweis zur fehlenden Adresse sind in diesem Zustand erwartbar. Die Adresse muss erst vor dem Speichern der ausgefüllten Konfiguration gültig sein. Ist **Fernseher suchen** deaktiviert, die Instanz zunächst in der Instanzübersicht aktivieren.
 
-Eine Suche beginnt ausschließlich durch **Fernseher suchen**. Das Öffnen der Konfiguration und der Auswahlliste liest nur das letzte Ergebnis dieses Adapterstarts. Neue Suchläufe ersetzen die Vorschläge; sie überschreiben keine eingetragene TV-Adresse und keine anderen Einstellungen. Die Trefferliste bleibt nur im Arbeitsspeicher und wird bei einem Adapterneustart verworfen. Für die Suche werden keine zusätzlichen ioBroker-Datenpunkte angelegt.
+Eine Suche beginnt ausschließlich durch **Fernseher suchen**. Das Öffnen der Konfiguration und der Auswahlliste liest nur das letzte Ergebnis dieses Adapterstarts. Neue Suchläufe ersetzen die Vorschläge; sie überschreiben keine eingetragene TV-Adresse und keine anderen Einstellungen. Die aktuelle Trefferliste bleibt im Arbeitsspeicher. Ab **0.1.25** werden die dabei erkannten Namen zusätzlich mit IP-Adresse und Steuerport gespeichert, damit die Web-Auswahl sie nach einem Neustart wieder anzeigen kann.
+
+## Fernsehernamen in der Web-Auswahl
+
+Die allgemeine Auswahlseite `/loewe-tv/` zeigt ab **0.1.25** den bei der Gerätesuche gemeldeten TV-Namen über der jeweiligen Instanzkennung. `loewe-tv.0` und `loewe-tv.1` bleiben unter den Namen sichtbar. Die Kacheln verwenden weiterhin ihre bisherigen direkten EPG-Links, auch über Cloud oder einen Reverse-Proxy.
+
+Nach dem Update die in LOEWE-TV ausgewählte Web-Instanz einmal neu starten. Anschließend in **jeder TV-Instanz** unter **Verbindung → Fernseher suchen** suchen, während die TVs eingeschaltet sind. Eine bereits richtige Geräteadresse beibehalten und die Auswahlseite neu laden. Für das Speichern der erkannten Namen ist kein zusätzlicher Speichern-Klick nötig. Wird anschließend die TV-Adresse geändert, die Konfiguration wie bisher speichern.
+
+Diese einmalige erneute Suche ist beim Wechsel von 0.1.24 oder älter nötig, weil die früheren Versionen die Namen beim Adapterneustart verworfen haben. Danach bleiben bekannte Namen auch bei ausgeschaltetem TV und nach weiteren Neustarts erhalten. Eine spätere erfolgreiche Suche aktualisiert einen am Fernseher geänderten Namen. Eine leere oder fehlgeschlagene Suche löscht bekannte Namen nicht.
+
+Die Zuordnung verwendet die **exakte IPv4-Adresse und den Steuerport** der gespeicherten Instanzkonfiguration. Die Namen aller Treffer werden gespeichert, damit auch eine erst nach der Suche gewählte IP-Adresse nach dem anschließenden Neustart ihren Namen behält. Für eine geänderte Adresse ohne passenden Treffer wird kein Name eines anderen TVs übernommen. Bei manuell eingetragenen DNS-Hostnamen gibt es keinen automatischen Abgleich mit einer gefundenen IP-Adresse.
+
+Ohne passenden erkannten Namen bleibt der vorhandene ioBroker-Instanzname beziehungsweise die neutrale Beschriftung **Fernseher 0/1** sichtbar. Es werden keine Raumbezeichnungen erfunden. Der nur lesbare Zustand `device.discoveryNames` enthält höchstens 256 Einträge mit `host`, `port` und `name`. Er dient ausschließlich der Anzeige und verändert keine TV-Steuerung, Senderkennung oder Aufnahmezuordnung. Das Öffnen der Webseite liest nur gespeicherte Daten und löst keine Netzwerksuche aus. [Prüfbericht](PRUEFBERICHT_0.1.25.md).
 
 ## Mehrere Fernseher und mehrere Adressen
 
@@ -70,7 +82,7 @@ Aus einer Antwort wird die HTTP-Adresse in `LOCATION` gelesen. Die Gerätebeschr
 | Gerätebeschreibungen | Höchstens **256 unterschiedliche URLs**, davon höchstens **3 je antwortender IP-Adresse**. Diese Grenze gilt bereits für UPnP-Kandidaten vor der Loewe-Erkennung. |
 | SSDP-Antworten | Höchstens **4.096** Nachrichten; einzelne Nachrichten höchstens **8 KiB**. |
 | Gerätebeschreibung | Höchstens **128 KiB** XML, höchstens **32** Verschachtelungsebenen und Geräteobjekte. |
-| Zusätzliche Antwortzeitlimits | Die Laufzeit begrenzt den Suchauftrag auf **8 Sekunden**, die Nachrichtenbehandlung auf **10 Sekunden**; die Admin-Schaltfläche beendet das Warten nach **15 Sekunden**. |
+| Zusätzliche Antwortzeitlimits | Die Laufzeit begrenzt die Netzwerksuche auf **8 Sekunden**, die Nachrichtenbehandlung einschließlich Namensspeicherung auf **10 Sekunden**; die Admin-Schaltfläche beendet das Warten nach **15 Sekunden**. |
 
 Werden Umfangs- oder Zeitgrenzen erreicht, kann das Ergebnis unvollständig sein. Erkannte Einschränkungen des Suchlaufs werden in der Oberfläche gemeldet; weitere Hinweise stehen im Debug-Protokoll. Einzelne unbrauchbare Gerätebeschreibungen oder nicht zugelassene Verweise werden übersprungen und müssen keine gesonderte Meldung erzeugen. Das Ergebnis enthält alle innerhalb dieser Grenzen erkannten TV-Adressen. Ein einzelnes fehlerhaftes oder nicht antwortendes UPnP-Gerät soll die übrigen Treffer nicht verhindern. Die Suche verwendet eigene asynchrone Netzwerkzugriffe und belegt keine Position in der SOAP-Befehlswarteschlange. Beim Beenden der Instanz wird eine laufende Suche abgebrochen.
 
@@ -91,7 +103,7 @@ Man: "ssdp:discover"
 
 Die Konfiguration verwendet die vorhandenen Admin-Komponenten `sendto` und `selectSendTo` mit nur vorübergehend gehaltenen Formularfeldern. Grundlage ist die [offizielle JSON-Config-Beschreibung von ioBroker Admin 7.0.23](https://github.com/ioBroker/ioBroker.admin/blob/v7.0.23/packages/jsonConfig/SCHEMA.md) sowie deren Implementierung von [ConfigSendto](https://github.com/ioBroker/ioBroker.admin/blob/v7.0.23/packages/jsonConfig/src/JsonConfigComponent/ConfigSendto.tsx) und [ConfigSelectSendTo](https://github.com/ioBroker/ioBroker.admin/blob/v7.0.23/packages/jsonConfig/src/JsonConfigComponent/ConfigSelectSendTo.tsx).
 
-## Prüfung dieser Version
+## Prüfung der ursprünglichen Version 0.1.9
 
 Am **18. Oktober 2026** bestanden mit **Node.js 24.19.0** alle **439 Tests** von `npm test`: keine Fehler, abgebrochenen oder übersprungenen Tests. `npm run check` bestätigte außerdem Paketmetadaten, Übersetzungen, Objektdefinitionen, Protokollvorlagen und JavaScript-Syntax. Gegenüber dem vorherigen Stand sind **48 Tests** für die neue Gerätesuche hinzugekommen.
 

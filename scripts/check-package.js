@@ -18,10 +18,10 @@ const catalog = readJson('docs/protocol-templates.json');
 const remote115 = readJson('docs/remote115-keys.json');
 
 assert.equal(pkg.name, `iobroker.${io.common.name}`);
-assert.equal(pkg.version, '0.1.24');
+assert.equal(pkg.version, '0.1.25');
 assert.equal(pkg.version, io.common.version);
 assert.ok(BUILD_ID.startsWith(`${pkg.version}-`), 'Build identifier must match package version');
-assert.equal(BUILD_ID, '0.1.24-xmltv-mapping.1');
+assert.equal(BUILD_ID, '0.1.25-tv-names.1');
 assert.ok(pkg.keywords.includes('xmltv'), 'Package keywords must describe optional XMLTV support');
 assert.equal(io.common.mode, 'daemon');
 assert.equal(io.common.messagebox, true, 'Admin list selection requires adapter messaging');
@@ -124,12 +124,16 @@ for (const advanced of [false, true]) {
         }
     }
     assert.equal([...ids].filter(id => /^remote\.[^.]+$/.test(id)).length, 44);
-    assert.equal(objects.length, 94);
+    assert.equal(objects.length, 95);
     for (const id of retiredStaticStates) {
         assert.ok(!ids.has(id), `Retired static data point must not be recreated: ${id}`);
     }
     assert.ok(![...ids].some(id => /^(?:api|media|channels\.radio)(?:\.|$)/.test(id)));
     assert.ok(ids.has('info.adapterBuild'));
+    const tvNames = objects.find(object => object.id === 'device.discoveryNames');
+    assert.equal(tvNames?.common.type, 'string');
+    assert.equal(tvNames?.common.read, true);
+    assert.equal(tvNames?.common.write, false, 'Discovered TV names are read-only display metadata');
     const journal = objects.find(object => object.id === 'recordings.jobs');
     assert.equal(journal?.common.write, false, 'Recording journal must be read-only');
     assert.equal(journal?.common.type, 'string');

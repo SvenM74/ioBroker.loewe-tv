@@ -1,6 +1,12 @@
 # Loewe TV Adapter für ioBroker
 
-## Version 0.1.24
+## Version 0.1.25
+
+Build **`0.1.25-tv-names.1`** zeigt auf der Auswahlseite `/loewe-tv/` die bei der Netzwerksuche erkannten **Fernsehernamen** an. Die Namen werden zusammen mit IP-Adresse und Steuerport gespeichert und bleiben auch nach einem Neustart oder bei ausgeschaltetem TV verfügbar. Jede Kachel behält darunter ihre Instanzkennung und ihren eigenen EPG-Link.
+
+Nach dem Update die ausgewählte Web-Instanz neu starten. In den Einstellungen von **beiden TV-Instanzen** unter **Verbindung → Fernseher suchen** einmal eine Suche bei eingeschalteten TVs ausführen und anschließend die Auswahlseite neu laden. Frühere Versionen hatten die Namen nur vorübergehend gespeichert. Die bereits passende TV-Adresse muss dabei nicht geändert werden. Spätere Suchläufe aktualisieren die Bezeichnung automatisch. [Einrichtung](docs/NETWORK_DISCOVERY.md#fernsehernamen-in-der-web-auswahl) · [Update](docs/INSTALLATION.md#update-auf-0125) · [Prüfbericht](docs/PRUEFBERICHT_0.1.25.md).
+
+## XMLTV-Korrektur seit 0.1.24
 
 Build **`0.1.24-xmltv-mapping.1`** korrigiert den Fehler **„XMLTV: Jede Senderzuordnung benötigt channel und xmltvId.“** beim Laden oder Prüfen der EPG-Konfiguration. Das Admin-Auswahlfeld kann einen leeren Wert ohne `xmltvId` übergeben. Bisher führte eine solche Zeile dazu, dass die gesamte Tabelle abgewiesen wurde. Die gemeinsame Normalisierung für Adapterstart, Senderliste und Quellenvorschau ergänzt jetzt eine fehlende Auswahl und ignoriert vollständig leere Altzeilen. Gültige manuelle und deaktivierte Zuordnungen bleiben erhalten.
 
@@ -24,7 +30,7 @@ Unter **EPG-Einstellungen** stehen **Nur TV**, **TV mit XMLTV-Ergänzung** und *
 
 ### Instanzlink und Schnellzugriff
 
-**Die automatischen Instanz-Pfeile sind unter älteren Admin-8-Versionen weiterhin nicht zuverlässig direkt.** Der in Admin 8.0.14 nachgewiesene Linkaufbau entfernt den EPG-Pfad und die TV-Nummer und führt beide Pfeile zu `/loewe-tv/`. Auch 0.1.24 behebt diesen Admin-Linkfehler nicht. Für den Aufruf ohne Auswahl die jeweilige direkte Web-Adresse **`/loewe-tv.0/epg.html`** beziehungsweise **`/loewe-tv.1/epg.html`** oder den Admin-Pfad **`/adapter/loewe-tv/epg.html?instance=0`** beziehungsweise **`?instance=1`** verwenden. [Direkte Zugänge](docs/ADMIN_LINKS.md).
+**Die automatischen Instanz-Pfeile sind unter älteren Admin-8-Versionen weiterhin nicht zuverlässig direkt.** Der in Admin 8.0.14 nachgewiesene Linkaufbau entfernt den EPG-Pfad und die TV-Nummer und führt beide Pfeile zu `/loewe-tv/`. Für den Aufruf ohne Auswahl die jeweilige direkte Web-Adresse **`/loewe-tv.0/epg.html`** beziehungsweise **`/loewe-tv.1/epg.html`** oder den Admin-Pfad **`/adapter/loewe-tv/epg.html?instance=0`** beziehungsweise **`?instance=1`** verwenden. Die allgemeine Auswahl zeigt ab 0.1.25 die gespeicherten Fernsehernamen. [Direkte Zugänge](docs/ADMIN_LINKS.md).
 
 Der allgemeine Einstieg `/loewe-tv/` aus 0.1.20 bleibt erhalten, damit ältere Links keine erneute 404 erzeugen. Bei mehreren TVs enthält er weiterhin eine Auswahl. Die vorhandenen instanzbezogenen Web-/Cloud-Kacheln und die gespeicherte Web-Adapter-Auswahl bleiben bestehen. Admin 8.0.22 enthält einen offiziellen Fix für seinen Linkaufbau; dieser Stand ist eine Möglichkeit für direkte automatische Pfeile und keine neue Betriebsvoraussetzung des TV-Adapters. [Offizieller Admin-Fix](https://github.com/ioBroker/ioBroker.admin/releases/tag/v8.0.22) · [Web-/Cloud-Zugang](docs/EPG_GUI.md#über-iobrokercloud-remote-öffnen).
 

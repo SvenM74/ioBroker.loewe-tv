@@ -166,6 +166,13 @@ geladenen TV-Erweiterung öffnet sich deren Programmübersicht direkt. Bei
 mehreren TVs erscheint die Auswahl. Ein gültiges `?instance=N` öffnet die
 angegebene Instanz direkt, sofern sie auf diesem Web-Adapter verfügbar ist.
 
+Ab **0.1.25** zeigen die Auswahlkacheln die bei der Netzwerksuche erkannten
+Fernsehernamen. Die gespeicherte IP-Adresse mit Steuerport bestimmt die
+Zuordnung; Instanzkennung und EPG-Ziel bleiben erhalten. Für bestehende
+Installationen nach dem Update in jeder TV-Instanz einmal **Fernseher suchen**
+ausführen. Anschließend bleiben die Namen auch bei ausgeschaltetem TV
+verfügbar. [Einrichtung der Namen](NETWORK_DISCOVERY.md#fernsehernamen-in-der-web-auswahl).
+
 Der Einstieg wird weiterhin von alten Lesezeichen **und von den betroffenen
 automatischen Admin-Links** benötigt. Die Auswahl enthält nur die tatsächlich
 auf dieser Web-Instanz geladenen LOEWE-Erweiterungen. Ungültige, mehrdeutige oder

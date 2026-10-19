@@ -6,16 +6,18 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const EpgWebExtension = require('../lib/web-extension');
+const { TV_NAMES_STATE } = require('../lib/tv-names');
 
 function web(options = {}) {
     const handlers = options.host?.handlers || [];
     const app = options.host?.app || { use(handler) { handlers.push(handler); } };
-    const adapter = options.host?.adapter || { namespace: options.webInstance || 'web.2', config: { socketio: options.socketio },
+    const adapter = options.host?.adapter || options.adapter || { namespace: options.webInstance || 'web.2', config: { socketio: options.socketio },
         sendTo() { assert.fail('Serving the guide must not send an adapter message.'); },
         setForeignState() { assert.fail('Serving the guide must not change ioBroker states.'); } };
     const instance = { _id: options.id || 'system.adapter.loewe-tv.3',
         common: { enabled: options.enabled !== false, name: options.name },
-        native: { webInstance: options.selected === undefined ? 'web.2' : options.selected } };
+        native: { webInstance: options.selected === undefined ? 'web.2' : options.selected,
+            host: options.tvHost, port: options.port } };
     const extension = new (options.Extension || EpgWebExtension)(null,
         { auth: options.auth === true, language: options.language || 'de' }, adapter, instance, app);
     return { extension, handlers, app, adapter, instance,
@@ -30,9 +32,9 @@ function web(options = {}) {
             let index = 0;
             function next() {
                 if (index >= handlers.length) { res.next = true; return; }
-                handlers[index++](req, res, next);
+                return handlers[index++](req, res, next);
             }
-            next();
+            res.done = Promise.resolve(next()).then(() => res);
             return res;
         },
     };
@@ -46,6 +48,24 @@ function pageLinks(response) {
 
 function tvLinks(response) {
     return pageLinks(response).filter(link => /(?:^|\/)loewe-tv\.\d+\/epg\.html$/.test(link));
+}
+
+function savedNames(devices) {
+    return { val: JSON.stringify({ schemaVersion: 1, devices }), ack: true };
+}
+
+function namesAdapter(options = {}) {
+    const reads = [];
+    const subscriptions = [];
+    const unsubscriptions = [];
+    return { namespace: 'web.2', config: {}, reads, subscriptions, unsubscriptions,
+        getForeignStateAsync(id) { reads.push(id); return options.read?.(id); },
+        subscribeForeignStatesAsync(id) { subscriptions.push(id); return options.subscribe?.(id); },
+        unsubscribeForeignStatesAsync(id) { unsubscriptions.push(id); return options.unsubscribe?.(id); },
+        sendTo() { assert.fail('TV labels must not trigger TV or adapter commands.'); },
+        setForeignState() { assert.fail('TV labels must not change ioBroker states.'); },
+        setForeignObject() { assert.fail('TV labels must not rename or restart an adapter.'); },
+    };
 }
 
 test('web extension only activates for the enabled TV and explicitly selected web instance', () => {
@@ -229,7 +249,8 @@ test('only installed regular SVG logos with safe names are exposed under the web
         readFileSync(filename) { read.push(filename); return content; },
     };
     const context = { module: { exports: {} }, __dirname: path.join(__dirname, '..', 'lib'), URL,
-        require(name) { return name === 'node:fs' ? fakeFs : require(name); } };
+        require(name) { return name === 'node:fs' ? fakeFs
+            : name === './tv-names' ? require('../lib/tv-names') : require(name); } };
     vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../lib/web-extension.js'), 'utf8'), context);
     const service = web({ Extension: context.module.exports });
     assert.equal(service.request('/loewe-tv.3/logos/station-hd.svg').code, 200);
@@ -501,4 +522,188 @@ test('late unloading of a replaced extension cannot remove its new registration'
     second.extension.unload();
     assert.equal(old.request('/loewe-tv/').headers.Location, '../loewe-tv.0/epg.html');
     assert.equal(old.request('/loewe-tv.0/epg.html').code, 200);
+});
+
+test('the first chooser reads both saved TV names while offline without delaying assets or direct TV links', async () => {
+    const resolvers = new Map();
+    const adapter = namesAdapter({ read: id => new Promise(resolve => resolvers.set(id, resolve)) });
+    const first = web({ adapter, id: 'system.adapter.loewe-tv.0', tvHost: '192.168.1.30', name: 'loewe-tv' });
+    const second = web({ host: first, id: 'system.adapter.loewe-tv.1', tvHost: '192.168.1.31', name: 'loewe-tv' });
+    const response = first.request('/loewe-tv/');
+    assert.equal(response.code, null, 'The initial chooser waits for its short local database read.');
+    assert.equal(first.request('/loewe-tv.0/epg.html').code, 200);
+    assert.equal(first.request('/loewe-tv.1/epg.js').code, 200);
+    assert.equal(first.request('/loewe-tv/epg-entry.css').code, 200);
+    assert.equal(first.request('/loewe-tv/?instance=1').headers.Location, '../loewe-tv.1/epg.html');
+    await new Promise(resolve => setImmediate(resolve));
+    const identities = [
+        { host: '192.168.1.30', port: 905, name: 'Loewe Wohnzimmer' },
+        { host: '192.168.1.31', port: 905, name: 'Loewe Schlafzimmer' },
+    ];
+    const stateIds = [0, 1].map(instance => `loewe-tv.${instance}.${TV_NAMES_STATE}`);
+    assert.deepEqual(adapter.reads, stateIds);
+    assert.deepEqual(adapter.subscriptions, stateIds);
+    for (const resolve of resolvers.values()) resolve(savedNames(identities));
+    await response.done;
+    let readyCalled = false;
+    await first.extension.waitForReady(extension => {
+        assert.equal(extension, first.extension);
+        readyCalled = true;
+    });
+    assert.equal(readyCalled, true, 'The official callback-style Web readiness hook is supported.');
+    assert.match(String(response.body), /Loewe Wohnzimmer/);
+    assert.match(String(response.body), /Loewe Schlafzimmer/);
+    assert.doesNotMatch(String(response.body), /Fernseher [01]/);
+    assert.deepEqual(tvLinks(response), ['../loewe-tv.0/epg.html', '../loewe-tv.1/epg.html']);
+    first.extension.unload();
+    second.extension.unload();
+    assert.deepEqual(adapter.unsubscriptions, [], 'Web owns shared subscriptions, including other readers of these states.');
+});
+
+test('a newer name update wins over a late initial read and cannot change another TV', async () => {
+    let finishRead;
+    let readStarted;
+    const started = new Promise(resolve => { readStarted = resolve; });
+    const adapter = namesAdapter({ read: id => id.startsWith('loewe-tv.0.') ? new Promise(resolve => {
+        finishRead = resolve;
+        readStarted();
+    }) : savedNames([{ host: '192.168.1.31', port: 905, name: 'Schlafzimmer' }]) });
+    const first = web({ adapter, id: 'system.adapter.loewe-tv.0', tvHost: '192.168.1.30' });
+    const second = web({ host: first, id: 'system.adapter.loewe-tv.1', tvHost: '192.168.1.31' });
+    await started;
+    const changed = savedNames([{ host: '192.168.1.30', port: 905, name: 'Neuer TV-Name' }]);
+    first.extension.stateChange(`loewe-tv.0.${TV_NAMES_STATE}`, changed);
+    second.extension.stateChange(`loewe-tv.0.${TV_NAMES_STATE}`, changed);
+    first.extension.stateChange(`loewe-tv.0.${TV_NAMES_STATE}.other`, savedNames([
+        { host: '192.168.1.30', port: 905, name: 'Unrelated state' },
+    ]));
+    first.extension.stateChange(`loewe-tv.0.${TV_NAMES_STATE}`, { ...changed, val: '{}', ack: false });
+    finishRead(savedNames([{ host: '192.168.1.30', port: 905, name: 'Veralteter TV-Name' }]));
+    await Promise.all([first.extension.waitForReady(), second.extension.waitForReady()]);
+    const response = first.request('/loewe-tv/');
+    assert.match(String(response.body), /Neuer TV-Name/);
+    assert.match(String(response.body), /Schlafzimmer/);
+    assert.doesNotMatch(String(response.body), /Veralteter|Unrelated/);
+    first.extension.stateChange(`loewe-tv.0.${TV_NAMES_STATE}`, null);
+    assert.match(String(first.request('/loewe-tv/').body), /Fernseher 0/);
+    first.extension.unload();
+    second.extension.unload();
+});
+
+test('saved names require the configured IP and port and their markup is escaped', async () => {
+    const adapter = namesAdapter({ read: () => savedNames([
+        { host: '192.168.1.30', port: 905, name: 'TV <script>alert("x")</script> & Küche' },
+    ]) });
+    const first = web({ adapter, id: 'system.adapter.loewe-tv.0', tvHost: '192.168.1.30', port: '905' });
+    const changedHost = web({ host: first, id: 'system.adapter.loewe-tv.1', tvHost: '192.168.1.31', name: 'Eigenes Gästezimmer' });
+    const changedPort = web({ host: first, id: 'system.adapter.loewe-tv.2', tvHost: '192.168.1.30', port: 906 });
+    const hostname = web({ host: first, id: 'system.adapter.loewe-tv.3', tvHost: 'tv.local' });
+    const services = [first, changedHost, changedPort, hostname];
+    await Promise.all(services.map(service => service.extension.waitForReady()));
+    const response = first.request('/loewe-tv/');
+    const html = String(response.body);
+    assert.equal((html.match(/&lt;script&gt;/g) || []).length, 1);
+    assert.match(html, /&quot;x&quot;/);
+    assert.match(html, /&amp; Küche/);
+    assert.doesNotMatch(html, /<script\b/i);
+    assert.match(html, /Eigenes Gästezimmer/);
+    assert.match(html, /Fernseher 2/);
+    assert.match(html, /Fernseher 3/);
+    assert.equal(tvLinks(response).length, 4);
+    first.extension.stateChange(`loewe-tv.0.${TV_NAMES_STATE}`, { val: '{broken', ack: true });
+    assert.match(String(first.request('/loewe-tv/').body), /Fernseher 0/);
+    for (const service of services) service.extension.unload();
+});
+
+test('name initialization has a fixed deadline when the state database does not answer', async () => {
+    const timers = [];
+    const context = { module: { exports: {} }, __dirname: path.join(__dirname, '..', 'lib'), URL,
+        require(name) {
+            if (name === 'node:timers') return {
+                setTimeout(callback, delay) { const timer = { callback, delay }; timers.push(timer); return timer; },
+                clearTimeout(timer) { if (timer) timer.cleared = true; },
+            };
+            return name === './tv-names' ? require('../lib/tv-names') : require(name);
+        } };
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../lib/web-extension.js'), 'utf8'), context);
+    const adapter = namesAdapter({ read: () => new Promise(() => {}) });
+    const first = web({ Extension: context.module.exports, adapter, id: 'system.adapter.loewe-tv.0', tvHost: '192.168.1.30' });
+    const second = web({ Extension: context.module.exports, host: first, id: 'system.adapter.loewe-tv.1', tvHost: '192.168.1.31' });
+    const response = first.request('/loewe-tv/');
+    assert.equal(response.code, null);
+    assert.equal(first.request('/loewe-tv.0/epg.html').code, 200);
+    assert.equal(first.request('/loewe-tv/?instance=0').code, 302);
+    assert.equal(timers.length, 2);
+    for (const timer of timers) {
+        assert.ok(timer.delay > 0 && timer.delay <= 2000, 'The chooser has a short, bounded initialization wait.');
+        timer.callback();
+    }
+    await response.done;
+    assert.equal(response.code, 200);
+    assert.match(String(response.body), /Fernseher 0/);
+    assert.match(String(response.body), /Fernseher 1/);
+    assert.ok(timers.every(timer => timer.cleared));
+    first.extension.unload();
+    second.extension.unload();
+});
+
+test('name database failures fall back safely and a completed read cannot revive an unloaded extension', async () => {
+    const adapter = namesAdapter({
+        subscribe() { throw new Error('Subscription unavailable'); },
+        read: () => Promise.reject(new Error('State unavailable')),
+        unsubscribe() { assert.fail('The extension must not remove Web-owned subscriptions.'); },
+    });
+    const first = web({ adapter, id: 'system.adapter.loewe-tv.0', tvHost: '192.168.1.30' });
+    const second = web({ host: first, id: 'system.adapter.loewe-tv.1', tvHost: '192.168.1.31' });
+    await Promise.all([first.extension.waitForReady(), second.extension.waitForReady()]);
+    assert.equal(first.request('/loewe-tv/').code, 200);
+    first.extension.unload();
+    second.extension.unload();
+
+    let finishRead;
+    let readStarted;
+    const started = new Promise(resolve => { readStarted = resolve; });
+    const lateAdapter = namesAdapter({ read: () => new Promise(resolve => { finishRead = resolve; readStarted(); }) });
+    const late = web({ adapter: lateAdapter, tvHost: '192.168.1.30' });
+    await started;
+    late.extension.unload();
+    finishRead(savedNames([{ host: '192.168.1.30', port: 905, name: 'Name nach Entladen' }]));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(late.extension.name, 'Fernseher 3');
+    assert.equal(late.request('/loewe-tv/').next, true);
+    assert.equal(late.extension.welcomePage(), null);
+    assert.deepEqual(lateAdapter.unsubscriptions, []);
+});
+
+test('replacing a TV extension preserves its name subscription despite a late old subscription or unload', async () => {
+    for (const delayOldSubscription of [false, true]) {
+        let finishOldSubscription;
+        let subscribeStarted;
+        let subscribeCount = 0;
+        const started = new Promise(resolve => { subscribeStarted = resolve; });
+        const adapter = namesAdapter({
+            read: () => savedNames([{ host: '192.168.1.30', port: 905, name: 'Wohnzimmer' }]),
+            subscribe() {
+                subscribeCount += 1;
+                if (subscribeCount !== 1 || !delayOldSubscription) return;
+                return new Promise(resolve => { finishOldSubscription = resolve; subscribeStarted(); });
+            },
+        });
+        const old = web({ adapter, id: 'system.adapter.loewe-tv.0', tvHost: '192.168.1.30' });
+        if (delayOldSubscription) await started;
+        else await old.extension.waitForReady();
+        const replacement = web({ host: old, id: 'system.adapter.loewe-tv.0', tvHost: '192.168.1.30' });
+        old.extension.unload();
+        finishOldSubscription?.();
+        await replacement.extension.waitForReady();
+        await new Promise(resolve => setImmediate(resolve));
+        assert.deepEqual(adapter.unsubscriptions, [], 'The old instance must not remove the replacement subscription.');
+        replacement.extension.stateChange(`loewe-tv.0.${TV_NAMES_STATE}`, savedNames([
+            { host: '192.168.1.30', port: 905, name: 'Aktueller Name' },
+        ]));
+        assert.equal(replacement.extension.name, 'Aktueller Name');
+        replacement.extension.unload();
+        old.extension.unload();
+        assert.deepEqual(adapter.unsubscriptions, []);
+    }
 });

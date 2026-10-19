@@ -9,6 +9,8 @@ const { AdapterRuntime } = require('../lib/adapter-runtime');
 const { parseChannelPage, parseTimerList } = require('../lib/loewe-client');
 const { runPowerOn } = require('../lib/power-on');
 const { createCache } = require('../lib/epg-data');
+const { TV_NAMES_STATE, parseTvNames, nameForTv } = require('../lib/tv-names');
+const EpgWebExtension = require('../lib/web-extension');
 
 // Explicit upgrade fixtures: these public states were retired in the TV-only build.
 const RETIRED_STATIC_STATES = [
@@ -735,8 +737,136 @@ test('TV discovery works with an empty host and loading choices never searches a
     assert.equal(requests.length, 1, 'Reopening the selector only reads cached results');
     assert.equal(requests[0].port, 905);
     assert.deepEqual(h.adapter.config, before, 'Search never saves an IP or changes native configuration');
-    assert.equal(h.adapter.writes.length, writes, 'Discovery creates no persistent data points or status writes');
+    assert.deepEqual(h.adapter.writes.slice(writes).map(state => state.id), [TV_NAMES_STATE],
+        'Discovery only persists bounded TV names; it does not write controls or configuration');
+    assert.deepEqual(parseTvNames(h.adapter.states.get(TV_NAMES_STATE).val), { schemaVersion: 1, devices: [
+        { host: '192.0.2.10', port: 905, name: 'Wohnzimmer' },
+        { host: '192.0.2.20', port: 905, name: 'Schlafzimmer' },
+    ] });
     assert.equal(h.client.calls.length, 0, 'No authentication, SOAP request or TV command during search');
+});
+
+test('names found before choosing a host survive restart, stay instance-local and render on the correct web links', async t => {
+    let scans = 0;
+    const first = await harness(t, { host: '', pollInterval: 0, channelListView: '' }, () => {}, {
+        async tvDiscovery() {
+            scans++;
+            return { devices: [
+                { host: '192.0.2.10', name: 'Loewe Wohnzimmer', apiReachable: true },
+                { host: '192.0.2.20', name: 'Loewe Schlafzimmer', apiReachable: true },
+            ], warnings: [] };
+        },
+    });
+    assert.equal((await first.runtime.handleMessage('discoverTvs', { port: 905 })).result, 'discoveryComplete');
+    const saved = structuredClone(first.adapter.states.get(TV_NAMES_STATE));
+    await first.runtime.stop();
+    const restarted = [];
+    for (const [instance, host] of [[0, '192.0.2.10'], [1, '192.0.2.20']]) {
+        restarted.push(await harness(t, { host, pollInterval: 0, channelListView: '' }, adapter => {
+            adapter.namespace = `loewe-tv.${instance}`;
+            adapter.states.set(TV_NAMES_STATE, structuredClone(saved));
+        }, { tvDiscovery() { assert.fail('Restoring names must not start a new network search'); } }));
+    }
+    assert.equal(nameForTv(restarted[1].runtime._tvNames, restarted[1].runtime.config.host, 905), 'Loewe Schlafzimmer');
+    assert.equal(nameForTv(restarted[1].runtime._tvNames, '192.0.2.30', 905), '');
+    assert.equal(nameForTv(restarted[1].runtime._tvNames, '192.0.2.20', 1905), '');
+    const unrelated = await harness(t, { host: '192.0.2.20', pollInterval: 0 }, adapter => {
+        adapter.namespace = 'loewe-tv.2';
+    });
+    assert.equal(nameForTv(unrelated.runtime._tvNames, '192.0.2.20', 905), '');
+
+    const reads = [];
+    const handlers = [];
+    const app = { use(handler) { handlers.push(handler); } };
+    const webAdapter = { namespace: 'web.2', config: {},
+        async getForeignStateAsync(id) {
+            reads.push(id);
+            const source = restarted.find(item => id === `${item.adapter.namespace}.${TV_NAMES_STATE}`);
+            assert.ok(source, 'The web extension must read only its own loaded TV instance');
+            return structuredClone(source.adapter.states.get(TV_NAMES_STATE));
+        },
+        sendTo() { assert.fail('Displaying names must not issue TV commands'); },
+        setForeignState() { assert.fail('Displaying names must not change states'); },
+    };
+    const extensions = restarted.map(item => new EpgWebExtension(null, { language: 'de' }, webAdapter, {
+        _id: `system.adapter.${item.adapter.namespace}`,
+        common: { enabled: true, name: 'loewe-tv' },
+        native: { host: item.adapter.config.host, port: 905, webInstance: 'web.2' },
+    }, app));
+    t.after(() => { for (const extension of extensions) extension.unload(); });
+    await Promise.all(extensions.map(extension => extension.waitForReady()));
+    const result = { headers: {}, status(code) { this.code = code; return this; },
+        setHeader(key, value) { this.headers[key] = value; }, send(body) { this.body = body; return this; } };
+    await handlers[0]({ method: 'GET', url: '/loewe-tv/' }, result, () => assert.fail('Expected the TV chooser'));
+    assert.equal(result.code, 200);
+    assert.match(String(result.body), /href="\.\.\/loewe-tv\.0\/epg\.html"[^]*?class="tv-name">Loewe Wohnzimmer<\/span>/u);
+    assert.match(String(result.body), /href="\.\.\/loewe-tv\.1\/epg\.html"[^]*?class="tv-name">Loewe Schlafzimmer<\/span>/u);
+    assert.doesNotMatch(String(result.body), /class="tv-name">Fernseher [01]</u);
+    assert.deepEqual(reads.sort(), [`loewe-tv.0.${TV_NAMES_STATE}`, `loewe-tv.1.${TV_NAMES_STATE}`]);
+    assert.equal(scans, 1);
+    assert.equal(first.client.calls.length + restarted.reduce((count, item) => count + item.client.calls.length, 0), 0);
+});
+
+test('offline and failed scans retain names, and changing one discovered name preserves the other TV', async t => {
+    const results = [
+        { devices: [{ host: '192.0.2.10', name: 'Loewe A', apiReachable: true },
+            { host: '192.0.2.20', name: 'Loewe B', apiReachable: true }], warnings: [] },
+        { devices: [], warnings: [] },
+        codedError('DISCOVERY_UNAVAILABLE', 'Offline'),
+        { devices: [{ host: '192.0.2.10', name: 'Neuer Name', apiReachable: true }], warnings: [] },
+    ];
+    const h = await harness(t, { pollInterval: 0 }, () => {}, {
+        async tvDiscovery() {
+            const next = results.shift();
+            if (next instanceof Error) throw next;
+            return next;
+        },
+    });
+    await h.runtime.handleMessage('discoverTvs', {});
+    const saved = h.adapter.states.get(TV_NAMES_STATE).val;
+    const writes = h.adapter.writes.length;
+    assert.equal((await h.runtime.handleMessage('discoverTvs', {})).result, 'discoveryEmpty');
+    assert.equal((await h.runtime.handleMessage('discoverTvs', {})).result, 'discoveryFailed');
+    assert.equal(h.adapter.states.get(TV_NAMES_STATE).val, saved);
+    assert.equal(h.adapter.writes.length, writes);
+    await h.runtime.handleMessage('discoverTvs', {});
+    const updated = parseTvNames(h.adapter.states.get(TV_NAMES_STATE).val);
+    assert.equal(nameForTv(updated, '192.0.2.10', 905), 'Neuer Name');
+    assert.equal(nameForTv(updated, '192.0.2.20', 905), 'Loewe B');
+    assert.equal(h.client.calls.length, 0);
+});
+
+for (const failingOperation of ['extendObjectAsync', 'getStateAsync', 'setStateAsync']) {
+    test(`optional TV-name ${failingOperation} failure leaves startup, discovery and remote control usable`, async t => {
+        const h = await harness(t, { pollInterval: 0 }, adapter => {
+            const original = adapter[failingOperation].bind(adapter);
+            adapter[failingOperation] = async (id, ...args) => {
+                if (id === TV_NAMES_STATE) throw codedError('DATABASE', 'Synthetic metadata storage error');
+                return original(id, ...args);
+            };
+        }, { async tvDiscovery() {
+            return { devices: [{ host: '192.0.2.10', name: 'Loewe A', apiReachable: true }], warnings: [] };
+        } });
+        assert.ok(h.runtime.client);
+        for (let attempt = 0; attempt < 2; attempt++) {
+            assert.equal((await h.runtime.handleMessage('discoverTvs', {})).result, 'discoveryComplete');
+            assert.match((await h.runtime.handleMessage('getDiscoveredTvs', {}))[1].label, /Loewe A/u);
+        }
+        assert.equal(h.client.calls.length, 0, 'Metadata retries never send a TV request');
+        await write(h, 'remote.home', true);
+        assert.equal(calls(h.client, 'key').length, 1);
+        assert.equal(h.adapter.logs.filter(entry => entry.level === 'warn' && entry.text.includes('Namensspeicher')).length, 1);
+    });
+}
+
+test('malformed saved TV names do not prevent startup or get assigned to a newly configured TV', async t => {
+    const h = await harness(t, { host: '192.0.2.20', pollInterval: 0 }, adapter => {
+        adapter.states.set(TV_NAMES_STATE, { val: '{broken snapshot', ack: true });
+    });
+    assert.deepEqual(h.runtime._tvNames, { schemaVersion: 1, devices: [] });
+    assert.equal(nameForTv(h.runtime._tvNames, h.runtime.config.host, 905), '');
+    assert.ok(h.runtime.client);
+    assert.equal(h.client.calls.length, 0);
 });
 
 test('TV search uses the unsaved control port and keeps caches scoped to that port and instance', async t => {
@@ -836,6 +966,8 @@ test('stopping cancels TV discovery immediately and ignores late search results'
     assert.equal(h.runtime._tvDiscoveryResult, null);
     assert.equal(h.runtime._tvDiscoveryPromise, null);
     assert.equal(h.runtime._tvDiscoveryAbort, null);
+    assert.deepEqual(parseTvNames(h.adapter.states.get(TV_NAMES_STATE).val), { schemaVersion: 1, devices: [] },
+        'Late discovery metadata must not be persisted after shutdown');
     assert.equal((await h.runtime.handleMessage('discoverTvs', {})).error, 'discoveryUnavailable');
 });
 

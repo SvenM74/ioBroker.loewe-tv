@@ -2,29 +2,72 @@
 
 Stand: **19. Oktober 2026**.
 
+## Senderlogos einrichten
+
+Ab **0.1.23** enthält das Register **Senderlogos** eine Zuordnungstabelle aus der gespeicherten TV-Senderliste und den Katalog von [tv-logo/tv-logos](https://github.com/tv-logo/tv-logos). Die Tabelle ist für jede Adapterinstanz getrennt. Die Sender müssen nicht von Hand angelegt werden; ein ausgeschalteter Fernseher und deaktiviertes EPG verhindern die lokale Zuordnung nicht. Eine laufende Adapterinstanz und eine bereits gespeicherte TV-Senderliste sind erforderlich.
+
+1. Die Einstellungen der betreffenden LOEWE-Instanz öffnen und **Senderlogos** wählen.
+2. Die **Logo-Quelle** wählen. Voreingestellt ist **Fernseher und Logo-Verzeichnis**.
+3. Das **bevorzugte Land** wählen: Deutschland, Österreich, Schweiz oder alle Länder. Deutschland ist der Standard. Diese Einstellung entscheidet zwischen gleichwertigen Länderfassungen; der gesamte Katalog bleibt manuell auswählbar.
+4. Die automatisch geladenen Senderzeilen prüfen. **TV-Sender und Logos neu laden** lädt die gespeicherte Liste erneut. **Logo-Zuordnung erneut prüfen** berechnet die Treffer für den aktuellen Formularstand.
+5. Bei Bedarf in einer Zeile **Manuell** wählen und im Feld daneben nach dem passenden Logo suchen. Zum Beispiel finden `SAT.1` und `ZDFHD` auch die getrennt geschriebenen Katalognamen. Einen Treffer auswählen; ein bloß eingegebener Sendername ist noch kein gültiger Dateipfad.
+6. Nach Änderungen die Zuordnung erneut prüfen und **Speichern**. Anschließend die Programmübersicht neu laden.
+
+Während eine Liste lädt, zunächst die Antwort abwarten. Die Tabelle übernimmt Antworten nur, wenn der Formularstand noch zur Anfrage passt. Ein Fehler liefert keine leere Ersatztabelle und verändert keine gespeicherten Einstellungen. Korrekturen für vorübergehend fehlende TV-Sender bleiben erhalten. Die Original-Tabelle der unterstützten Admin-Basis puffert Änderungen kurz; weitere Hinweise zur getesteten Formularkompatibilität stehen im [Prüfbericht](PRUEFBERICHT_0.1.23.md).
+
+| Zuordnung je TV-Sender | Wirkung |
+|---|---|
+| **Automatisch** | Verwendet einen eindeutigen Treffer aus dem Verzeichnis. Mehrere gleichwertige Kandidaten werden zur manuellen Auswahl vorgeschlagen. |
+| **Manuell** | Verwendet genau den ausgewählten Katalogpfad. Ein leerer oder nicht mehr enthaltener Pfad wird angezeigt und führt zu keinem automatischen Ersatztreffer im Verzeichnis. |
+| **Kein Verzeichnislogo** | Deaktiviert nur das Verzeichnislogo dieses Senders. Die übrigen gewählten Quellen und eine ausdrücklich eingetragene eigene Bildadresse bleiben möglich. |
+
+Die Spalte **TV-Bildadresse** zeigt, ob der gespeicherte Senderkatalog eine gültige TV-Bildadresse enthält. Sie ist kein Downloadtest. Unter **Letzte Prüfung der Logo-Zuordnung** steht das Ergebnis der letzten lokalen Prüfung; nach Änderungen erneut prüfen. Beide Spalten dienen der Anzeige und ändern keine TV-Dienstkennung.
+
 ## Auswahl in der Programmübersicht
 
-Die Anzeige versucht verfügbare Bilder in dieser Reihenfolge:
+Eine ausdrücklich eingetragene **manuelle Logo-Adresse hat in allen Modi Vorrang**. Danach bestimmt die gewählte Quelle die automatische Auswahl:
 
-1. Eine ausdrücklich für diesen TV-Sender eingetragene Logo-Adresse.
-2. Die vom Fernseher gelieferte Bildadresse.
-3. Das Logo des eindeutig zugeordneten XMLTV-Senders, sofern die externe Quelle eines enthält.
-4. Ein passendes mitgeliefertes Logo.
-5. Den ursprünglichen Sendernamen, falls kein Bild geladen werden kann.
+| Logo-Quelle | Reihenfolge nach einer manuellen Bildadresse |
+|---|---|
+| **Nur Fernseher** | TV-Bild, anschließend Sendername |
+| **Nur Logo-Verzeichnis** | Zugeordnetes Verzeichnislogo, anschließend Sendername |
+| **Fernseher und Logo-Verzeichnis** | TV-Bild → Verzeichnislogo → eindeutig zugeordnetes XMLTV-Bild → mitgeliefertes SVG → Sendername |
 
-Beim Laden eines Senderbildes wird jede Adresse höchstens einmal versucht. Schlägt eine Quelle fehl, bleibt die nächste passende Quelle verfügbar. Sendernummer, Suche, Tooltip und Screenreader behalten den ursprünglichen Namen aus der TV-Senderliste. Das XMLTV-Bild wird erst nach der Zuordnung zum konkreten TV-Dienst übernommen; die Logoauswahl selbst ordnet keine EPG-Programme zu.
+Jede Adresse wird beim Laden eines Senderbildes höchstens einmal versucht. Schlägt sie fehl, folgt die nächste erlaubte Quelle. Sendernummer, Suche, Tooltip und Screenreader behalten den ursprünglichen Namen aus der TV-Liste. Das XMLTV-Bild wird erst nach der Zuordnung zum konkreten TV-Dienst übernommen. Eine Logo-Zuordnung ersetzt oder verändert keine EPG-Zuordnung, Programmdaten, Umschaltziele oder Aufnahmen.
 
-Alle Sender haben dieselbe quadratische Anzeigefläche: **48 × 48 Pixel** auf größeren Ansichten und **44 × 44 Pixel** bis einschließlich 640 Pixel Ansichtsbreite. `object-fit: contain` erhält die ursprünglichen Proportionen der Grafik; breite oder hohe Logos werden weder gestreckt noch beschnitten. Die freie Fläche erhält einen dezenten hellen Hintergrund, ohne die Markenfarben zu verändern. Auch der Sendername als Ersatz bleibt in dieser Fläche. Er kann dort auf drei sichtbare Zeilen begrenzt sein; der vollständige ursprüngliche Name bleibt im Tooltip, in der Suche und für Screenreader erhalten. Die Sendernummer steht weiterhin separat daneben.
+Alle Sender haben dieselbe quadratische Anzeigefläche: **48 × 48 Pixel** auf größeren Ansichten und **44 × 44 Pixel** bis einschließlich 640 Pixel Ansichtsbreite. `object-fit: contain` erhält die ursprünglichen Proportionen; breite oder hohe Logos werden weder gestreckt noch beschnitten. Die freie Fläche erhält den vorhandenen dezenten Hintergrund. Auch der Sendername als Ersatz bleibt in dieser Fläche. Er kann dort auf drei sichtbare Zeilen begrenzt sein; der vollständige Name bleibt im Tooltip, in der Suche und für Screenreader erhalten. Die Sendernummer steht separat daneben.
 
-Die optionalen manuellen Einträge liegen in `native.channelLogoOverrides` als Zeilen mit `channel` und `url`: `channel` bezeichnet die exakte Service-ID aus dem TV-Senderkatalog, `url` eine absolute HTTP-/HTTPS-Bildadresse. Ein Sendername oder Programmplatz ersetzt diese Kennung nicht. Einträge ändern ausschließlich das Bild des betreffenden TV-Senders. TV- und XMLTV-Adressen sowie ein passendes mitgeliefertes Logo bleiben als Ersatz erhalten.
+Die TV-Schnittstelle enthält das optionale Attribut `thumbnailUrl` an `ResultItemReference` in der Antwort auf `GetChannelList`. Der [Parser](../lib/loewe-client.js) liest es bereits; seit 0.1.14 bleibt es über den Senderkatalog bis zur Programmübersicht erhalten. Für Logos werden keine zusätzlichen TV-Abfragen gestartet. Ob der konkrete Fernseher Bildadressen liefert, ist am Gerät zu prüfen. Eine vorhandene Liste kann bei eingeschaltetem TV einmal mit `channels.refresh=true` aktualisiert werden.
 
-Die TV-Schnittstelle enthält das optionale Attribut `thumbnailUrl` an `ResultItemReference` in der Antwort auf `GetChannelList`. Der bestehende Parser in [loewe-client.js](../lib/loewe-client.js) liest es bereits; seit 0.1.14 bleibt es über den vollständigen Senderabruf und den [Senderkatalog](../lib/channel-catalog.js) bis zur [Programmübersicht](../lib/epg-guide.js) erhalten. Zusätzliche Logo- oder EPG-Abfragen an den TV werden dafür nicht gestartet. Ob der konkrete Loewe-TV gefüllte Bildadressen liefert, ist noch am Gerät zu prüfen. Nach dem Update kann bei eingeschaltetem TV einmal `channels.refresh=true` ausgelöst werden.
+Absolute HTTP-/HTTPS-Adressen werden geprüft. Nur TV-Pfade dürfen relativ sein und werden dann gegen den konfigurierten TV-Host und Steuerport aufgelöst. Manuelle und XMLTV-Bildadressen müssen absolut sein. Nicht unterstützte Protokolle, protokollrelative Adressen, Zugangsdaten, Steuerzeichen, Backslashes und überlange Adressen werden verworfen. **HTTPS-Seiten überspringen HTTP-Bilder.** Im Modus „Beides“ kann dann direkt das HTTPS-Verzeichnislogo erscheinen.
 
-Absolute HTTP-/HTTPS-Adressen werden geprüft. Nur vom TV gelieferte relative Pfade werden gegen den konfigurierten TV-Host und Steuerport aufgelöst; manuelle und XMLTV-Logo-Adressen müssen absolut sein. Nicht unterstützte Protokolle, protokollrelative Adressen, Zugangsdaten, Steuerzeichen, Backslashes und überlange Adressen werden verworfen. Bei HTTPS-Aufruf der Programmübersicht werden HTTP-Bilder aus allen Quellen übersprungen. Dann wird die nächste HTTPS-Adresse, ein mitgeliefertes Logo oder der Sendername verwendet.
+Die mitgelieferten SVGs liegen im Adapter und werden von Admin beziehungsweise der gewählten Web-Instanz ausgeliefert. Externe Bilder lädt der Browser direkt von der angegebenen Adresse, ohne Referrer; ein Bildproxy wird nicht eingesetzt. Für Verzeichnisbilder ist HTTPS-Zugriff auf `raw.githubusercontent.com` nötig. Eine lokale TV-Adresse kann beim Fernzugriff unerreichbar sein. Bilder werden als `img` eingebunden und erhalten keine Farbfilter.
 
-Die mitgelieferten SVGs liegen im Adapter und werden sowohl von Admin als auch von der gewählten Web-Instanz ausgeliefert. Für diese Ersatzbilder ist kein externer Logo-Dienst nötig. Bei allen externen Quellen lädt der Browser das Bild direkt von der angegebenen Adresse; der Adapter stellt dafür keinen Bildproxy bereit. Eine lokale TV-Adresse kann bei einem Fernzugriff daher unerreichbar sein. Ein aus dem jeweiligen Browser erreichbares HTTPS-Bild oder ein mitgeliefertes Logo kann in diesem Fall als Ersatz dienen. Bilder werden als `img` eingebunden und erhalten keine Farbfilter.
+## Verzeichnis und automatische Zuordnung
 
-Der interne Darstellungsvertrag ist rückwärtskompatibel: `channelLogo(service, tvOrigin, { overrideUrl, xmltvIconUrl })` liefert optional `logoUrl`, höchstens zwei weitere externe Adressen in `logoAlternatives` und einen lokalen Pfad in `logoFallback`. Ohne externe Adresse steht der lokale Pfad unmittelbar in `logoUrl`. Doppelte Adressen werden anhand ihrer normalisierten URL entfernt. Die aufrufende EPG-Schicht muss beide Zusatzquellen bereits dem richtigen TV-Dienst zugeordnet haben. Kein Logofeld ist Teil der Sender- oder Aufnahmeidentität.
+Mitgeliefert wird ein Katalog mit **1.046 Bildvarianten**: Deutschland 683, Österreich 136, Schweiz 63, International 129 und Europa 35. Die Zahl enthält unter anderem HD-, Regional- und Designvarianten. Verzeichnisse `old` und `custom` sind ausgeschlossen. Der Quellstand ist auf einen Commit festgelegt; die Dateipfade werden nicht geraten. **Die PNG-Bilder selbst sind nicht Teil des Pakets.** Die [Herkunftsdokumentation](logo-registry-source.md) nennt den geprüften Commit, Dateihashes, Auswahlumfang, Nutzungshinweise und die Aktualisierung des Katalogs.
+
+Die Zuordnung bevorzugt exakte Namen und Qualitätsstufen, danach ausdrücklich hinterlegte gleichwertige Schreibweisen. Ein Sender mit HD-Kennung erhält bevorzugt sein HD-Bild oder ein allgemeines Logo desselben Senders; eine andere ausdrückliche Qualitätsstufe wird nur vorgeschlagen. Ein vorhandenes regionales Logo hat Vorrang vor einem allgemeinen Logo. Bekannte Regionalnamen dürfen auf ihre gemeinsame Sendermarke zurückfallen; unbekannte Regionen werden nicht entfernt. Plus-Zeichen, Nummern, `Black`/`White` und Submarken bleiben unterscheidbar. Standarddesigns haben bei sonst gleichwertigen Treffern Vorrang vor Alternativ-, Querformat- oder Symbolvarianten. Verbleibende Gleichstände erfordern eine manuelle Entscheidung.
+
+Beispiele aus dem Katalog und den automatisierten Prüfungen:
+
+| TV-Name | Automatischer Treffer |
+|---|---|
+| `ARD HD` | Das Erste HD |
+| `ZDFHD` | ZDF HD |
+| `SAT.1 HD` | Sat 1 HD |
+| `RTL II HD` | RTL Zwei HD |
+| `WDR HD Aachen` | WDR Aachen, eigenes Regionalbild |
+
+Diese Beispiele bestätigen die implementierten Regeln am mitgelieferten Katalog. Die konkrete Trefferquote deiner beiden TV-Listen wurde hier nicht am Gerät gemessen. Ein vorhandener Dateiname garantiert auch nicht den heutigen Sendebetrieb oder Markenstand.
+
+## Gespeicherte Einstellungen und Darstellung
+
+`native.channelLogoSource` enthält `auto`, `tv` oder `registry`, `native.channelLogoCountry` enthält `de`, `at`, `ch` oder `all`. `native.channelLogoMappings` besteht aus Zeilen mit der exakten TV-Service-ID `channel`, `mode` und `logoId` sowie ausschließlich angezeigten Metadaten. Nur Katalogpfade können Registry-Bildadressen erzeugen. Fehlerhafte optionale Logo-Einstellungen verhindern den Adapterstart nicht.
+
+Eigene Bildadressen bleiben in `native.channelLogoOverrides` als Zeilen mit `channel` und `url`. Der bestehende Editor und gespeicherte Adressen bleiben erhalten. Eine Bildadresse muss für den exakt ausgewählten TV-Dienst gelten; Sendername oder Programmplatz ersetzen dessen Kennung nicht.
+
+Der interne Darstellungsvertrag erweitert `channelLogo(service, tvOrigin, { source, overrideUrl, registryLogoUrl, xmltvIconUrl })`. Er liefert optional `logoUrl`, höchstens **drei** weitere externe Adressen in `logoAlternatives` und einen lokalen Pfad in `logoFallback`. Gleiche normalisierte URLs werden entfernt. Die EPG-Schicht löst Registry- und XMLTV-Logos vorher für den konkreten TV-Sender auf. Kein Logofeld ist Teil der Sender-, EPG-Cache- oder Aufnahmeidentität.
 
 ## Nutzungsstatus und Herkunft
 
@@ -36,7 +79,7 @@ Die SVG-Dateien wurden aus den jeweils angegebenen, auf einen Commit festgelegte
 
 Die ARTE-Datei enthält die waagerechte Fassung der Wortmarke; die verlinkte Commons-Seite dokumentiert dieselbe Wortmarke in senkrechter Ausrichtung. RTLZWEI verwendet das Zeichen mit offenem Rahmen von 2019, VOX die Fassung mit roter Kugel von 2013. Die Nutzungsangabe für das einzelne VOX-Logo stammt von seiner Commons-Dateiseite und ist keine Aussage über die übrigen Grafiken der als Downloadquelle verwendeten picons-Sammlung.
 
-Diese Prüfung gilt für die unten aufgeführten mitgelieferten Dateien. Für über TV, XMLTV oder manuelle Adressen geladene Bilder gelten die Bedingungen ihrer jeweiligen Quelle; ihre Nutzungsrechte werden durch die URL-Prüfung nicht bestätigt.
+Diese Prüfung gilt für die unten aufgeführten mitgelieferten Dateien. Für über TV, Logo-Verzeichnis, XMLTV oder manuelle Adressen geladene Bilder gelten die Bedingungen ihrer jeweiligen Quelle; ihre Nutzungsrechte werden durch die URL-Prüfung nicht bestätigt.
 
 ## Mitgelieferte Logos
 
@@ -67,7 +110,7 @@ Die Zuordnung verwendet ausdrücklich eingetragene Sendernamen und Aliase. Groß
 
 Für RTLZWEI sind zusätzlich `RTL II` und `RTL 2` als frühere beziehungsweise gebräuchliche Schreibweisen hinterlegt. Diese Identität und die Schreibweise `RTL2` sind in der [Erläuterung des Senders zur Wortmarke](https://unternehmen.rtl2.de/blog/so-schreibt-man-rtlzwei-ein-oder-zwei-gedanken-zu-unserer-wortmarke) dokumentiert. RTL, RTL Super, RTLup und RTL+ erhalten dadurch kein RTLZWEI-Logo; VOXup und VOX Music TV erhalten kein VOX-Logo.
 
-Die Auswahl umfasst **20 mitgelieferte Logos**. ARTE, RTLZWEI und VOX ergänzen die bisherige Abdeckung; daraus folgt keine Aussage, welche Sender bei einem bestimmten TV fehlten. Für SAT.1 wird in diesem Stand kein lokaler Ersatz mitgeliefert: Eine passende farbige SVG mit ausreichend belegter Quelle wurde bei dieser Ergänzung nicht übernommen. Vorhandene TV-, XMLTV- und manuelle Bildadressen bleiben auch für SAT.1 verfügbar. Neue Ersatzlogos können nach Einzelprüfung ihrer Quelle und Rechte in `admin/logos/` ergänzt und im Quellenverzeichnis registriert werden. Nicht abgedeckte Sender bleiben vollständig bedienbar und zeigen ihren Namen, sofern keine der konfigurierten Quellen ein nutzbares Bild liefert.
+Die Auswahl umfasst **20 mitgelieferte Logos**. ARTE, RTLZWEI und VOX ergänzen die bisherige Abdeckung; daraus folgt keine Aussage, welche Sender bei einem bestimmten TV fehlten. Für SAT.1 wird in diesem Stand kein lokaler Ersatz mitgeliefert: Eine passende farbige SVG mit ausreichend belegter Quelle wurde bei dieser Ergänzung nicht übernommen. Das neue externe Verzeichnis enthält SAT.1 einschließlich HD und Regionalvarianten; TV-, XMLTV- und manuelle Bildadressen bleiben ebenfalls möglich. Neue Ersatzlogos können nach Einzelprüfung ihrer Quelle und Rechte in `admin/logos/` ergänzt und im Quellenverzeichnis registriert werden. Nicht abgedeckte Sender bleiben vollständig bedienbar und zeigen ihren Namen, sofern keine der konfigurierten Quellen ein nutzbares Bild liefert.
 
 ## Prüfumfang
 

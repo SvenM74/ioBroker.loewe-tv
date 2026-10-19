@@ -315,7 +315,7 @@
         if (!primary) return [];
         if (localLogoUrl(primary)) return [primary];
         const fallback = localLogoUrl(channel?.logoFallback);
-        const alternatives = Array.isArray(channel?.logoAlternatives) ? channel.logoAlternatives.slice(0, 2).map(channelLogoUrl) : [];
+        const alternatives = Array.isArray(channel?.logoAlternatives) ? channel.logoAlternatives.slice(0, 3).map(channelLogoUrl) : [];
         return [...new Set([primary, ...alternatives, fallback])]
             .filter(url => url && !(pageProtocol === 'https:' && url.startsWith('http:')));
     }
@@ -382,7 +382,7 @@
                 const fallback = localLogoUrl(raw.logoFallback);
                 if (!localLogoUrl(logoUrl) && fallback) channel.logoFallback = fallback;
                 if (Array.isArray(raw.logoAlternatives)) {
-                    channel.logoAlternatives = [...new Set(raw.logoAlternatives.slice(0, 2).map(channelLogoUrl).filter(Boolean))];
+                    channel.logoAlternatives = [...new Set(raw.logoAlternatives.slice(0, 3).map(channelLogoUrl).filter(Boolean))];
                 }
             }
             const keys = new Set();

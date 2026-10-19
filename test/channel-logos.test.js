@@ -114,6 +114,61 @@ test('equivalent external image addresses are attempted only once', () => {
     }), { logoUrl: 'http://tv.invalid:905/logo.png' });
 });
 
+test('automatic logo policy preserves manual, TV, registry, XMLTV and local fallback order', () => {
+    const service = Object.freeze({ name: 'ZDF HD', thumbnailUrl: '/images/zdf.png' });
+    const options = Object.freeze({ source: 'auto', overrideUrl: 'https://manual.invalid/zdf.png',
+        registryLogoUrl: 'https://registry.invalid/zdf-hd.png', xmltvIconUrl: 'https://xmltv.invalid/zdf.png' });
+    assert.deepEqual(channelLogo(service, 'http://tv.invalid:905', options), {
+        logoUrl: options.overrideUrl,
+        logoAlternatives: ['http://tv.invalid:905/images/zdf.png', options.registryLogoUrl, options.xmltvIconUrl],
+        logoFallback: 'logos/zdf.svg',
+    });
+    assert.deepEqual(channelLogo({ name: 'ZDF HD' }, undefined, {
+        registryLogoUrl: options.registryLogoUrl, xmltvIconUrl: options.xmltvIconUrl,
+    }), { logoUrl: options.registryLogoUrl, logoAlternatives: [options.xmltvIconUrl], logoFallback: 'logos/zdf.svg' });
+});
+
+test('strict TV policy excludes automatic registry, XMLTV and bundled pictures', () => {
+    const service = { name: 'ZDF HD', thumbnailUrl: '/images/zdf.png' };
+    const options = { source: 'tv', registryLogoUrl: 'https://registry.invalid/zdf.png',
+        xmltvIconUrl: 'https://xmltv.invalid/zdf.png' };
+    assert.deepEqual(channelLogo(service, 'http://tv.invalid:905', options),
+        { logoUrl: 'http://tv.invalid:905/images/zdf.png' });
+    assert.deepEqual(channelLogo({ name: 'ZDF HD' }, 'http://tv.invalid:905', options), {});
+    assert.deepEqual(channelLogo(service, 'http://tv.invalid:905', { ...options, overrideUrl: 'https://manual.invalid/zdf.png' }),
+        { logoUrl: 'https://manual.invalid/zdf.png', logoAlternatives: ['http://tv.invalid:905/images/zdf.png'] });
+});
+
+test('strict registry policy excludes TV, XMLTV and bundled pictures while retaining explicit URLs', () => {
+    const service = { name: 'ZDF HD', thumbnailUrl: 'https://tv.invalid/zdf.png' };
+    const options = { source: 'registry', registryLogoUrl: 'https://registry.invalid/zdf.png',
+        xmltvIconUrl: 'https://xmltv.invalid/zdf.png' };
+    assert.deepEqual(channelLogo(service, 'http://tv.invalid:905', options), { logoUrl: options.registryLogoUrl });
+    assert.deepEqual(channelLogo(service, 'http://tv.invalid:905', { ...options, registryLogoUrl: '' }), {});
+    assert.deepEqual(channelLogo(service, 'http://tv.invalid:905', { ...options, overrideUrl: 'https://manual.invalid/zdf.png' }),
+        { logoUrl: 'https://manual.invalid/zdf.png', logoAlternatives: [options.registryLogoUrl] });
+});
+
+test('equivalent URLs are deduplicated across all four external logo sources', () => {
+    const url = 'https://logos.invalid/zdf.png';
+    assert.deepEqual(channelLogo({ name: 'ZDF', thumbnailUrl: url }, undefined, {
+        overrideUrl: 'https://LOGOS.invalid:443/./zdf.png', registryLogoUrl: url, xmltvIconUrl: url,
+    }), { logoUrl: 'https://LOGOS.invalid:443/./zdf.png', logoFallback: 'logos/zdf.svg' });
+    assert.deepEqual(channelLogo({ name: 'ZDF', thumbnailUrl: url }, undefined, {
+        source: 'registry', overrideUrl: url, registryLogoUrl: url,
+    }), { logoUrl: url });
+});
+
+test('unsafe registry metadata cannot bypass URL validation or strict source policy', () => {
+    for (const registryLogoUrl of ['//other.invalid/logo.png', '/local.svg', 'logos/zdf.svg',
+        'javascript:alert(1)', 'data:image/png,test', 'https://user:secret@other.invalid/logo.png',
+        'https://other.invalid/\\logo.png', 'https://other.invalid/%0alogo.png', {}, null]) {
+        assert.deepEqual(channelLogo({ name: 'ZDF', thumbnailUrl: 'https://tv.invalid/zdf.png' }, undefined,
+            { source: 'registry', registryLogoUrl }), {}, String(registryLogoUrl));
+    }
+    assert.deepEqual(channelLogo({ name: 'ZDF' }, undefined, { source: 'unknown' }), { logoUrl: 'logos/zdf.svg' });
+});
+
 test('manual and XMLTV image URLs must be absolute safe HTTP(S) addresses', () => {
     for (const value of [undefined, null, 7, {}, '', '/images/zdf.svg', 'logos/zdf.svg',
         'data:image/svg+xml,test', 'javascript:alert(1)', 'file:///tmp/zdf.svg', '//other.invalid/zdf.svg',

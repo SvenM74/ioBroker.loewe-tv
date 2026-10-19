@@ -18,10 +18,10 @@ const catalog = readJson('docs/protocol-templates.json');
 const remote115 = readJson('docs/remote115-keys.json');
 
 assert.equal(pkg.name, `iobroker.${io.common.name}`);
-assert.equal(pkg.version, '0.1.22');
+assert.equal(pkg.version, '0.1.23');
 assert.equal(pkg.version, io.common.version);
 assert.ok(BUILD_ID.startsWith(`${pkg.version}-`), 'Build identifier must match package version');
-assert.equal(BUILD_ID, '0.1.22-recovery.1');
+assert.equal(BUILD_ID, '0.1.23-logo-registry.1');
 assert.ok(pkg.keywords.includes('xmltv'), 'Package keywords must describe optional XMLTV support');
 assert.equal(io.common.mode, 'daemon');
 assert.equal(io.common.messagebox, true, 'Admin list selection requires adapter messaging');
@@ -79,7 +79,9 @@ for (const key of ['epgEnabled', 'epgRefreshInterval', 'epgSource', 'epgXmltvUrl
 assert.equal(config.epgSource, 'tv', 'External guides require an explicit source selection');
 assert.equal(config.epgXmltvUrl, '', 'Do not silently choose an external guide provider');
 assert.equal(config.epgConfigError, '');
-for (const key of ['epgXmltvMappings', 'channelLogoOverrides']) {
+assert.equal(config.channelLogoSource, 'auto');
+assert.equal(config.channelLogoCountry, 'de');
+for (const key of ['epgXmltvMappings', 'channelLogoOverrides', 'channelLogoMappings']) {
     assert.deepEqual(io.native[key], [], `Admin needs an empty correction table by default: ${key}`);
     assert.deepEqual(config[key], {}, `Runtime must normalize the correction table: ${key}`);
 }

@@ -415,6 +415,270 @@
         }
       }
     },
+    "_channelLogos": {
+      "type": "panel",
+      "label": "Channel logos",
+      "items": {
+        "_logoHelp": {
+          "type": "staticText",
+          "text": "Choose logos from the TV, the logo directory, or both. Manual image addresses below always take priority.",
+          "xs": 12
+        },
+        "channelLogoSource": {
+          "type": "select",
+          "label": "Logo source",
+          "default": "auto",
+          "options": [
+            {
+              "value": "auto",
+              "label": "TV and logo directory"
+            },
+            {
+              "value": "tv",
+              "label": "TV images only"
+            },
+            {
+              "value": "registry",
+              "label": "Logo directory only"
+            }
+          ],
+          "help": "TV and logo directory tries the TV image first, then the directory, then existing XMLTV or included images. A single-source mode shows the channel name if no usable image from that source is available.",
+          "xs": 12,
+          "sm": 6
+        },
+        "channelLogoCountry": {
+          "type": "select",
+          "label": "Preferred logo country",
+          "default": "de",
+          "options": [
+            {
+              "value": "de",
+              "label": "Germany"
+            },
+            {
+              "value": "at",
+              "label": "Austria"
+            },
+            {
+              "value": "ch",
+              "label": "Switzerland"
+            },
+            {
+              "value": "all",
+              "label": "All countries"
+            }
+          ],
+          "help": "Prefer this country when a channel has several national versions. International logos remain available. All countries requires a unique match without a national preference.",
+          "xs": 12,
+          "sm": 6
+        },
+        "_logoDirectory": {
+          "type": "staticText",
+          "text": "Open logo directory: tv-logo/tv-logos",
+          "href": "https://github.com/tv-logo/tv-logos",
+          "target": "_blank",
+          "doNotSave": true,
+          "xs": 12
+        },
+        "_logoExternalHelp": {
+          "type": "staticText",
+          "text": "The directory links to external HTTPS images. Their availability and terms of use are determined by the provider and rights holders.",
+          "xs": 12
+        },
+        "_logoMappingHelp": {
+          "type": "staticText",
+          "text": "The rows load automatically from this instance's saved TV channel list, even while the TV is off. Save a changed TV channel list first. Automatic uses a unique directory match. Manual lets you choose a logo. No directory logo disables only this channel's directory assignment. Save to apply changes.",
+          "xs": 12
+        },
+        "_logoMappingLoadingHelp": {
+          "type": "staticText",
+          "text": "While the saved channel list or logo assignments are loading, please wait and edit assignments afterwards.",
+          "controlStyle": {
+            "fontWeight": 600
+          },
+          "xs": 12
+        },
+        "_logoMappingLoad": {
+          "type": "sendTo",
+          "command": "getLogoMappingRows",
+          "jsonData": "${JSON.stringify({source: data.channelLogoSource || 'auto', country: data.channelLogoCountry || 'de', mappings: data.channelLogoMappings || [], listView: data.channelListView || undefined})}",
+          "useNative": true,
+          "doNotSave": true,
+          "showProcess": true,
+          "timeout": 8000,
+          "variant": "outlined",
+          "disabled": "!_alive",
+          "xs": 12,
+          "sm": 6,
+          "label": "Reload TV channels and logos",
+          "onLoaded": true
+        },
+        "_logoMappingReload": {
+          "type": "sendTo",
+          "command": "getLogoMappingRows",
+          "jsonData": "${JSON.stringify({source: data.channelLogoSource || 'auto', country: data.channelLogoCountry || 'de', mappings: data.channelLogoMappings || [], listView: data.channelListView || undefined})}",
+          "useNative": true,
+          "doNotSave": true,
+          "showProcess": true,
+          "timeout": 8000,
+          "variant": "outlined",
+          "disabled": "!_alive",
+          "xs": 12,
+          "sm": 6,
+          "label": "Recheck logo assignments",
+          "icon": "search"
+        },
+        "_logoMappingResponse": {
+          "type": "staticText",
+          "text": "",
+          "hidden": true,
+          "doNotSave": true,
+          "onChange": {
+            "alsoDependsOn": [
+              "channelLogoSource",
+              "channelLogoCountry",
+              "channelListView",
+              "channelLogoMappings"
+            ],
+            "ignoreOwnChanges": true,
+            "calculateFunc": "null"
+          },
+          "xs": 12
+        },
+        "_logoMappingStatus": {
+          "type": "staticText",
+          "text": "${data._logoMappingStatus || \"\"}",
+          "doNotSave": true,
+          "hidden": "!data._logoMappingStatus",
+          "onChange": {
+            "alsoDependsOn": [
+              "channelLogoSource",
+              "channelLogoCountry",
+              "channelListView",
+              "channelLogoMappings",
+              "_logoMappingLoad",
+              "_logoMappingReload"
+            ],
+            "ignoreOwnChanges": true,
+            "calculateFunc": "const response = data._logoMappingResponse; const same = response && response.basis && Array.isArray(response.rows) && JSON.stringify([data.channelLogoSource || 'auto', data.channelLogoCountry || 'de', data.channelListView || '', data.channelLogoMappings || []]) === JSON.stringify([response.basis.source, response.basis.country, response.basis.listView, response.basis.mappings]); return !response ? '' : same ? response.status || '' : 'The form changed while loading. Click Reload TV channels and logos again.';"
+          },
+          "xs": 12
+        },
+        "channelLogoMappings": {
+          "type": "table",
+          "label": "TV channels and logo assignments",
+          "help": "The TV image column indicates a saved image address, not a successful download. Directory assignments can be prepared in every source mode. Recheck after changing a country or assignment. Corrections for temporarily missing TV channels are retained.",
+          "noDelete": true,
+          "compact": true,
+          "onChange": {
+            "alsoDependsOn": [
+              "channelLogoSource",
+              "channelLogoCountry",
+              "channelListView",
+              "_logoMappingLoad",
+              "_logoMappingReload"
+            ],
+            "ignoreOwnChanges": true,
+            "calculateFunc": "const response = data._logoMappingResponse; const same = response && response.basis && Array.isArray(response.rows) && JSON.stringify([data.channelLogoSource || 'auto', data.channelLogoCountry || 'de', data.channelListView || '', data.channelLogoMappings || []]) === JSON.stringify([response.basis.source, response.basis.country, response.basis.listView, response.basis.mappings]); if (response) return same ? response.rows : data.channelLogoMappings; if (!Array.isArray(data.channelLogoMappings)) return data.channelLogoMappings; return data.channelLogoMappings.map(row => row && typeof row === 'object' && !Array.isArray(row) && Object.prototype.hasOwnProperty.call(row, 'mode') ? {...row, assignment: '', revision: (Number.isSafeInteger(row.revision) && row.revision >= 0 && row.revision < Number.MAX_SAFE_INTEGER ? row.revision : 0) + 1} : row);"
+          },
+          "items": [
+            {
+              "type": "text",
+              "attr": "tvChannel",
+              "title": "TV channel",
+              "readOnly": true,
+              "filter": true,
+              "sort": true,
+              "width": "20%"
+            },
+            {
+              "type": "text",
+              "attr": "tvLogo",
+              "title": "TV image address",
+              "readOnly": true,
+              "width": "12%"
+            },
+            {
+              "type": "select",
+              "attr": "mode",
+              "title": "Directory assignment",
+              "options": [
+                {
+                  "value": "auto",
+                  "label": "Automatic"
+                },
+                {
+                  "value": "manual",
+                  "label": "Manual"
+                },
+                {
+                  "value": "disabled",
+                  "label": "No directory logo"
+                }
+              ],
+              "width": "16%"
+            },
+            {
+              "type": "autocompleteSendTo",
+              "attr": "logoId",
+              "title": "Directory logo or exact path",
+              "command": "getLogoRegistryChannels",
+              "jsonData": "${JSON.stringify({country: globalData.channelLogoCountry || 'de', listView: globalData.channelListView || undefined, channel: data.channel, selected: data.logoId, query: data.logoId})}",
+              "alsoDependsOn": [
+                "mode",
+                "revision",
+                "logoId"
+              ],
+              "freeSolo": true,
+              "noTranslation": true,
+              "maxLength": 512,
+              "hidden": "data.mode !== 'manual'",
+              "width": "27%"
+            },
+            {
+              "type": "text",
+              "attr": "assignment",
+              "title": "Last logo assignment check",
+              "readOnly": true,
+              "width": "25%"
+            }
+          ],
+          "xs": 12
+        },
+        "channelLogoOverrides": {
+          "type": "table",
+          "label": "Manual channel logos",
+          "help": "Select a TV channel and enter an image URL you may use. Delete the row to restore automatic logo selection.",
+          "default": [],
+          "uniqueColumns": [
+            "channel"
+          ],
+          "items": [
+            {
+              "type": "selectSendTo",
+              "attr": "channel",
+              "title": "TV channel",
+              "command": "getEpgTvChannels",
+              "jsonData": "${JSON.stringify({listView: globalData.channelListView, channel: data.channel})}",
+              "manual": true,
+              "noTranslation": true,
+              "width": "40%"
+            },
+            {
+              "type": "text",
+              "attr": "url",
+              "title": "Logo image URL",
+              "default": "",
+              "width": "60%",
+              "validator": "if (data.url === undefined || data.url === null || (typeof data.url === 'string' && !data.url.trim())) return true; try { const u = new URL(data.url); return typeof data.url === 'string' && data.url.length <= 2048 && ['http:','https:'].includes(u.protocol) && !!u.hostname && !u.username && !u.password; } catch { return false; }",
+              "validatorNoSaveOnError": false,
+              "validatorErrorText": "Enter an HTTP(S) image URL without username or password."
+            }
+          ],
+          "xs": 12
+        }
+      }
+    },
     "_webAccess": {
       "type": "panel",
       "label": "Web access",
@@ -568,49 +832,6 @@
           "label": "Append compatibility byte (NUL)",
           "help": "Leave enabled to use the request format of Loewe App 1.4.7.",
           "default": true,
-          "xs": 12
-        }
-      }
-    },
-    "_channelLogos": {
-      "type": "panel",
-      "label": "Channel logos",
-      "items": {
-        "_logoHelp": {
-          "type": "staticText",
-          "text": "A manual logo URL takes priority. Otherwise use a TV logo, an unambiguously assigned XMLTV icon or an included logo. If an image cannot be loaded, the next image or channel name is shown. HTTPS pages need HTTPS image URLs.",
-          "xs": 12
-        },
-        "channelLogoOverrides": {
-          "type": "table",
-          "label": "Manual channel logos",
-          "help": "Select a TV channel and enter an image URL you may use. Delete the row to restore automatic logo selection.",
-          "default": [],
-          "uniqueColumns": [
-            "channel"
-          ],
-          "items": [
-            {
-              "type": "selectSendTo",
-              "attr": "channel",
-              "title": "TV channel",
-              "command": "getEpgTvChannels",
-              "jsonData": "${JSON.stringify({listView: globalData.channelListView, channel: data.channel})}",
-              "manual": true,
-              "noTranslation": true,
-              "width": "40%"
-            },
-            {
-              "type": "text",
-              "attr": "url",
-              "title": "Logo image URL",
-              "default": "",
-              "width": "60%",
-              "validator": "if (data.url === undefined || data.url === null || (typeof data.url === 'string' && !data.url.trim())) return true; try { const u = new URL(data.url); return typeof data.url === 'string' && data.url.length <= 2048 && ['http:','https:'].includes(u.protocol) && !!u.hostname && !u.username && !u.password; } catch { return false; }",
-              "validatorNoSaveOnError": false,
-              "validatorErrorText": "Enter an HTTP(S) image URL without username or password."
-            }
-          ],
           "xs": 12
         }
       }

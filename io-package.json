@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.22",
+    "version": "0.1.23",
     "news": {
+      "0.1.23": {
+        "en": "Add a channel-logo registry with 1,046 pinned tv-logo/tv-logos paths, automatic TV-channel matching, country preference and editable per-channel assignments. Choose TV logos, registry logos or both; retain manual image URLs and square logo frames. Populate the logo tab from the saved channel list even when TV and EPG are off. Preserve the Admin 7.7.28 baseline and existing Web/Cloud routes.",
+        "de": "Senderlogo-Verzeichnis mit 1.046 festgelegten tv-logo/tv-logos-Dateipfaden, automatischer Zuordnung zur TV-Liste, Länderpräferenz und Korrektur je Sender ergänzen. TV-Logos, Verzeichnis oder beide Quellen wählen; manuelle Bildadressen und quadratische Anzeigen erhalten. Das Logo-Register verwendet die gespeicherte Senderliste auch bei ausgeschaltetem TV oder deaktiviertem EPG. Admin-Mindestversion 7.7.28 und bestehende Web-/Cloud-Routen beibehalten."
+      },
       "0.1.22": {
         "en": "Restore Admin >=7.7.28: the stricter dependency introduced in 0.1.21 could prevent the TV adapter from starting and disable both programme data and remote commands. Keep the existing Web routes and per-TV settings. Older Admin links may still open the TV selector; use the direct per-TV URL.",
         "de": "Admin >=7.7.28 wieder zulassen: Die strengere Abhängigkeit aus 0.1.21 konnte den TV-Adapterstart und damit Programmdaten und Fernbedienung blockieren. Bestehende Web-Pfade und TV-Zuordnungen erhalten. Ältere Admin-Links können weiterhin die TV-Auswahl öffnen; direkte TV-URL verwenden."
@@ -159,7 +163,10 @@
     "epgSource": "tv",
     "epgXmltvUrl": "",
     "epgXmltvMappings": [],
-    "channelLogoOverrides": []
+    "channelLogoOverrides": [],
+    "channelLogoSource": "auto",
+    "channelLogoCountry": "de",
+    "channelLogoMappings": []
   },
   "objects": [],
   "instanceObjects": [

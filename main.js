@@ -5,6 +5,7 @@ const { AdapterRuntime } = require('./lib/adapter-runtime');
 const EPG_COMMANDS = ['getEpgGuide', 'refreshEpgGuide', 'selectEpgProgramme', 'recordEpgProgramme', 'getRecordings', 'cancelRecording'];
 const REMOTE_COMMANDS = ['sendRemoteCommand', 'getRemoteStatus'];
 const MAPPING_COMMANDS = ['getEpgTvChannels', 'getXmltvChannels', 'getEpgMappingRows', 'previewEpgMappings', 'applyEpgMapping'];
+const LOGO_COMMANDS = ['getLogoMappingRows', 'getLogoRegistryChannels'];
 
 function epgGuideUrl(namespace, message) {
     // iframeSendTo requires a URL string, including during adapter startup.
@@ -35,7 +36,7 @@ function messageFailure(command, message, error) {
     if (EPG_COMMANDS.includes(command)) {
         return { error: reason.slice(0, 1200), code: typeof error?.code === 'string' ? error.code.slice(0, 80) : 'EPG_GUIDE_UNAVAILABLE' };
     }
-    if (['getEpgTvChannels', 'getXmltvChannels'].includes(command)) {
+    if (['getEpgTvChannels', 'getXmltvChannels', 'getLogoRegistryChannels'].includes(command)) {
         const selected = command === 'getEpgTvChannels' ? message?.channel : message?.selected;
         return [{ value: '', label: `Auswahl nicht verfügbar: ${reason.slice(0, 1000)}` },
             ...(typeof selected === 'string' && selected && selected.length <= 512
@@ -82,7 +83,7 @@ class LoeweTv extends utils.Adapter {
     async onMessage(message) {
         if (!message || !message.callback || typeof message.from !== 'string' || !message.from
             || !['getChannelLists', 'refreshChannelLists', 'getDiscoveredTvs', 'discoverTvs',
-                'getEpgGuideUrl', ...EPG_COMMANDS, ...REMOTE_COMMANDS, ...MAPPING_COMMANDS].includes(message.command)) return;
+                'getEpgGuideUrl', ...EPG_COMMANDS, ...REMOTE_COMMANDS, ...MAPPING_COMMANDS, ...LOGO_COMMANDS].includes(message.command)) return;
 
         if (message.command === 'getEpgGuideUrl') {
             // Render the guide even before the runtime is ready. Its own error
@@ -113,7 +114,7 @@ class LoeweTv extends utils.Adapter {
         // bounded even if startup or a future runtime implementation fails.
         const timeout = ['getChannelLists', 'previewEpgMappings'].includes(message.command) ? 35000
             : ['discoverTvs', 'selectEpgProgramme', 'sendRemoteCommand'].includes(message.command) ? 10000
-                : message.command === 'getEpgMappingRows' ? 8000
+                : ['getEpgMappingRows', 'getLogoMappingRows'].includes(message.command) ? 8000
                 : ['recordEpgProgramme', 'cancelRecording'].includes(message.command) ? 6000 : 4000;
         timer = setTimeout(() => {
             const error = new Error('Zeitlimit erreicht. Fernseher und laufende Adapterinstanz prüfen.');
@@ -129,7 +130,7 @@ class LoeweTv extends utils.Adapter {
                 REMOTE_COMMANDS.includes(message.command) ? { code: 'REMOTE_UNAVAILABLE', delivery: 'notSent' } : {});
             dispatched = true;
             const response = await this.runtime.handleMessage(message.command, message.message);
-            if (['getChannelLists', 'getDiscoveredTvs', 'getEpgTvChannels', 'getXmltvChannels'].includes(message.command) && !Array.isArray(response)) {
+            if (['getChannelLists', 'getDiscoveredTvs', 'getEpgTvChannels', 'getXmltvChannels', 'getLogoRegistryChannels'].includes(message.command) && !Array.isArray(response)) {
                 throw new Error(message.command === 'getChannelLists'
                     ? 'Ungültige Antwort beim Laden der Senderlisten.' : message.command === 'getDiscoveredTvs'
                         ? 'Ungültige Antwort beim Laden der gefundenen Fernseher.' : 'Ungültige Antwort der Senderzuordnung.');

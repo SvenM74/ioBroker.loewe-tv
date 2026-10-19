@@ -208,18 +208,23 @@ test('logo and text fallback share a fixed square inside the desktop and mobile 
     }
 });
 
-test('manual, TV and XMLTV logos fail over in order and HTTPS never loads an insecure alternative', () => {
+test('manual, TV, registry and XMLTV logos fail over in order and HTTPS never loads an insecure alternative', () => {
     const manual = 'https://manual.example/station.svg';
     const tv = 'http://192.0.2.10/channel.png';
+    const registry = 'https://raw.githubusercontent.com/tv-logo/tv-logos/pinned/channel.png';
     const xmltv = 'https://guide.example/station.png';
     const bundled = 'logos/zdf.svg';
     const cases = [
+        { protocol: 'http:', primary: manual, alternatives: [tv, registry, xmltv], expected: [manual, tv, registry, xmltv, bundled] },
+        { protocol: 'https:', primary: tv, alternatives: [registry, xmltv], expected: [registry, xmltv, bundled] },
+        { protocol: 'https:', primary: manual, alternatives: [tv, registry, xmltv, 'https://ignored.example/extra.png'],
+            expected: [manual, registry, xmltv, bundled] },
         { protocol: 'http:', primary: manual, alternatives: [tv, xmltv], expected: [manual, tv, xmltv, bundled] },
         { protocol: 'https:', primary: manual, alternatives: [tv, xmltv], expected: [manual, xmltv, bundled] },
         { protocol: 'https:', primary: 'http://manual.example/station.svg', alternatives: [tv, xmltv], expected: [xmltv, bundled] },
         { protocol: 'https:', primary: manual, alternatives: [manual, xmltv], expected: [manual, xmltv, bundled] },
         { protocol: 'https:', primary: manual, alternatives: ['data:image/svg+xml,test', '//other.example/image.png', xmltv],
-            expected: [manual, bundled] },
+            expected: [manual, xmltv, bundled] },
     ];
     for (const { protocol, primary, alternatives, expected } of cases) {
         const original = { ...channel('Fixture station HD', 1), logoUrl: primary,

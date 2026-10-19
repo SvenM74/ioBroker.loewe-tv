@@ -14,6 +14,7 @@ const { mergeChannelPage } = require('../lib/channel-catalog');
 
 const VIEW = 'configuration-fixture-list';
 const configForm = require('../admin/jsonConfig.json').items._epg.items;
+const logoForm = require('../admin/jsonConfig.json').items._channelLogos.items;
 const mainSource = fs.readFileSync(path.join(__dirname, '../main.js'), 'utf8');
 
 function deferred() {
@@ -47,6 +48,13 @@ function mappingEnvelope(response, request) {
     assert.ok(Array.isArray(envelope.rows));
     assert.equal(typeof envelope.status, 'string');
     return envelope;
+}
+
+function logoFormRequest(data, field = '_logoMappingLoad', row) {
+    const item = row ? logoForm.channelLogoMappings.items.find(column => column.attr === field) : logoForm[field];
+    assert.equal(typeof item?.jsonData, 'string', `The actual logo field ${field} must define its sendTo payload.`);
+    const serialized = vm.runInNewContext('`' + item.jsonData + '`', { data: row || data, globalData: data });
+    return { command: item.command, message: JSON.parse(serialized) };
 }
 
 function messageRoute(runtime, adapter) {
@@ -354,4 +362,94 @@ test('a fully restored empty catalogue differs from an instance that has not sta
     await h.runtime.start();
     assert.deepEqual(await h.runtime.channelObjects.waitForReady(), { ready: true, status: 'empty' });
     assert.deepEqual(h.calls, []);
+});
+
+test('the shipped logo form waits for saved channels and resolves logos with TV and EPG off', async t => {
+    const televisionPage = page();
+    televisionPage.items[0].name = 'ZDF HD';
+    televisionPage.items[0].thumbnailUrl = '/images/zdf.png';
+    televisionPage.items[1].name = 'SAT.1 HD';
+    const h = await harness(t, { page: televisionPage, blockRestore: true,
+        config: { epgEnabled: false, epgSource: 'tv', epgXmltvUrl: '' } });
+    await h.restoreEntered.promise;
+    const draft = { ...structuredClone(h.adapter.config), channelListView: '' };
+    const before = structuredClone(draft);
+    const request = logoFormRequest(draft);
+    let answered = false;
+    const waiting = h.send(request).then(response => { answered = true; return response; });
+    await nextTurn();
+    assert.equal(answered, false, 'The form must wait instead of replacing the TV list with an empty table.');
+    h.restoreRelease.resolve();
+    const response = await waiting;
+    assert.equal(response.error, undefined);
+    assert.deepEqual(Object.keys(response.native), ['_logoMappingResponse']);
+    const envelope = response.native._logoMappingResponse;
+    assert.deepEqual(envelope.basis, { source: 'auto', country: 'de', listView: '', mappings: [] });
+    assert.deepEqual(envelope.rows.map(row => [row.tvChannel, row.logoId]), [
+        ['1. ZDF HD', 'countries/germany/hd/zdf-hd-de.png'],
+        ['2. SAT.1 HD', 'countries/germany/hd/sat-1-hd-de.png'],
+    ]);
+    assert.equal(envelope.rows[0].tvLogo, 'TV-Bildadresse vorhanden');
+    assert.equal(envelope.rows[1].tvLogo, 'Keine TV-Bildadresse');
+    assert.match(envelope.status, /2 von 2 TV-Sendern zugeordnet/u);
+    const options = await h.send(logoFormRequest(draft, 'logoId', { ...envelope.rows[1], mode: 'manual', logoId: 'SAT.1' }));
+    assert.ok(options.some(option => option.value === 'countries/germany/hd/sat-1-hd-de.png'));
+    assert.deepEqual(draft, before);
+    const guide = h.runtime.epg.guide();
+    assert.equal(guide.channels[0].logoUrl, 'http://tv.fixture.invalid:905/images/zdf.png');
+    assert.match(guide.channels[0].logoAlternatives[0], /\/hd\/zdf-hd-de\.png$/u);
+    assert.match(guide.channels[1].logoUrl, /\/hd\/sat-1-hd-de\.png$/u);
+    assert.ok(guide.channels.every(channel => channel.status === 'disabled'));
+    assert.equal(h.runtime._connected, false);
+    assert.deepEqual(h.calls, [], 'Opening the logo tab must not contact or wake a TV, XMLTV or GitHub.');
+});
+
+test('two actual runtimes keep manual logo assignments separate without changing TV targets or EPG revisions', async t => {
+    const televisionPage = page();
+    televisionPage.items[0].name = 'ZDF HD';
+    const id = mergeChannelPage(null, televisionPage).services[0].id;
+    const logos = ['countries/germany/hd/zdf-hd-de.png', 'countries/germany/hd/sat-1-hd-de.png'];
+    const runtimes = [];
+    for (let index = 0; index < 2; index++) {
+        const h = await harness(t, { namespace: `loewe-tv.${index}`, page: televisionPage,
+            config: { epgSource: 'tv', epgEnabled: false, channelLogoSource: 'registry',
+                channelLogoMappings: [{ channel: id, mode: 'manual', logoId: logos[index] }] } });
+        await h.runtime.channelObjects.whenIdle();
+        runtimes.push(h);
+        const beforeConfig = structuredClone(h.runtime.config);
+        const beforeTarget = h.runtime.channelObjects.target(`${id}.select`);
+        const beforeGuide = h.runtime.epg.guide();
+        assert.ok(beforeGuide.channels[0].logoUrl.endsWith(`/${logos[index]}`));
+        assert.equal(beforeGuide.instance, `loewe-tv.${index}`);
+        const draft = { ...structuredClone(h.adapter.config), channelLogoCountry: 'ch',
+            channelLogoMappings: [{ channel: id, mode: 'manual', logoId: logos[1 - index] }] };
+        const response = await h.send(logoFormRequest(draft));
+        assert.equal(response.native._logoMappingResponse.rows[0].logoId, logos[1 - index]);
+        assert.deepEqual(h.runtime.config, beforeConfig, 'Loading a draft does not activate unsaved choices.');
+        assert.deepEqual(h.runtime.channelObjects.target(`${id}.select`), beforeTarget);
+        const afterGuide = h.runtime.epg.guide();
+        assert.deepEqual(afterGuide.channels, beforeGuide.channels, 'A logo form preview cannot alter the live guide.');
+        assert.equal(afterGuide.catalogRevision, beforeGuide.catalogRevision);
+        assert.deepEqual(h.calls, []);
+    }
+    assert.notEqual(runtimes[0].runtime.epg.guide().channels[0].logoUrl, runtimes[1].runtime.epg.guide().channels[0].logoUrl);
+});
+
+test('a failed logo catalogue read or stale list choice keeps the form and current selection intact', async t => {
+    for (const restoreError of [true, false]) {
+        const h = await harness(t, { restoreError });
+        await h.runtime.channelObjects.whenIdle();
+        const selected = 'countries/germany/hd/zdf-hd-de.png';
+        const draft = { ...structuredClone(h.adapter.config), channelListView: restoreError ? VIEW : 'unsaved-other-list',
+            channelLogoSource: 'registry', channelLogoMappings: [{ channel: h.catalog.services[0].id, mode: 'manual', logoId: selected }] };
+        const before = structuredClone(draft);
+        const response = await h.send(logoFormRequest(draft));
+        assert.equal(typeof response.error, 'string');
+        assert.equal(Object.hasOwn(response, 'native'), false);
+        const options = await h.send(logoFormRequest(draft, 'logoId', draft.channelLogoMappings[0]));
+        assert.ok(Array.isArray(options));
+        assert.ok(options.some(option => option.value === selected));
+        assert.deepEqual(draft, before);
+        assert.deepEqual(h.calls, []);
+    }
 });

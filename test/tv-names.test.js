@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { TV_NAMES_STATE, parseTvNames, mergeTvNames, nameForTv } = require('../lib/tv-names');
+const { TV_NAMES_STATE, parseTvNames, mergeTvNames, mergeReportedTvName, nameForTv } = require('../lib/tv-names');
 
 const empty = () => ({ schemaVersion: 1, devices: [] });
 const snapshot = devices => ({ schemaVersion: 1, devices });
@@ -80,4 +80,73 @@ test('name storage is bounded and preserves the most recently confirmed identiti
     const longName = mergeTvNames(empty(), [{ host: '192.0.2.1', name: 'x'.repeat(159) + '📺suffix' }], 905);
     assert.equal(longName.devices[0].name.length, 159);
     assert.equal(longName.devices[0].name.isWellFormed(), true);
+});
+
+test('live names bind DNS and IPv6 targets exactly without guessing another address', () => {
+    let value = empty();
+    const hosts = ['tv-wohnzimmer.fritz.box', 'TV-Schlafzimmer', '2001:db8::1', '[2001:db8::2]'];
+    for (const [index, host] of hosts.entries()) value = mergeReportedTvName(value,
+        { host, port: 905, name: `Loewe ${index}`, source: 'network' });
+    const restored = parseTvNames(JSON.stringify(value));
+    for (const [index, host] of hosts.entries()) {
+        assert.equal(nameForTv(restored, host, 905), `Loewe ${index}`);
+        assert.equal(nameForTv(restored, host, 1905), '');
+    }
+    assert.equal(nameForTv(restored, '192.0.2.10', 905), '');
+    assert.equal(nameForTv(restored, 'anderer-tv.fritz.box', 905), '');
+    assert.equal(nameForTv(restored, '2001:db8::3', 905), '');
+    assert.equal(nameForTv(restored, hosts[0], '905/path'), '');
+    assert.deepEqual(restored, value);
+});
+
+test('network names improve streaming names and discovery names retain priority', () => {
+    const target = { host: '192.0.2.10', port: 905 };
+    const first = mergeReportedTvName(empty(), { ...target, name: 'Remote TV', source: 'streaming' });
+    const network = mergeReportedTvName(first, { ...target, name: '  Loewe\n Wohnzimmer  ', source: 'network' });
+    assert.equal(nameForTv(network, target.host, target.port), 'Loewe Wohnzimmer');
+    const renamed = mergeReportedTvName(network, { ...target, name: 'Loewe Esszimmer', source: 'network' });
+    assert.equal(nameForTv(renamed, target.host, target.port), 'Loewe Esszimmer');
+    assert.deepEqual(mergeReportedTvName(renamed, { ...target, name: 'Remote TV', source: 'streaming' }), renamed);
+    assert.deepEqual(first.devices, [{ ...target, name: 'Remote TV', source: 'streaming' }]);
+    const discovered = mergeTvNames(renamed, [{ host: target.host, name: 'Mein Loewe' }], target.port);
+    assert.deepEqual(discovered.devices, [{ ...target, name: 'Mein Loewe' }]);
+    assert.deepEqual(mergeReportedTvName(discovered, { ...target, name: 'h1', source: 'network' }), discovered);
+    assert.deepEqual(parseTvNames(JSON.stringify(discovered)), discovered);
+});
+
+test('empty, malformed and untrusted live name fields cannot erase an offline name', () => {
+    const good = { host: '192.0.2.10', port: 905, name: 'Wohnzimmer', source: 'network' };
+    const previous = mergeReportedTvName(empty(), good);
+    for (const fields of [
+        { name: '' }, { name: '  \n ' }, { name: null }, { name: { '#text': 'Wrong boundary' } },
+        { name: '\uD800' }, { host: '' }, { host: 'http://tv.invalid' }, { host: 'tv.invalid/path' },
+        { host: 'user@tv.invalid' }, { host: 'tv.invalid:905' }, { host: '192.0.2.999' },
+        { host: '[tv.invalid]' }, { host: '-invalid' }, { host: 'x'.repeat(256) },
+        { port: false }, { port: 0 }, { port: 65536 }, { source: 'discovery' },
+        { source: '__proto__' }, { source: 'constructor' }, { source: null }, { source: ['network'] },
+    ]) assert.deepEqual(mergeReportedTvName(previous, { ...good, ...fields }), previous);
+    for (const source of ['discovery', '__proto__', 'constructor', null, ['network']]) {
+        assert.deepEqual(parseTvNames(JSON.stringify(snapshot([{ ...good, source }]))), empty());
+    }
+    const longName = mergeReportedTvName(previous, { ...good, name: 'x'.repeat(159) + '📺suffix' });
+    assert.equal(longName.devices[0].name.length, 159);
+    assert.equal(longName.devices[0].name.isWellFormed(), true);
+});
+
+test('long DNS hosts and multibyte names round-trip within the persisted byte bound', () => {
+    let value = empty();
+    let lastHost;
+    for (let index = 0; index < 256; index += 1) {
+        lastHost = `${String(index).padStart(3, '0')}${'a'.repeat(60)}.${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(61)}`;
+        value = mergeReportedTvName(value, { host: lastHost, port: 905, name: '界'.repeat(160), source: 'streaming' });
+    }
+    const stored = JSON.stringify(value);
+    assert.ok(Buffer.byteLength(stored) <= 192 * 1024);
+    assert.ok(value.devices.length > 1 && value.devices.length < 256);
+    assert.equal(nameForTv(value, lastHost, 905), '界'.repeat(160));
+    assert.deepEqual(parseTvNames(stored), value);
+    const discovered = mergeTvNames(value, [{ host: '192.0.2.10', name: '界'.repeat(160) }], 905);
+    assert.deepEqual(parseTvNames(JSON.stringify(discovered)), discovered);
+    assert.equal(nameForTv(discovered, lastHost, 905), '界'.repeat(160));
+    assert.equal(nameForTv(discovered, '192.0.2.10', 905), '界'.repeat(160));
 });

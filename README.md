@@ -1,10 +1,10 @@
 # Loewe TV Adapter für ioBroker
 
-## Version 0.1.25
+## Version 0.1.26
 
-Build **`0.1.25-tv-names.1`** zeigt auf der Auswahlseite `/loewe-tv/` die bei der Netzwerksuche erkannten **Fernsehernamen** an. Die Namen werden zusammen mit IP-Adresse und Steuerport gespeichert und bleiben auch nach einem Neustart oder bei ausgeschaltetem TV verfügbar. Jede Kachel behält darunter ihre Instanzkennung und ihren eigenen EPG-Link.
+Build **`0.1.26-tv-names.1`** korrigiert die in 0.1.25 unvollständige Übernahme der **Fernsehernamen**. Bisher wurde der Namensspeicher nur bei einer manuellen Netzwerksuche gefüllt. Jetzt übernimmt der Adapter den gemeldeten Netzwerknamen auch aus seinen regulären Geräte- und Einstellungsabfragen; als Ersatz kann der vom TV gemeldete Streamingname dienen. Die Namen werden mit der genauen konfigurierten Adresse und dem Steuerport gespeichert und bleiben anschließend auch offline erhalten.
 
-Nach dem Update die ausgewählte Web-Instanz neu starten. In den Einstellungen von **beiden TV-Instanzen** unter **Verbindung → Fernseher suchen** einmal eine Suche bei eingeschalteten TVs ausführen und anschließend die Auswahlseite neu laden. Frühere Versionen hatten die Namen nur vorübergehend gespeichert. Die bereits passende TV-Adresse muss dabei nicht geändert werden. Spätere Suchläufe aktualisieren die Bezeichnung automatisch. [Einrichtung](docs/NETWORK_DISCOVERY.md#fernsehernamen-in-der-web-auswahl) · [Update](docs/INSTALLATION.md#update-auf-0125) · [Prüfbericht](docs/PRUEFBERICHT_0.1.25.md).
+Nach dem Paketupdate **beide TV-Instanzen und die ausgewählte Web-Instanz neu starten**. Die Fernseher müssen einmal erreichbar sein und ihren Namen liefern. Bei eingeschaltetem Statusabruf geschieht die Übernahme automatisch; eine erneute Netzwerksuche ist dafür nicht nötig. Ist der Statusabruf bewusst ausgeschaltet, liest **`control.refresh`** die Geräteangaben einmalig. Die Auswahlseite danach neu laden. Sie liest gespeicherte Namen auch nach einer verpassten Zustandsmeldung erneut ein. Jede Kachel behält die Instanzkennung und ihren eigenen EPG-Link. [Einrichtung](docs/NETWORK_DISCOVERY.md#fernsehernamen-in-der-web-auswahl) · [Update](docs/INSTALLATION.md#update-auf-0126) · [Prüfbericht](docs/PRUEFBERICHT_0.1.26.md).
 
 ## XMLTV-Korrektur seit 0.1.24
 

@@ -6,7 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { AdapterRuntime } = require('../lib/adapter-runtime');
-const { parseChannelPage, parseTimerList } = require('../lib/loewe-client');
+const { parseChannelPage, parseTimerList, parseResponse } = require('../lib/loewe-client');
 const { runPowerOn } = require('../lib/power-on');
 const { createCache } = require('../lib/epg-data');
 const { TV_NAMES_STATE, parseTvNames, nameForTv } = require('../lib/tv-names');
@@ -88,7 +88,7 @@ class FakeClient extends EventEmitter {
 
     getDeviceData() {
         return this.invoke('getDeviceData', [], response('GetDeviceData', {
-            DeviceName: 'Simulated Loewe TV',
+            NetworkHostName: 'Simulated Loewe TV',
             'MAC-Address-LAN': '02:00:00:00:00:01',
         }));
     }
@@ -805,6 +805,223 @@ test('names found before choosing a host survive restart, stay instance-local an
     assert.deepEqual(reads.sort(), [`loewe-tv.0.${TV_NAMES_STATE}`, `loewe-tv.1.${TV_NAMES_STATE}`]);
     assert.equal(scans, 1);
     assert.equal(first.client.calls.length + restarted.reduce((count, item) => count + item.client.calls.length, 0), 0);
+});
+
+test('a normal upgrade learns both configured TV names from parsed device replies without another search', async t => {
+    // Field names are documented in Loewe Remote API 1.0.47, section 9.2.
+    // The names below are fixtures, not captured replies from the user's TVs.
+    for (const [instance, host, name] of [
+        [0, '192.0.2.10', 'Loewe bild 7.55'], [1, '192.0.2.20', 'Loewe bild 5.32'],
+    ]) {
+        const data = parseResponse(`<env:Envelope xmlns:env="http://schemas.xmlsoap.org/soap/envelope/">
+            <env:Body><m:GetDeviceDataResponse xmlns:m="urn:loewe.de:RemoteTV:Tablet">
+            <m:NetworkHostName>${name}</m:NetworkHostName><m:StreamingServerName>Streaming fallback</m:StreamingServerName>
+            </m:GetDeviceDataResponse></env:Body></env:Envelope>`);
+        const h = await harness(t, { host, pollInterval: 30 }, (adapter, client) => {
+            adapter.namespace = `loewe-tv.${instance}`;
+            adapter.states.set('device.data', { val: JSON.stringify(response('GetDeviceData', {
+                NetworkHostName: 'Unbound old TV',
+            }).data), ack: true });
+            client.hooks.getDeviceData = () => data;
+        }, { tvDiscovery() { assert.fail('The normal status read must not start SSDP discovery'); } });
+        assert.equal(nameForTv(h.runtime._tvNames, host, 905), name);
+        assert.deepEqual(parseTvNames(h.adapter.states.get(TV_NAMES_STATE).val), {
+            schemaVersion: 1, devices: [{ host, port: 905, name, source: 'network' }],
+        });
+        assert.deepEqual(JSON.parse(h.adapter.states.get('device.data').val), data.data,
+            'The actual saved diagnostic contains Envelope/Body, without an outer data wrapper');
+        assert.equal(h.adapter.states.get('info.connection').val, true);
+        assert.deepEqual(h.client.calls.map(call => call.method), [
+            'getDeviceData', 'getVolume', 'getMute', 'getSettings', 'getCurrentPlayback',
+        ], 'Name recognition reuses the existing successful status requests');
+        assert.equal(nameForTv(h.runtime._tvNames, instance === 0 ? '192.0.2.20' : '192.0.2.10', 905), '');
+    }
+});
+
+test('polling disabled retains its semantics and control.refresh can use a settings name', async t => {
+    for (const name of ['TV im Arbeitszimmer', { '#text': 'TV im Arbeitszimmer', '@_type': 'string' }]) {
+        const h = await harness(t, { host: 'tv-room.example', pollInterval: 0 }, (adapter, client) => {
+            adapter.states.set('device.data', { val: JSON.stringify(response('GetDeviceData', {
+                NetworkHostName: 'Saved data with no address binding',
+            }).data), ack: true });
+            client.hooks.getDeviceData = () => response('GetDeviceData', { DeviceName: 'Client field must be ignored' });
+            client.hooks.getSettings = () => response('GetSettings', { NetworkHostName: name, WolEnable: '1' });
+        }, { tvDiscovery() { assert.fail('A manual status refresh must not search the network'); } });
+        assert.equal(h.client.calls.length, 0);
+        assert.equal(nameForTv(h.runtime._tvNames, h.runtime.config.host, 905), '',
+            'Old unbound device.data must not be used as evidence for the configured address');
+        await write(h, 'control.refresh', true);
+        assert.equal(nameForTv(h.runtime._tvNames, h.runtime.config.host, 905), 'TV im Arbeitszimmer');
+        assert.equal(h.adapter.states.get('device.wolEnabled').val, true);
+        assert.deepEqual(h.client.calls.map(call => call.method), [
+            'getDeviceData', 'getVolume', 'getMute', 'getSettings', 'getCurrentPlayback',
+        ]);
+    }
+});
+
+test('an initially empty name retries on a later regular poll and stops once the TV reports its name', async t => {
+    let now = 0;
+    const h = await harness(t, { host: '192.0.2.10', pollInterval: 30 }, (_adapter, client) => {
+        client.hooks.getDeviceData = () => response('GetDeviceData', { NetworkHostName: '' });
+    }, { epgOptions: { now: () => now } });
+    assert.equal(calls(h.client, 'getDeviceData').length, 1);
+    now = 59999;
+    await h.runtime.poll();
+    assert.equal(calls(h.client, 'getDeviceData').length, 1, 'The retry must not happen before 60 seconds');
+    assert.equal(calls(h.client, 'getSettings').length, 1);
+    now = 60000;
+    h.client.hooks.getDeviceData = () => response('GetDeviceData', { NetworkHostName: 'TV after boot' });
+    await h.runtime.poll();
+    assert.equal(calls(h.client, 'getDeviceData').length, 2);
+    assert.equal(nameForTv(h.runtime._tvNames, '192.0.2.10', 905), 'TV after boot');
+    now = 360000;
+    await h.runtime.poll();
+    assert.equal(calls(h.client, 'getDeviceData').length, 2, 'A known name must end automatic metadata retries');
+    assert.equal(calls(h.client, 'getSettings').length, 2);
+});
+
+test('empty metadata has at most three automatic reads per connection phase', async t => {
+    let now = 0;
+    const h = await harness(t, { host: '192.0.2.10', pollInterval: 30 }, (_adapter, client) => {
+        client.hooks.getDeviceData = () => response('GetDeviceData', { NetworkHostName: '' });
+    }, { epgOptions: { now: () => now } });
+    for (const time of [60000, 120000, 180000, 240000, 360000]) {
+        now = time;
+        await h.runtime.poll();
+    }
+    assert.equal(calls(h.client, 'getDeviceData').length, 3);
+    assert.equal(calls(h.client, 'getSettings').length, 3);
+    h.client.hooks.getVolume = () => { throw codedError('NETWORK', 'Connection was lost'); };
+    await h.runtime.poll();
+    assert.equal(h.adapter.states.get('info.connection').val, false);
+    delete h.client.hooks.getVolume;
+    now += 1;
+    await h.runtime.poll();
+    assert.equal(calls(h.client, 'getDeviceData').length, 4, 'A new connection phase performs its ordinary initial read');
+    now += 59999;
+    await h.runtime.poll();
+    assert.equal(calls(h.client, 'getDeviceData').length, 4);
+});
+
+test('empty names with polling disabled never add a timer and manual refresh remains immediate', async t => {
+    let now = 0;
+    const h = await harness(t, { host: '192.0.2.10', pollInterval: 0 }, (_adapter, client) => {
+        client.hooks.getDeviceData = () => response('GetDeviceData', { NetworkHostName: '' });
+    }, { epgOptions: { now: () => now } });
+    assert.equal(h.client.calls.length, 0);
+    now = 360000;
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(h.client.calls.length, 0);
+    assert.equal(h.adapter.timers.size, 0);
+    await write(h, 'control.refresh', true);
+    now += 1;
+    await write(h, 'control.refresh', true);
+    assert.equal(calls(h.client, 'getDeviceData').length, 2, 'Explicit reads need not wait for the automatic retry interval');
+    assert.equal(h.adapter.timers.size, 0);
+});
+
+test('device names fall back to the streaming name and later accept a reported network name', async t => {
+    const h = await harness(t, { host: '2001:db8::10' }, (_adapter, client) => {
+        client.hooks.getDeviceData = () => response('GetDeviceData', {
+            NetworkHostName: '', StreamingServerName: { '#text': 'Loewe Streamingname' },
+        });
+    });
+    assert.equal(nameForTv(h.runtime._tvNames, '2001:db8::10', 905), 'Loewe Streamingname');
+    h.client.hooks.getDeviceData = () => response('GetDeviceData', { NetworkHostName: 'Loewe Netzwerkname' });
+    await write(h, 'control.refresh', true);
+    assert.equal(nameForTv(h.runtime._tvNames, '2001:db8::10', 905), 'Loewe Netzwerkname');
+    h.client.hooks.getDeviceData = () => response('GetDeviceData', { StreamingServerName: 'A weaker later report' });
+    await write(h, 'control.refresh', true);
+    assert.equal(nameForTv(h.runtime._tvNames, '2001:db8::10', 905), 'Loewe Netzwerkname');
+});
+
+test('reported names survive an offline restart without transferring to a changed host or port', async t => {
+    const first = await harness(t, { host: '192.0.2.10' }, (_adapter, client) => {
+        client.hooks.getDeviceData = () => response('GetDeviceData', { NetworkHostName: 'Loewe Wohnzimmer' });
+    });
+    const saved = structuredClone(first.adapter.states.get(TV_NAMES_STATE));
+    const previousData = structuredClone(first.adapter.states.get('device.data'));
+    await first.runtime.stop();
+    for (const [host, port, expectedName] of [
+        ['192.0.2.10', 905, 'Loewe Wohnzimmer'], ['192.0.2.20', 905, ''], ['192.0.2.10', 1905, ''],
+    ]) {
+        const h = await harness(t, { host, port }, (adapter, client) => {
+            adapter.states.set(TV_NAMES_STATE, structuredClone(saved));
+            adapter.states.set('device.data', structuredClone(previousData));
+            client.hooks.getDeviceData = () => { throw codedError('NETWORK', 'The TV is off'); };
+        });
+        assert.equal(nameForTv(h.runtime._tvNames, host, port), expectedName);
+        assert.equal(h.adapter.states.get(TV_NAMES_STATE).val, saved.val);
+        assert.equal(h.adapter.states.get('info.connection').val, false);
+    }
+});
+
+test('empty or malformed name fields cannot erase a known TV name or become client names', async t => {
+    const h = await harness(t, { host: '192.0.2.10' }, (_adapter, client) => {
+        client.hooks.getDeviceData = () => response('GetDeviceData', { NetworkHostName: 'Known TV' });
+    });
+    const saved = h.adapter.states.get(TV_NAMES_STATE).val;
+    for (const value of ['', ' \n ', '\u0000\u0001', null, 17, false, [], { wrong: 'value' }, { '#text': 17 }, '\uD800']) {
+        h.client.hooks.getDeviceData = () => response('GetDeviceData', {
+            NetworkHostName: value, StreamingServerName: value, DeviceName: 'Not a TV name',
+        });
+        h.client.hooks.getSettings = () => response('GetSettings', { NetworkHostName: value, StreamingServerName: 'Not a settings field' });
+        await write(h, 'control.refresh', true);
+        assert.equal(h.adapter.states.get(TV_NAMES_STATE).val, saved);
+        assert.equal(h.adapter.states.get('info.connection').val, true);
+    }
+    h.client.hooks.getDeviceData = () => { throw codedError('SOAP_FAULT', 'Optional device data unavailable'); };
+    h.client.hooks.getSettings = () => { throw codedError('SOAP_FAULT', 'Optional settings unavailable'); };
+    await write(h, 'control.refresh', true);
+    assert.equal(h.adapter.states.get(TV_NAMES_STATE).val, saved);
+    assert.equal(h.adapter.states.get('info.connection').val, true);
+});
+
+test('live device and settings reports retain the existing name from network discovery', async t => {
+    const snapshot = { schemaVersion: 1, devices: [{ host: '192.0.2.10', port: 905, name: 'Name from TV discovery' }] };
+    const h = await harness(t, { host: '192.0.2.10' }, (adapter, client) => {
+        adapter.states.set(TV_NAMES_STATE, { val: JSON.stringify(snapshot), ack: true });
+        client.hooks.getDeviceData = () => response('GetDeviceData', { NetworkHostName: 'Network host', StreamingServerName: 'Stream' });
+        client.hooks.getSettings = () => response('GetSettings', { NetworkHostName: 'Network settings' });
+    });
+    assert.deepEqual(parseTvNames(h.adapter.states.get(TV_NAMES_STATE).val), snapshot);
+    assert.equal(h.adapter.states.get('info.connection').val, true);
+});
+
+test('a reply for a changed endpoint or a stopped runtime cannot persist a TV name', async t => {
+    for (const [method, action] of [['getDeviceData', 'GetDeviceData'], ['getSettings', 'GetSettings']]) {
+        for (const change of ['host', 'port', 'stop']) {
+            const h = await harness(t, { host: '192.0.2.10', pollInterval: 0 });
+            const pending = deferred();
+            h.client.hooks.getDeviceData = () => response('GetDeviceData');
+            h.client.hooks.getSettings = () => response('GetSettings', { NetworkHostName: 'Original TV settings' });
+            h.client.hooks[method] = () => pending.promise;
+            const refreshing = write(h, 'control.refresh', true);
+            await waitUntil(() => calls(h.client, method).length === 1, 'Expected pending metadata reply');
+            if (change === 'host') h.runtime.config.host = '192.0.2.20';
+            else if (change === 'port') h.runtime.config.port = 1905;
+            else await h.runtime.stop();
+            pending.resolve(response(action, { NetworkHostName: 'Late response from the original TV' }));
+            await refreshing;
+            assert.deepEqual(parseTvNames(h.adapter.states.get(TV_NAMES_STATE).val), { schemaVersion: 1, devices: [] });
+        }
+    }
+});
+
+test('a TV-name storage failure does not stop status polling or remote control', async t => {
+    const h = await harness(t, { host: '192.0.2.10', pollInterval: 0 });
+    const writeState = h.adapter.setStateAsync.bind(h.adapter);
+    h.adapter.setStateAsync = async (id, state) => {
+        if (id === TV_NAMES_STATE) throw codedError('DATABASE', 'Name cache write failed');
+        return writeState(id, state);
+    };
+    for (let attempt = 0; attempt < 2; attempt++) await write(h, 'control.refresh', true);
+    assert.equal(h.adapter.states.get('info.connection').val, true);
+    assert.equal(h.adapter.states.get('status.volume').val, h.client.volume);
+    assert.equal(h.adapter.states.get('info.lastError').val, '');
+    await write(h, 'remote.home', true);
+    assert.equal(calls(h.client, 'key').length, 1);
+    assert.equal(h.adapter.logs.filter(entry => entry.level === 'warn' && entry.text.includes('Namensspeicher')).length, 1);
 });
 
 test('offline and failed scans retain names, and changing one discovered name preserves the other TV', async t => {

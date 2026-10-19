@@ -166,11 +166,14 @@ geladenen TV-Erweiterung öffnet sich deren Programmübersicht direkt. Bei
 mehreren TVs erscheint die Auswahl. Ein gültiges `?instance=N` öffnet die
 angegebene Instanz direkt, sofern sie auf diesem Web-Adapter verfügbar ist.
 
-Ab **0.1.25** zeigen die Auswahlkacheln die bei der Netzwerksuche erkannten
-Fernsehernamen. Die gespeicherte IP-Adresse mit Steuerport bestimmt die
-Zuordnung; Instanzkennung und EPG-Ziel bleiben erhalten. Für bestehende
-Installationen nach dem Update in jeder TV-Instanz einmal **Fernseher suchen**
-ausführen. Anschließend bleiben die Namen auch bei ausgeschaltetem TV
+Ab **0.1.26** übernimmt der Adapter Fernsehernamen auch automatisch aus den
+regulären Geräte- und Einstellungsantworten. Nach dem Paketupdate beide
+TV-Instanzen und die ausgewählte Web-Instanz neu starten; die TVs müssen
+einmal erreichbar sein und ihre Namen melden. Eine erneute Netzwerksuche
+ist dafür nicht nötig. Bei ausgeschaltetem Statusabruf kann `control.refresh`
+die Namen einmalig abfragen. Die genaue konfigurierte Adresse mit Steuerport
+bestimmt die Zuordnung; Instanzkennung und EPG-Ziel bleiben erhalten.
+Anschließend sind die gespeicherten Namen auch bei ausgeschaltetem TV
 verfügbar. [Einrichtung der Namen](NETWORK_DISCOVERY.md#fernsehernamen-in-der-web-auswahl).
 
 Der Einstieg wird weiterhin von alten Lesezeichen **und von den betroffenen

@@ -6,7 +6,7 @@ Die Suche wird vom **ioBroker-Rechner** ausgeführt. Die Netzwerkverbindung des 
 
 ## Suchen und auswählen
 
-1. Installiere das neue Paket nach der [Updateanleitung](INSTALLATION.md#update-auf-0125). Lade Admin danach vollständig neu und prüfe `info.adapterBuild`: Für das aktuelle Paket muss dort **`0.1.25-tv-names.1`** stehen.
+1. Installiere das neue Paket nach der [Updateanleitung](INSTALLATION.md#update-auf-0126). Lade Admin danach vollständig neu und prüfe `info.adapterBuild`: Für das aktuelle Paket muss dort **`0.1.26-tv-names.1`** stehen.
 2. Aktiviere die gewünschte Instanz, beispielsweise **`loewe-tv.0`**, in der Instanzübersicht und warte ihren Start ab.
 3. Öffne **Instanzen → loewe-tv.0 → Einstellungen → Verbindung** und betätige **Fernseher suchen**.
 4. Warte einige Sekunden. Öffne danach **Gefundene Fernseher** und wähle den gewünschten Eintrag. Jeder Treffer enthält die IP-Adresse und die verfügbaren Geräteangaben.
@@ -19,15 +19,19 @@ Eine Suche beginnt ausschließlich durch **Fernseher suchen**. Das Öffnen der K
 
 ## Fernsehernamen in der Web-Auswahl
 
-Die allgemeine Auswahlseite `/loewe-tv/` zeigt ab **0.1.25** den bei der Gerätesuche gemeldeten TV-Namen über der jeweiligen Instanzkennung. `loewe-tv.0` und `loewe-tv.1` bleiben unter den Namen sichtbar. Die Kacheln verwenden weiterhin ihre bisherigen direkten EPG-Links, auch über Cloud oder einen Reverse-Proxy.
+Die allgemeine Auswahlseite `/loewe-tv/` zeigt den gespeicherten Fernsehernamen über der jeweiligen Instanzkennung. `loewe-tv.0` und `loewe-tv.1` bleiben unter den Namen sichtbar. **0.1.26** korrigiert die unvollständige Übernahme aus 0.1.25: Eine erneute manuelle Suche ist nicht mehr nötig, wenn der TV seinen Namen bei der regulären Statusabfrage liefert.
 
-Nach dem Update die in LOEWE-TV ausgewählte Web-Instanz einmal neu starten. Anschließend in **jeder TV-Instanz** unter **Verbindung → Fernseher suchen** suchen, während die TVs eingeschaltet sind. Eine bereits richtige Geräteadresse beibehalten und die Auswahlseite neu laden. Für das Speichern der erkannten Namen ist kein zusätzlicher Speichern-Klick nötig. Wird anschließend die TV-Adresse geändert, die Konfiguration wie bisher speichern.
+Nach dem Paketupdate **beide LOEWE-Instanzen und die ausgewählte Web-Instanz neu starten**. Die TVs einmal einschalten beziehungsweise erreichbar machen. Bei aktiviertem Statusabruf liest der Adapter ihre Geräteinformationen beim Start oder nach dem erneuten Verbindungsaufbau. Anschließend die Auswahlseite neu laden. Bei bewusst deaktiviertem Statusabruf (`pollInterval = 0`) bleibt die automatische Abfrage aus; der Taster **`control.refresh`** der jeweiligen Instanz liest die Angaben einmalig.
 
-Diese einmalige erneute Suche ist beim Wechsel von 0.1.24 oder älter nötig, weil die früheren Versionen die Namen beim Adapterneustart verworfen haben. Danach bleiben bekannte Namen auch bei ausgeschaltetem TV und nach weiteren Neustarts erhalten. Eine spätere erfolgreiche Suche aktualisiert einen am Fernseher geänderten Namen. Eine leere oder fehlgeschlagene Suche löscht bekannte Namen nicht.
+Der Adapter verwendet den vom TV gemeldeten **Netzwerknamen** aus `GetDeviceData` oder `GetSettings`. Falls nur ein **Streamingname** vorhanden ist, kann dieser als Ersatz dienen. Die Felder sind in der [Loewe Remote API 1.0.47, Seiten 22 und 63](https://cdn.loewe.tv/manuals/en/plus/Remote%20API/remote_api_1.0.47_Loewe.pdf) dokumentiert. Liefert der TV während des Hochfahrens zunächst leere Felder, erfolgen innerhalb derselben Verbindung bei höchstens zwei späteren regulären Statusabfragen neue Versuche, frühestens jeweils nach 60 Sekunden. Dafür wird kein eigener Timer oder Suchlauf gestartet.
 
-Die Zuordnung verwendet die **exakte IPv4-Adresse und den Steuerport** der gespeicherten Instanzkonfiguration. Die Namen aller Treffer werden gespeichert, damit auch eine erst nach der Suche gewählte IP-Adresse nach dem anschließenden Neustart ihren Namen behält. Für eine geänderte Adresse ohne passenden Treffer wird kein Name eines anderen TVs übernommen. Bei manuell eingetragenen DNS-Hostnamen gibt es keinen automatischen Abgleich mit einer gefundenen IP-Adresse.
+Ein bereits durch **Fernseher suchen** bestätigter Name hat Vorrang vor dem Netzwerknamen; dieser hat Vorrang vor dem Streamingnamen. Eine spätere erfolgreiche Suche aktualisiert einen aus der Suche gespeicherten Namen. Automatisch gelesene Netzwerknamen werden bei späteren vollständigen Geräteabfragen ebenfalls aktualisiert. Leere oder fehlgeschlagene Antworten löschen keine bekannten Namen. Nach der ersten erfolgreichen Übernahme bleiben die Namen auch bei ausgeschaltetem TV und nach weiteren Neustarts verfügbar.
 
-Ohne passenden erkannten Namen bleibt der vorhandene ioBroker-Instanzname beziehungsweise die neutrale Beschriftung **Fernseher 0/1** sichtbar. Es werden keine Raumbezeichnungen erfunden. Der nur lesbare Zustand `device.discoveryNames` enthält höchstens 256 Einträge mit `host`, `port` und `name`. Er dient ausschließlich der Anzeige und verändert keine TV-Steuerung, Senderkennung oder Aufnahmezuordnung. Das Öffnen der Webseite liest nur gespeicherte Daten und löst keine Netzwerksuche aus. [Prüfbericht](PRUEFBERICHT_0.1.25.md).
+Die Zuordnung verwendet die **genaue konfigurierte Adresse und den Steuerport** der aktuellen TV-Abfrage. DNS-Namen und IPv6-Adressen werden ebenfalls als exakte Ziele unterstützt. Eine DNS-Adresse wird nicht mit einer gefundenen IP-Adresse gleichgesetzt. Alte ungebundene `device.data`- oder `device.settings`-Antworten werden nicht nachträglich einer womöglich geänderten TV-Adresse zugeordnet.
+
+Die Web-Auswahl liest nur die gespeicherten Daten der jeweils eigenen LOEWE-Instanz. Zustandsänderungen werden übernommen; spätere Seitenaufrufe lesen die Namen zusätzlich höchstens alle fünf Sekunden erneut ein. So kann sich die Anzeige nach einem fehlgeschlagenen Startabruf oder einer verpassten Zustandsmeldung erholen. Der Datenbankabruf wartet höchstens 1,5 Sekunden. Direkte EPG-Links und Dateien werden dadurch nicht verzögert. Beim Öffnen der Seite wird keine TV-Abfrage oder Netzwerksuche ausgelöst.
+
+Ohne passenden gemeldeten Namen bleibt der vorhandene ioBroker-Instanzname beziehungsweise **Fernseher 0/1** sichtbar. Es werden keine Raumbezeichnungen erfunden. Der nur lesbare Zustand **`device.discoveryNames`** enthält höchstens 256 Einträge und 192 KiB mit `host`, `port` und `name`; automatisch gelesene Einträge enthalten zusätzlich `source: "network"` oder `source: "streaming"`. Die Kacheln verwenden weiterhin ihre instanzbezogenen EPG-Links. Der Name verändert keine TV-Steuerung, Senderkennung oder Aufnahmezuordnung. [Prüfbericht](PRUEFBERICHT_0.1.26.md).
 
 ## Mehrere Fernseher und mehrere Adressen
 

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.25",
+    "version": "0.1.26",
     "news": {
+      "0.1.26": {
+        "en": "Automatically retain TV names from normal device and settings responses without requiring another manual TV search. Bind live names to the configured address and port, retain them offline, and retry initially empty names during a bounded number of later polls. Reload stored names on later TV-selection page requests after missed state events.",
+        "de": "Fernsehernamen automatisch aus den regulären Geräte- und Einstellungsantworten übernehmen, ohne eine erneute manuelle TV-Suche vorauszusetzen. Live-Namen an die konfigurierte Adresse und den Steuerport binden, offline erhalten und anfangs leere Namen bei wenigen späteren Statusabfragen erneut lesen. Gespeicherte Namen bei späteren Aufrufen der TV-Auswahl nach verpassten Zustandsmeldungen nachladen."
+      },
       "0.1.25": {
         "en": "Show the discovered TV name on the TV selection page. Retain names by exact IP address and control port across restarts and offline periods, and update the page after a new TV search. Preserve each instance's existing EPG link.",
         "de": "Auf der TV-Auswahlseite den erkannten Fernsehernamen anzeigen. Namen mit exakter IP-Adresse und Steuerport über Neustarts und Offline-Zeiten erhalten und nach einer neuen Fernseher-Suche aktualisieren. Bestehende EPG-Links der jeweiligen Instanz beibehalten."

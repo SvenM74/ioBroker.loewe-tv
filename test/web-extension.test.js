@@ -68,6 +68,36 @@ function namesAdapter(options = {}) {
     };
 }
 
+function namesClock() {
+    let now = 10000;
+    const timers = [];
+    const context = { module: { exports: {} }, __dirname: path.join(__dirname, '..', 'lib'), URL,
+        Date: class extends Date { static now() { return now; } },
+        require(name) {
+            if (name === 'node:timers') return {
+                setTimeout(callback, delay) {
+                    const timer = { callback, delay, at: now + delay, cleared: false };
+                    timers.push(timer);
+                    return timer;
+                },
+                clearTimeout(timer) { if (timer) timer.cleared = true; },
+            };
+            return name === './tv-names' ? require('../lib/tv-names') : require(name);
+        } };
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../lib/web-extension.js'), 'utf8'), context);
+    return { Extension: context.module.exports, timers,
+        advance(milliseconds) {
+            now += milliseconds;
+            for (const timer of timers) {
+                if (!timer.cleared && timer.at <= now) {
+                    timer.cleared = true;
+                    timer.callback();
+                }
+            }
+        },
+    };
+}
+
 test('web extension only activates for the enabled TV and explicitly selected web instance', () => {
     for (const options of [
         { selected: '' }, { selected: '*' }, { selected: 'web.1' }, { selected: 'system.adapter.web.2' },
@@ -706,4 +736,158 @@ test('replacing a TV extension preserves its name subscription despite a late ol
         old.extension.unload();
         assert.deepEqual(adapter.unsubscriptions, []);
     }
+});
+
+test('a later chooser GET recovers stored TV names after the first database read and subscription failed', async () => {
+    const clock = namesClock();
+    let failed = true;
+    const adapter = namesAdapter({
+        subscribe() { throw new Error('Subscription unavailable'); },
+        read(id) {
+            if (failed) throw new Error('State unavailable during startup');
+            return savedNames([{ host: id.startsWith('loewe-tv.0.') ? '192.168.1.30' : '192.168.1.31',
+                port: 905, name: id.startsWith('loewe-tv.0.') ? 'Wohnzimmer' : 'Schlafzimmer' }]);
+        },
+    });
+    const first = web({ Extension: clock.Extension, adapter, id: 'system.adapter.loewe-tv.0', tvHost: '192.168.1.30' });
+    const second = web({ Extension: clock.Extension, host: first, id: 'system.adapter.loewe-tv.1', tvHost: '192.168.1.31' });
+    await Promise.all([first.extension.waitForReady(), second.extension.waitForReady()]);
+    assert.match(String(first.request('/loewe-tv/').body), /Fernseher 0/);
+    failed = false;
+    clock.advance(4999);
+    assert.match(String(first.request('/loewe-tv/').body), /Fernseher 0/);
+    assert.equal(adapter.reads.length, 2, 'Repeated page reloads respect the five-second read interval.');
+    clock.advance(1);
+    const response = first.request('/loewe-tv/');
+    await response.done;
+    assert.match(String(response.body), /Wohnzimmer/);
+    assert.match(String(response.body), /Schlafzimmer/);
+    assert.doesNotMatch(String(response.body), /Fernseher [01]/);
+    assert.equal(adapter.reads.length, 4);
+    assert.deepEqual(tvLinks(response), ['../loewe-tv.0/epg.html', '../loewe-tv.1/epg.html']);
+    first.extension.unload();
+    second.extension.unload();
+});
+
+test('parallel chooser reloads share one read per TV and recover a lost name event without delaying direct links', async () => {
+    const clock = namesClock();
+    const resolvers = new Map();
+    let reload = false;
+    const adapter = namesAdapter({ read: id => reload
+        ? new Promise(resolve => resolvers.set(id, resolve))
+        : savedNames([{ host: id.startsWith('loewe-tv.0.') ? '192.168.1.30' : '192.168.1.31', port: 905, name: 'Alter Name' }]) });
+    const first = web({ Extension: clock.Extension, adapter, id: 'system.adapter.loewe-tv.0', tvHost: '192.168.1.30' });
+    const second = web({ Extension: clock.Extension, host: first, id: 'system.adapter.loewe-tv.1', tvHost: '192.168.1.31' });
+    await Promise.all([first.extension.waitForReady(), second.extension.waitForReady()]);
+    reload = true;
+    clock.advance(5000);
+    assert.equal(first.request('/loewe-tv.0/epg.html').code, 200);
+    assert.equal(first.request('/loewe-tv/?instance=1').headers.Location, '../loewe-tv.1/epg.html');
+    assert.equal(first.request('/loewe-tv/epg-entry.css').code, 200);
+    assert.equal(adapter.reads.length, 2, 'Assets and unambiguous redirects never start the extra name read.');
+    const responses = Array.from({ length: 12 }, (_, index) => first.request(ENTRY_PATHS[index % ENTRY_PATHS.length]));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(adapter.reads.length, 4, 'Concurrent page reloads share their in-flight name reads.');
+    assert.ok(responses.every(response => response.code === null));
+    assert.equal(first.request('/loewe-tv.1/epg.js').code, 200);
+    assert.equal(first.request('/loewe-tv/?instance=0').code, 302);
+    for (const [id, resolve] of resolvers) {
+        const firstTv = id.startsWith('loewe-tv.0.');
+        resolve(savedNames([{ host: firstTv ? '192.168.1.30' : '192.168.1.31', port: 905,
+            name: firstTv ? 'Neues Wohnzimmer' : 'Neues Schlafzimmer' }]));
+    }
+    await Promise.all(responses.map(response => response.done));
+    for (const response of responses) {
+        assert.equal(response.code, 200);
+        assert.match(String(response.body), /Neues Wohnzimmer/);
+        assert.match(String(response.body), /Neues Schlafzimmer/);
+        assert.doesNotMatch(String(response.body), /Alter Name/);
+    }
+    assert.equal(first.request('/loewe-tv/').code, 200);
+    assert.equal(adapter.reads.length, 4, 'A completed reload cannot immediately start another one.');
+    first.extension.unload();
+    second.extension.unload();
+});
+
+test('live name updates and unloading win over later chooser read responses', async () => {
+    const clock = namesClock();
+    const resolvers = new Map();
+    let reload = false;
+    const adapter = namesAdapter({ read: id => reload
+        ? new Promise(resolve => resolvers.set(id, resolve))
+        : savedNames([{ host: id.startsWith('loewe-tv.0.') ? '192.168.1.30' : '192.168.1.31', port: 905, name: 'Ursprünglich' }]) });
+    const first = web({ Extension: clock.Extension, adapter, id: 'system.adapter.loewe-tv.0', tvHost: '192.168.1.30' });
+    const second = web({ Extension: clock.Extension, host: first, id: 'system.adapter.loewe-tv.1', tvHost: '192.168.1.31' });
+    await Promise.all([first.extension.waitForReady(), second.extension.waitForReady()]);
+    reload = true;
+    clock.advance(5000);
+    const response = first.request('/loewe-tv/');
+    await new Promise(resolve => setImmediate(resolve));
+    first.extension.stateChange(`loewe-tv.0.${TV_NAMES_STATE}`, savedNames([
+        { host: '192.168.1.30', port: 905, name: 'Aktueller Name aus Event' },
+    ]));
+    second.extension.unload();
+    for (const [id, resolve] of resolvers) resolve(savedNames([
+        { host: id.startsWith('loewe-tv.0.') ? '192.168.1.30' : '192.168.1.31', port: 905, name: 'Verspäteter Name' },
+    ]));
+    await response.done;
+    assert.equal(first.extension.name, 'Aktueller Name aus Event');
+    assert.equal(second.extension.name, 'Ursprünglich', 'A response cannot revive or rename an unloaded TV.');
+    assert.equal(second.extension.welcomePage(), null);
+    assert.equal(response.headers.Location, '../loewe-tv.0/epg.html', 'The final response uses the remaining active TV.');
+    first.extension.unload();
+});
+
+test('a hung subscription and timed out read cannot prevent a later chooser from recovering', async () => {
+    const clock = namesClock();
+    const initialResolvers = new Map();
+    let reload = false;
+    const adapter = namesAdapter({ subscribe: () => new Promise(() => {}), read: id => reload
+        ? savedNames([{ host: id.startsWith('loewe-tv.0.') ? '192.168.1.30' : '192.168.1.31', port: 905, name: 'Wiederhergestellt' }])
+        : new Promise(resolve => initialResolvers.set(id, resolve)) });
+    const first = web({ Extension: clock.Extension, adapter, id: 'system.adapter.loewe-tv.0', tvHost: '192.168.1.30' });
+    const second = web({ Extension: clock.Extension, host: first, id: 'system.adapter.loewe-tv.1', tvHost: '192.168.1.31' });
+    const initial = first.request('/loewe-tv/');
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(adapter.reads.length, 2, 'Name reads do not depend on acknowledgement of a subscription.');
+    clock.advance(1500);
+    await initial.done;
+    assert.equal(initial.code, 200);
+    assert.match(String(initial.body), /Fernseher 0/);
+    reload = true;
+    clock.advance(3500);
+    const recovered = first.request('/loewe-tv/');
+    await recovered.done;
+    assert.equal(adapter.reads.length, 4);
+    assert.equal((String(recovered.body).match(/Wiederhergestellt/g) || []).length, 2);
+    for (const [id, resolve] of initialResolvers) resolve(savedNames([
+        { host: id.startsWith('loewe-tv.0.') ? '192.168.1.30' : '192.168.1.31', port: 905, name: 'Zu spät' },
+    ]));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(first.extension.name, 'Wiederhergestellt');
+    assert.equal(second.extension.name, 'Wiederhergestellt');
+    first.extension.unload();
+    second.extension.unload();
+});
+
+test('a chooser request does not recursively retry after its read deadline crosses the next refresh interval', async () => {
+    const clock = namesClock();
+    const adapter = namesAdapter({ read: () => new Promise(() => {}) });
+    const first = web({ Extension: clock.Extension, adapter, id: 'system.adapter.loewe-tv.0', tvHost: '192.168.1.30' });
+    const second = web({ Extension: clock.Extension, host: first, id: 'system.adapter.loewe-tv.1', tvHost: '192.168.1.31' });
+    await new Promise(resolve => setImmediate(resolve));
+    clock.advance(5000);
+    const response = first.request('/loewe-tv/');
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(adapter.reads.length, 4);
+    clock.advance(20000);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(response.code, 200, 'Even after a long event-loop pause, this request renders after one deadline.');
+    await response.done;
+    assert.equal(adapter.reads.length, 4, 'Rendering after the deadline must not start another read.');
+    assert.match(String(response.body), /Fernseher 0/);
+    assert.match(String(response.body), /Fernseher 1/);
+    assert.ok(clock.timers.every(timer => timer.delay === 1500 && timer.cleared));
+    first.extension.unload();
+    second.extension.unload();
 });

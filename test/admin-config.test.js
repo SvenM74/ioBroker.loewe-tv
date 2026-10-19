@@ -229,12 +229,12 @@ test('Admin lists use the saved native selection and a temporary reload trigger'
     assert.equal(translations[reload.label], 'Senderlisten neu laden');
 });
 
-test('EPG configuration reads directly from the TV with only enable and refresh settings', () => {
+test('EPG configuration keeps TV source settings and adds optional web-instance selection', () => {
     const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
     const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
     const panel = config.items._epg;
     const items = panel.items;
-    const expected = { epgEnabled: true, epgRefreshInterval: 900 };
+    const expected = { epgEnabled: true, epgRefreshInterval: 900, webInstance: '' };
     assert.equal(panel.type, 'panel');
     assert.deepEqual(Object.keys(items).filter(key => !key.startsWith('_')).sort(), Object.keys(expected).sort());
     for (const [key, value] of Object.entries(expected)) {
@@ -255,6 +255,43 @@ test('EPG configuration reads directly from the TV with only enable and refresh 
                 if (item[key]) assert.ok(translations[item[key]], `${language} translation missing: ${item[key]}`);
             }
         }
+    }
+});
+
+test('web access uses the official instance selector without making old settings invalid', () => {
+    const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
+    const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
+    const field = config.items._epg.items.webInstance;
+    assert.equal(field.type, 'instance');
+    assert.equal(field.adapter, 'web');
+    assert.equal(field.allowDeactivate, true);
+    assert.equal(field.onlyEnabled, true);
+    assert.equal(field.all, undefined, 'A saved web selection identifies one existing instance.');
+    assert.equal(io.native.webInstance, '');
+    for (const webInstance of [undefined, '', 'web.0', 'web.12']) {
+        const data = { ...clone(io.native), host: 'tv.example', webInstance };
+        const before = clone(data);
+        assert.deepEqual(adminValidationErrors(config, data), [], `Valid selection: ${webInstance}`);
+        assert.deepEqual(clone(data), before);
+    }
+    for (const webInstance of [null, false, 0, '*', 'web.01', 'web.-1', 'admin.0', 'system.adapter.web.0', 'web.0/other', 'http://host:8082']) {
+        assert.deepEqual(adminValidationErrors(config, { ...clone(io.native), host: 'tv.example', webInstance }), ['_epg.webInstance']);
+    }
+});
+
+test('instance overview and Admin quick access both link to the exact TV instance', () => {
+    const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
+    const link = io.common.localLinks._default;
+    assert.equal(link.intro, true);
+    assert.equal(link.name.de, 'Programmübersicht');
+    assert.equal(link.link, 'adapter/loewe-tv/epg.html?instance=%instance%');
+    assert.equal(io.common.webExtension, 'lib/web-extension.js');
+    assert.equal(fs.existsSync(path.join(root, io.common.webExtension)), true);
+    for (const instance of [0, 3, 12]) {
+        const url = new URL(link.link.replace('%instance%', String(instance)), 'https://broker.example/proxy/admin/');
+        assert.equal(url.pathname, '/proxy/admin/adapter/loewe-tv/epg.html');
+        assert.equal(url.searchParams.get('instance'), String(instance));
+        assert.equal(url.origin, 'https://broker.example');
     }
 });
 

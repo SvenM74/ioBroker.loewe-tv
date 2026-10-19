@@ -2,20 +2,21 @@
 
 ## Aktueller Stand
 
-**Version 0.1.13, Build `0.1.13-recording-status.1`**, zeigt vom Fernseher beantwortete Aufnahmeaufträge als **An TV übertragen** und trennt diesen Nachweis vom noch offenen Timerabgleich. Die Diagnose ist aufklappbar. Die Korrekturen an Timer-Textmetadaten und Verbindungsstatus aus 0.1.12 bleiben enthalten. Die automatische Suche nach Sendungen anhand eigener Regeln bleibt das nächste Ausbauziel.
+**Version 0.1.14, Build `0.1.14-epg-web.1`**, ergänzt Senderlogos, eine kompakte Aktionsleiste sowie Instanz- und Schnellzugriffe über Admin und optional ioBroker.web. Die Aufnahme- und Statuskorrekturen aus 0.1.12/0.1.13 bleiben erhalten. Die automatische Suche nach Sendungen anhand eigener Regeln bleibt das nächste Ausbauziel.
 
 | Baustein | Implementierter Stand |
 |---|---|
 | TV finden und konfigurieren | Netzwerksuche bietet gefundene Loewe-Adressen an. Jede Instanz verwendet den gespeicherten TV und eine ausgewählte Senderliste. [Netzwerksuche](NETWORK_DISCOVERY.md). |
 | Senderbestand | Ausschließlich TV-Dienste unter `channels.tv`, mit Namens-ID und nachgeführter Position. Mehrere Plätze desselben Dienstes teilen sich einen Ordner. |
 | TV-EPG | Abruf ausschließlich vom Fernseher; aktuelle und nächste Sendung unter jedem TV-Sender, weitere gelieferte Vorschauen im Cache. [EPG](EPG.md). |
-| Oberfläche | Getrennte Reiter **EPG-Einstellungen** und **Programmübersicht**, Zeitachse und Sendungsdetails. **Separat öffnen** verwendet die bestehende Admin-Adresse samt Anmeldung, ohne eigenen Port. |
+| Oberfläche | Senderlogos, Zeitachse und kompakte Sendungsauswahl mit aufklappbarer Beschreibung. Aktionen und EPG-Aktualisierung stehen zwischen Stundenauswahl und Suche. |
+| Zugriff | Link an der Instanz und im Admin-Schnellzugriff. Optional eine vorhandene ioBroker.web-Instanz mit integrierter Socket-Verbindung auswählen; eigener Instanzpfad und Web-Schnellzugriff. |
 | Laufende Sendung ansehen | **Jetzt ansehen** sendet nur für eine aktuell eindeutig laufende Sendung. Die Gültigkeit wird direkt vor dem TV-Befehl erneut geprüft. |
 | Aufnahme vormerken | Zukünftige Sendung mit vollständigen, eindeutigen Zeiten auswählen und den Dialog bestätigen. Der Auftrag wird dauerhaft in `recordings.jobs` gespeichert. |
 | Offline-Übergabe | Aufträge warten auf einen erreichbaren TV. Kein Wake-on-LAN und kein Einschaltbefehl. Nur vor Sendungsbeginn darf ein neuer Timer übertragen werden. |
 | Timer abgleichen | `GetTimerList` wird mit Senderkennung und exakten Zeiten abgeglichen. Nur ein eindeutig passender Timer führt zu `scheduled`. Unbekannte Formate bleiben unbestätigt. |
 
-Die [Bedienungsanleitung zur Programmübersicht](EPG_GUI.md) beschreibt Dialoge, Zustände und die separate URL. Für eine gewöhnliche Admin-Installation lautet die URL beispielsweise `http://IOBROKER-HOST:8081/adapter/loewe-tv/epg.html?instance=0`; der Button übernimmt die tatsächlich verwendete Adresse einschließlich HTTPS, Proxy-Pfad und Instanznummer.
+Die [Bedienungsanleitung zur Programmübersicht](EPG_GUI.md) beschreibt Dialoge, Zustände, Senderbilder und beide Zugangswege. Die [Logoquellen](CHANNEL_LOGOS.md) führen den geprüften Nutzungsstatus jedes mitgelieferten Bildes auf.
 
 ## Was am Gerät bereits bestätigt ist
 

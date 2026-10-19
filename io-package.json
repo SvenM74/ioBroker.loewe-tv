@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.13",
+    "version": "0.1.14",
     "news": {
+      "0.1.14": {
+        "en": "Show optional channel logos from the TV with individually documented public-domain logo fallbacks. Add programme-guide links in the instance overview and optional access through an existing ioBroker.web instance. Move watching, recording and EPG refresh beside the time-window selector; replace the large details panel with a compact selection and expandable description. Preserve recording delivery status and duplicate-submission protection.",
+        "de": "Optionale Senderlogos des TVs mit einzeln dokumentierten gemeinfreien Ersatzgrafiken anzeigen. Die Programmübersicht aus der Instanzübersicht und optional über eine bestehende ioBroker.web-Instanz öffnen. Ansehen, Aufnahmeplanung und EPG-Aktualisierung neben die Stundenauswahl verschieben; die große Detailfläche durch eine kompakte Auswahl mit aufklappbarer Beschreibung ersetzen. Aufnahmestatus und Schutz vor doppelter Übertragung bleiben erhalten."
+      },
       "0.1.13": {
         "en": "Distinguish a recording request answered by the TV from pending timer confirmation. Show transferred requests with a neutral status and expandable timer diagnostics, including existing journal entries. Preserve genuine transfer uncertainty, timer matching and protection against repeated submissions. Document the reported delivery of two requests and the start of the first recording.",
         "de": "Vom TV beantwortete Aufnahmeaufträge von einer noch offenen Timerbestätigung unterscheiden. Übertragene Aufträge mit sachlichem Status und aufklappbarer Timerdiagnose anzeigen, auch für vorhandene Journaleinträge. Tatsächlich unklaren Versand, Timerabgleich und Schutz vor erneutem Versand beibehalten. Gemeldete Übergabe zweier Aufträge und Beginn der ersten Aufnahme dokumentieren."
@@ -87,6 +91,17 @@
     "adminUI": {
       "config": "json"
     },
+    "localLinks": {
+      "_default": {
+        "link": "adapter/loewe-tv/epg.html?instance=%instance%",
+        "name": {
+          "en": "Programme guide",
+          "de": "Programmübersicht"
+        },
+        "intro": true
+      }
+    },
+    "webExtension": "lib/web-extension.js",
     "dependencies": [
       {
         "js-controller": ">=6.0.11"
@@ -108,6 +123,7 @@
     "channelListView": "",
     "epgEnabled": true,
     "epgRefreshInterval": 900,
+    "webInstance": "",
     "pollPlayback": true,
     "appendNul": true,
     "macLan": "",

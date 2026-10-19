@@ -28,6 +28,24 @@ function recordingSnapshot(overrides = {}) {
     }] };
 }
 
+// Minimal DOM event surface for image fallback behavior; it performs no image
+// requests and adds no browser dependency to the normal adapter test suite.
+function logoDocument() {
+    return { createElement(tagName) {
+        const listeners = new Map();
+        const element = { tagName, children: [], hidden: false, sources: [], textContent: '',
+            appendChild(child) { this.children.push(child); return child; },
+            addEventListener(type, callback) { listeners.set(type, callback); },
+            emit(type) { listeners.get(type)?.({ target: this }); },
+        };
+        Object.defineProperty(element, 'src', {
+            get() { return this.sources.at(-1); },
+            set(value) { this.sources.push(value); },
+        });
+        return element;
+    } };
+}
+
 test('guide accepts only the expected TV snapshot and a bounded event list', () => {
     for (const invalid of [null, {}, { ...payload([]), source: 'xmltv' },
         { ...payload([]), schemaVersion: 2 }, { ...payload([]), now: 'today' },
@@ -45,6 +63,89 @@ test('guide sorts by numeric channel position, keeps names and has no generated 
     assert.ok(result.channels.every(item => item.events.length === 0));
     assert.equal(result.instance, 'loewe-tv.0');
     assert.equal(result.listName, 'ASTRA LCN');
+});
+
+test('channel logos retain only supported optional image sources without changing names or search', () => {
+    const result = ui.normalizeGuide(payload([
+        { ...channel('Das Erste HD', 1, []), logoUrl: 'http://192.0.2.10:905/channel.png', logoFallback: 'logos/das-erste.svg' },
+        { ...channel('ZDF HD', 2, []), logoUrl: 'logos/zdf.svg', logoFallback: 'logos/ignored.svg' },
+        { ...channel('Arte HD', 3, []), logoUrl: 'https://TV.example/channel.svg?size=small' },
+        channel('Unknown station', 4, []),
+    ]));
+    assert.equal(result.channels[0].logoUrl, 'http://192.0.2.10:905/channel.png');
+    assert.equal(result.channels[0].logoFallback, 'logos/das-erste.svg');
+    assert.equal(result.channels[1].logoUrl, 'logos/zdf.svg');
+    assert.equal(Object.hasOwn(result.channels[1], 'logoFallback'), false, 'A local logo does not need another fallback.');
+    assert.equal(result.channels[2].logoUrl, 'https://tv.example/channel.svg?size=small');
+    assert.equal(Object.hasOwn(result.channels[3], 'logoUrl'), false);
+    assert.equal(Object.hasOwn(result.channels[3], 'logoFallback'), false);
+    assert.equal(ui.filterChannels(result.channels, 'erste 1')[0].name, 'Das Erste HD');
+});
+
+test('unsafe, malformed and oversized logo addresses never enter the normalized guide', () => {
+    for (const logoUrl of [undefined, null, 1, {}, '', 'javascript:alert(1)', 'data:image/svg+xml,test',
+        'file:///tmp/logo.svg', '//tv.example/logo.svg', '/logos/zdf.svg', '../logos/zdf.svg',
+        'logos/../zdf.svg', 'logos/%2e%2e/logo.svg', 'logos/zdf.svg?extra=1', 'logos/zdf.svg#extra',
+        'logos/ZDF.svg', 'logos/zdf.png', 'logos\\zdf.svg', `logos/${'a'.repeat(81)}.svg`, 'http://tv.example\\logo.png',
+        'http://user:password@tv.example/logo.png', 'http://@tv.example/logo.png', 'https:///logo.png',
+        'https://tv.example/\nlogo.png', 'https://tv.example/logo.png ', 'https://tv.example/%5clogo.png',
+        'https://tv.example/%0alogo.png', `https://tv.example/${'x'.repeat(2048)}`, `https://tv.example/${'ä'.repeat(400)}.svg`]) {
+        const value = ui.normalizeGuide(payload([{ ...channel('Station', 1, []), logoUrl, logoFallback: 'logos/zdf.svg' }])).channels[0];
+        assert.equal(Object.hasOwn(value, 'logoUrl'), false, String(logoUrl));
+        assert.equal(Object.hasOwn(value, 'logoFallback'), false, 'A standalone fallback is not a valid primary image.');
+    }
+    for (const logoFallback of ['https://other.example/logo.svg', '../logo.svg', '//other/logo.svg', 'logos/logo.svg?x=1']) {
+        const value = ui.normalizeGuide(payload([{ ...channel('Station', 1, []), logoUrl: 'http://192.0.2.10/logo.png', logoFallback }])).channels[0];
+        assert.equal(value.logoUrl, 'http://192.0.2.10/logo.png');
+        assert.equal(Object.hasOwn(value, 'logoFallback'), false);
+    }
+});
+
+test('HTTPS pages skip HTTP TV logos and local assets keep the same relative path in either entry point', () => {
+    const value = { logoUrl: 'http://192.0.2.10/logo.png', logoFallback: 'logos/das-erste.svg' };
+    assert.deepEqual(ui.channelLogoSources(value, 'http:'), ['http://192.0.2.10/logo.png', 'logos/das-erste.svg']);
+    assert.deepEqual(ui.channelLogoSources(value, 'https:'), ['logos/das-erste.svg']);
+    assert.deepEqual(ui.channelLogoSources({ logoUrl: value.logoUrl }, 'https:'), []);
+    assert.deepEqual(ui.channelLogoSources({ logoUrl: 'https://tv.example/logo.svg', logoFallback: value.logoFallback }, 'https:'),
+        ['https://tv.example/logo.svg', 'logos/das-erste.svg']);
+    for (const protocol of ['http:', 'https:']) {
+        assert.deepEqual(ui.channelLogoSources({ logoUrl: 'logos/zdf.svg' }, protocol), ['logos/zdf.svg']);
+    }
+});
+
+test('a logo retries only its one local fallback and then restores the full station name as text', () => {
+    const document = logoDocument();
+    const value = { name: 'Station <img src=x> & HD', logoUrl: 'http://192.0.2.10/logo.png', logoFallback: 'logos/das-erste.svg' };
+    const identity = ui.createChannelIdentity(document, value, 'http:');
+    const [label, logo] = identity.children;
+    assert.equal(label.textContent, value.name);
+    assert.equal(identity.title, value.name);
+    assert.equal(logo.alt, value.name);
+    assert.equal(logo.title, value.name);
+    assert.equal(logo.loading, 'lazy');
+    assert.equal(logo.referrerPolicy, 'no-referrer');
+    assert.equal(label.hidden, true);
+    assert.deepEqual(logo.sources, [value.logoUrl]);
+    logo.emit('error');
+    assert.deepEqual(logo.sources, [value.logoUrl, value.logoFallback]);
+    assert.equal(label.hidden, true);
+    logo.emit('error');
+    assert.equal(logo.hidden, true);
+    assert.equal(label.hidden, false);
+    logo.emit('error');
+    assert.equal(logo.sources.length, 2, 'Repeated error events cannot create a retry loop.');
+
+    const secure = ui.createChannelIdentity(document, value, 'https:');
+    assert.deepEqual(secure.children[1].sources, [value.logoFallback]);
+    secure.children[1].emit('error');
+    assert.equal(secure.children[0].hidden, false);
+    assert.equal(secure.children[1].hidden, true);
+    for (const plain of [{ name: value.name }, { name: value.name, logoUrl: value.logoUrl }, { name: value.name, logoUrl: 'javascript:alert(1)' }]) {
+        const node = ui.createChannelIdentity(document, plain, 'https:');
+        assert.equal(node.children.length, 1);
+        assert.equal(node.children[0].textContent, value.name);
+        assert.equal(node.children[0].hidden, false);
+    }
 });
 
 test('guide keeps uncertain endings and rejects invalid, estimated or reversed event times', () => {
@@ -170,7 +271,7 @@ test('all static UI strings have German and English translations with matching s
     assert.equal(ui.translate('de', 'minutes', { count: 30 }), '30 Min.');
 });
 
-test('untrusted TV text remains data and the guide has no direct network or playback transport', () => {
+test('untrusted TV text remains data and the guide has no TV-command or playback transport', () => {
     const hostile = '<img src=x onerror=alert(1)><script>unsafe()</script>';
     const result = ui.normalizeGuide(payload([channel(hostile, 1, [event(hostile, START, START + ui.HOUR, {
         description: `${hostile}\u0000`, subtitle: hostile,
@@ -389,7 +490,39 @@ test('recording snapshots reject oversized responses, strip controls and keep in
         { ...payload, jobs: Array(513).fill(job) }]) assert.throws(() => ui.normalizeRecordings(invalid), /EPG_RECORDINGS_RESPONSE_INVALID/);
 });
 
-test('standalone URLs retain the current Admin origin, proxy path and instance without copying unrelated URL parameters', () => {
+test('programme and refresh actions sit between duration and search with an accessible compact selection', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../admin/epg.html'), 'utf8');
+    const controls = html.match(/<section class="guide-controls"[^>]*>([\s\S]*?)<\/section>/u)?.[1];
+    assert.ok(controls, 'The common toolbar must be present.');
+    const positions = ['guideDuration', 'programmeAction', 'refreshGuide', 'channelSearch']
+        .map(id => controls.indexOf(`id="${id}"`));
+    assert.ok(positions.every(position => position >= 0));
+    assert.deepEqual([...positions].sort((a, b) => a - b), positions, 'DOM order keeps keyboard access consistent with the toolbar.');
+    for (const id of ['programmeAction', 'refreshGuide']) {
+        assert.equal([...html.matchAll(new RegExp(`id="${id}"`, 'gu'))].length, 1, `${id} must not be duplicated.`);
+    }
+    assert.match(controls, /id="programmeAction"[^>]+aria-describedby="selectionSummary programmeActionHint"/u);
+    const selection = html.match(/<section class="programme-selection"[^>]*>([\s\S]*?)<\/section>/u)?.[1];
+    assert.ok(selection);
+    for (const id of ['selectionSummary', 'detailChannel', 'programmeTitle', 'detailTimes', 'programmeActionHint', 'actionStatus']) {
+        assert.ok(selection.includes(`id="${id}"`), `The compact selection must retain ${id}.`);
+    }
+    const description = selection.match(/<details\b[^>]*id="programmeDescription"[^>]*>/u)?.[0];
+    assert.ok(description, 'Programme descriptions remain available without a large permanent detail panel.');
+    assert.doesNotMatch(description, /\sopen(?:\s|=|>)/u);
+    assert.doesNotMatch(html, /id="(?:programmeDetail|detailNumber|detailStation|detailProgress|detailProgressBar|openStandalone)"/u);
+    assert.match(html, /<dialog[^>]+id="recordingDialog"/u);
+    assert.match(html, /id="recordingsList"/u);
+});
+
+test('every element used by the mounted guide remains present after the detail-panel removal', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../admin/epg.html'), 'utf8');
+    const code = fs.readFileSync(path.join(__dirname, '../admin/epg.js'), 'utf8');
+    const names = new Set([...code.matchAll(/\belements\.([a-zA-Z][a-zA-Z0-9]*)/gu)].map(match => match[1]));
+    for (const name of names) assert.ok(html.includes(`id="${name}"`), `Missing mounted element: ${name}`);
+});
+
+test('the retained standalone URL helper validates Admin URLs while the old UI button is absent', () => {
     assert.equal(ui.standaloneUrl('https://iobroker.example:8081/proxy/admin/adapter/loewe-tv/epg.html?instance=12&extra=private#details'),
         'https://iobroker.example:8081/proxy/admin/adapter/loewe-tv/epg.html?instance=12');
     assert.equal(ui.standaloneUrl('http://iobroker.local:8081/adapter/loewe-tv/epg.html?instance=0'),
@@ -402,7 +535,7 @@ test('standalone URLs retain the current Admin origin, proxy path and instance w
         'https://example.com/adapter/loewe-tv/epg.html?instance=-1',
         'https://example.com/adapter/loewe-tv/epg.html?instance=null']) assert.equal(ui.standaloneUrl(invalid), '');
     const html = fs.readFileSync(path.join(__dirname, '../admin/epg.html'), 'utf8');
-    assert.match(html, /id="openStandalone" target="_blank" rel="noopener noreferrer"/u);
+    assert.doesNotMatch(html, /id="openStandalone"/u);
     assert.match(html, /<dialog[^>]+id="recordingDialog"/u);
     assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '../admin/epg.js'), 'utf8'), /window\.confirm\s*\(|window\.alert\s*\(/u);
 });

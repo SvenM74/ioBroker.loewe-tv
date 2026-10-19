@@ -217,6 +217,24 @@
           "validatorErrorText": "Enter 0 or a whole number from 300 to 86400.",
           "xs": 12,
           "sm": 6
+        },
+        "webInstance": {
+          "type": "instance",
+          "adapter": "web",
+          "label": "Programme guide in ioBroker.web",
+          "help": "Select an existing web instance to make this TV's programme guide available there. Leave disabled to use Admin only. Save the setting, then open the programme guide from the web start page.",
+          "allowDeactivate": true,
+          "onlyEnabled": true,
+          "default": "",
+          "validator": "data.webInstance === undefined || data.webInstance === '' || (typeof data.webInstance === 'string' && /^web\\.(?:0|[1-9]\\d{0,8})$/.test(data.webInstance))",
+          "validatorNoSaveOnError": true,
+          "validatorErrorText": "Select an available web instance or deactivate web access.",
+          "xs": 12
+        },
+        "_webGuideHelp": {
+          "type": "staticText",
+          "text": "The selected web instance must use its integrated socket connection. Its login, HTTPS and user permissions also apply to the programme guide. Users need permission to send adapter messages. Saving this setting may restart that web instance to load the extension. The programme guide uses the running TV adapter.",
+          "xs": 12
         }
       }
     },
@@ -226,7 +244,7 @@
       "items": {
         "_epgGuideHelp": {
           "type": "staticText",
-          "text": "The programme guide uses the saved TV and selected channel list. Save changes in the other tabs first. Select a programme to watch it now or confirm a future recording. Open the guide separately using its own link.",
+          "text": "The programme guide uses the saved TV and selected channel list. Save changes in the other tabs first. Select a programme to watch it now or confirm a future recording. A direct link is available in the ioBroker instance overview; optional web access is configured under EPG settings.",
           "xs": 12
         },
         "_epgGuide": {

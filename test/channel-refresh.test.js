@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { setImmediate: nextTurn } = require('node:timers/promises');
 const { AdapterRuntime, normalizeConfig } = require('../lib/adapter-runtime');
-const { mergeChannelPage } = require('../lib/channel-catalog');
+const { mergeChannelPage, MAX_CATALOG_BYTES } = require('../lib/channel-catalog');
 
 const VIEW = 'fastscan-refresh-fixture';
 
@@ -182,6 +182,30 @@ test('startup and interval request video and remove obsolete manual page paramet
     assert.deepEqual(h.client.calls.map(call => call.method), ['getChannels', 'getChannels']);
 });
 
+test('the complete TV refresh preserves safe thumbnails and discards unsafe images or streaming metadata', async t => {
+    const h = await harness(t, { channelRefreshInterval: 0 }, (_adapter, client) => {
+        client.entries = [
+            { ...entry(1), '@_thumbnailUrl': 'http://tv.example/logo.png', '@_streamingUrl': 'http://tv.example/stream' },
+            { ...entry(2), '@_thumbnailUrl': '/logos/two.png' },
+            { ...entry(3), '@_thumbnailUrl': 'javascript:alert(1)' },
+            { ...entry(4), '@_thumbnailUrl': 'https://user:secret@tv.example/logo' },
+            { ...entry(5), '@_thumbnailUrl': 'x'.repeat(2049) },
+        ];
+    });
+    assert.equal(await h.runtime.channelRefresh.refresh(), true);
+    assert.equal(calls(h, 'getChannels').length, 1);
+    const accepted = h.channelObjects.accepted[0].page;
+    assert.equal(accepted.items[0].thumbnailUrl, 'http://tv.example/logo.png');
+    assert.equal(accepted.items[1].thumbnailUrl, '/logos/two.png');
+    assert.ok(accepted.items.slice(2).every(item => !Object.hasOwn(item, 'thumbnailUrl')));
+    assert.equal(JSON.stringify(accepted).includes('streamingUrl'), false);
+    const catalog = mergeChannelPage(null, accepted, { mediaType: 'video' });
+    assert.equal(catalog.services.length, 5);
+    assert.ok(catalog.services.every(service => service.available));
+    assert.equal(catalog.services[0].thumbnailUrl, 'http://tv.example/logo.png');
+    assert.equal(catalog.lastQuery.reconciled, true);
+});
+
 test('disabled automatic refresh sends nothing, while the explicit complete-refresh button still works', async t => {
     const h = await harness(t, { channelRefreshInterval: 0 });
     assert.equal(h.adapter.timers.size, 0);
@@ -252,6 +276,24 @@ test('mixed multi-page scans retain raw offsets, validate two reads and let remo
     assert.equal(catalog.services.length, 251);
     assert.ok(catalog.services.some(value => value.number === 501));
     assert.equal(state(h, 'channels.refreshCount'), 251);
+});
+
+test('thumbnail changes between complete scans cannot invalidate an unchanged channel list', async t => {
+    const h = await harness(t, { channelRefreshInterval: 0 }, (_adapter, client) => {
+        client.entries = Array.from({ length: 501 }, (_, index) => entry(index + 1));
+        client.hooks.getChannels = (view, start, count) => {
+            const checkScan = client.calls.filter(call => call.method === 'getChannels').length > 2;
+            const entries = client.entries.map(channel => ({ ...channel,
+                '@_thumbnailUrl': checkScan ? '/logos/updated.png' : '/logos/original.png' }));
+            return page(view, start, entries, { count });
+        };
+    });
+    assert.equal(await h.runtime.channelRefresh.refresh(), true);
+    assert.deepEqual(calls(h, 'getChannels').map(call => call.args[1]), [0, 500, 0, 500]);
+    assert.equal(h.channelObjects.accepted.length, 1);
+    assert.equal(h.channelObjects.accepted[0].page.items[0].thumbnailUrl, '/logos/original.png');
+    assert.equal(state(h, 'channels.refreshStatus'), 'ready');
+    assert.equal(state(h, 'channels.refreshCount'), 501);
 });
 
 test('a changing list is rejected even when the TV always returns hash 4294967295', async t => {
@@ -511,6 +553,24 @@ test('entry count and catalogue byte limits reject oversized snapshots before pu
         assert.equal(calls(h, 'getChannels').length, 1);
         assert.match(state(h, 'channels.refreshError'), /CHANNEL_REFRESH_LIMIT/u);
     }
+});
+
+test('optional images cannot exhaust the complete-refresh channel budget', async t => {
+    const thumbnailUrl = '/logos/' + 'x'.repeat(1900) + '.png';
+    const h = await harness(t, { channelRefreshInterval: 0 }, (_adapter, client) => {
+        client.entries = Array.from({ length: 300 }, (_, index) => ({ ...entry(index + 1), '@_thumbnailUrl': thumbnailUrl }));
+    });
+    assert.equal(await h.runtime.channelRefresh.refresh(), true);
+    assert.equal(calls(h, 'getChannels').length, 1);
+    const accepted = h.channelObjects.accepted[0].page;
+    assert.equal(accepted.items.length, 300);
+    assert.ok(Buffer.byteLength(JSON.stringify(accepted)) > MAX_CATALOG_BYTES, 'Only optional images exceed the metadata budget.');
+    const catalog = mergeChannelPage(null, accepted, { mediaType: 'video' });
+    assert.equal(catalog.services.length, 300);
+    assert.ok(catalog.services.every(service => service.available));
+    assert.ok(Buffer.byteLength(JSON.stringify(catalog)) <= MAX_CATALOG_BYTES);
+    assert.equal(JSON.stringify(catalog).includes('thumbnailUrl'), false);
+    assert.equal(catalog.lastQuery.reconciled, true);
 });
 
 test('the overall deadline prevents further pages after a delayed reply', async t => {

@@ -46,7 +46,7 @@ function browser(options = {}) {
     };
     const clearTimeout = id => timers.delete(id);
     class Clock extends Date { static now() { return now; } }
-    const io = {
+    const io = Object.assign(options.regularSocketIo ? function socketIo() {} : {}, {
         connect(url, opts) {
             connectionOptions.push({ url, options: opts });
             const handlers = new Map();
@@ -91,7 +91,7 @@ function browser(options = {}) {
             });
             return socket;
         },
-    };
+    });
     const window = {
         location: new URL(options.href || 'https://broker.example/iobroker/admin/adapter/loewe-tv/epg.html?instance=3'),
         navigator: { language: options.language || 'de-DE' },
@@ -189,6 +189,51 @@ test('missing, ambiguous and non-numeric instances never default to instance 0',
     }
 });
 
+test('web guide authenticates on the selected same-origin web socket and keeps proxy prefixes', async () => {
+    const view = browser({ loadScript: true, href: 'https://broker.example/proxy/web/loewe-tv.3/epg.html' });
+    const guide = await view.bridge.requestGuide({ from: 100000, to: 200000 });
+    assert.equal(guide.instance, 'loewe-tv.3');
+    assert.equal(view.scripts[0].src, 'https://broker.example/proxy/web/lib/js/socket.io.js');
+    assert.equal(view.connectionOptions[0].url, 'https://broker.example/proxy/web/');
+    assert.equal(view.connectionOptions[0].options.path, '/proxy/web/socket.io');
+    assert.equal(view.connectionOptions[0].options.reconnection, false);
+    assert.equal(view.connectionOptions[0].options.forceNew, true);
+    assert.equal(Object.hasOwn(view.connectionOptions[0].options, 'token'), false);
+    assert.equal(view.requests[0].instance, 'loewe-tv.3');
+    view.dispose();
+    assert.equal(view.timers.size, 0);
+});
+
+test('web instance paths cannot be overridden by query parameters or default to another TV', async () => {
+    for (const suffix of [
+        'loewe-tv.3/epg.html?instance=0', 'loewe-tv.3/epg.html?instance=3&instance=3',
+        'loewe-tv.03/epg.html', 'loewe-tv.-1/epg.html', 'loewe-tv.x/epg.html',
+        'loewe-tv.3/other.html', 'other.3/epg.html',
+    ]) {
+        const view = browser({ href: `https://broker.example/proxy/web/${suffix}` });
+        await assert.rejects(view.bridge.requestGuide({}), { code: 'EPG_GUIDE_INSTANCE' });
+        assert.equal(view.requests.length, 0);
+        assert.equal(view.connectionOptions.length, 0);
+        view.dispose();
+    }
+    const matching = browser({ href: 'https://broker.example/loewe-tv.3/epg.html?instance=3' });
+    await matching.bridge.requestGuide({});
+    assert.equal(matching.requests[0].instance, 'loewe-tv.3');
+    matching.dispose();
+});
+
+test('regular Socket.IO uses the root namespace and puts a web proxy prefix only in its transport path', async () => {
+    const view = browser({ regularSocketIo: true, loadScript: true,
+        href: 'https://broker.example/proxy/web/loewe-tv.3/epg.html' });
+    await view.bridge.requestGuide({});
+    assert.equal(view.scripts[0].src, 'https://broker.example/proxy/web/lib/js/socket.io.js');
+    assert.equal(view.connectionOptions[0].url, 'https://broker.example');
+    assert.equal(view.connectionOptions[0].options.path, '/proxy/web/socket.io');
+    assert.equal(view.requests[0].instance, 'loewe-tv.3');
+    view.dispose();
+    assert.equal(view.timers.size, 0);
+});
+
 test('all 2000 channels can be collected from small pages without a 32-page truncation', async () => {
     const view = browser({ respond: ({ payload }) => page(2000, payload.offset, 11) });
     const result = await view.bridge.requestGuide({ from: 100000, to: 200000 });
@@ -234,13 +279,27 @@ test('wrong instance, incomplete totals, invalid revisions and non-progressing p
         page(2, 0, 32, { total: 2001 }),
         page(33, 0, 33),
         page(2, 0, 32, { channels: [{ id: 'same' }, { id: 'same' }] }),
-        'permissionError',
         null,
     ]) {
         const view = browser({ respond: () => response });
         await assert.rejects(view.bridge.requestGuide({}), /unvollständige|ungültige/);
         assert.equal(view.requests.length, 1);
         view.dispose();
+    }
+});
+
+test('Admin and web sendTo permission denials are reported as permissions and never retried', async () => {
+    for (const href of ['https://broker/adapter/loewe-tv/epg.html?instance=3', 'https://broker/loewe-tv.3/epg.html']) {
+        for (const reply of ['permissionError', { error: 'permissionError' }]) {
+            const view = browser({ href, respond: () => reply });
+            await assert.rejects(view.bridge.recordProgramme({ ...SELECTION, confirmed: true }), error =>
+                error.code === 'EPG_GUIDE_PERMISSION' && /Benutzerrechte/.test(error.message));
+            assert.equal(view.requests.length, 1);
+            await view.advance(15000);
+            assert.equal(view.requests.length, 1);
+            view.dispose();
+            assert.equal(view.timers.size, 0);
+        }
     }
 });
 
@@ -400,7 +459,7 @@ test('new guide actions cannot fall back to instance 0 or bypass the Admin sessi
 
 test('authentication failure sends no adapter commands and releases the connection', async () => {
     const view = browser({ auth: false });
-    await assert.rejects(view.bridge.requestGuide({}), /Admin-Sitzung/);
+    await assert.rejects(view.bridge.requestGuide({}), /ioBroker-Sitzung/);
     assert.equal(view.requests.length, 0);
     assert.equal(view.sockets[0].destroyed, true);
     assert.equal(view.timers.size, 0);

@@ -868,7 +868,8 @@ test('slow sender object creation does not block the remote-control command queu
     assert.equal(h.runtime.channelObjects.services.size, 280);
     const cacheBytes = Buffer.byteLength(state(h, 'channels.catalog').val, 'utf8');
     assert.ok(cacheBytes < MAX_CATALOG_BYTES, '372 realistic entries must fit in the persistent catalogue.');
-    assert.equal(state(h, 'channels.catalog').val.includes('tv.example.invalid'), false);
+    assert.equal(state(h, 'channels.catalog').val.includes('"streamingUrl"'), false);
+    assert.equal(h.runtime.channelObjects.catalog.services[0].thumbnailUrl, entries[0]['@_thumbnailUrl']);
     assert.equal(h.runtime.channelObjects.catalog.lastQuery.returnedResults, 372);
     assert.equal(h.runtime.channelObjects.catalog.lastQuery.ignoredAudioResults, 92);
     assert.equal(h.adapter.dynamicCalls.some(call => call.id.startsWith('channels.radio.')), false);

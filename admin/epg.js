@@ -17,8 +17,8 @@
     const LANE_HEIGHT = 70;
     const MESSAGES = {
         de: {
-            heading: 'Programmübersicht', refresh: 'EPG aktualisieren', tvChannel: 'TV-KANAL',
-            openStandalone: 'Separat öffnen', watchNow: 'Jetzt ansehen', planRecording: 'Aufnahme planen',
+            heading: 'Programmübersicht', refresh: 'EPG aktualisieren', programmeDetails: 'Sendungsdetails',
+            watchNow: 'Jetzt ansehen', planRecording: 'Aufnahme planen',
             actionChecking: 'Sendung wird geprüft …', actionRecording: 'Aufnahme wird vorgemerkt …',
             actionViewHint: 'Schaltet den Fernseher auf diesen Sender.',
             actionRecordHint: 'Aufnahme erst nach deiner Bestätigung vormerken.',
@@ -92,8 +92,8 @@
             unavailable: 'Instanz nicht erreichbar', responseInvalid: 'Die Instanz hat eine ungültige Programmübersicht geliefert.',
         },
         en: {
-            heading: 'Programme guide', refresh: 'Refresh EPG', tvChannel: 'TV CHANNEL',
-            openStandalone: 'Open separately', watchNow: 'Watch now', planRecording: 'Plan recording',
+            heading: 'Programme guide', refresh: 'Refresh EPG', programmeDetails: 'Programme details',
+            watchNow: 'Watch now', planRecording: 'Plan recording',
             actionChecking: 'Checking programme …', actionRecording: 'Queuing recording …',
             actionViewHint: 'Changes the TV to this channel.',
             actionRecordHint: 'Queue a recording after your confirmation.',
@@ -293,6 +293,70 @@
         const bounded = Math.min(maximum, Math.max(minimum, start));
         return { from: bounded, to: bounded + duration * HOUR, hours: duration, minimum, maximum };
     }
+    function localLogoUrl(value) {
+        return typeof value === 'string' && value.length <= 90
+            && /^logos\/[a-z0-9][a-z0-9-]{0,79}\.svg$/u.test(value) ? value : '';
+    }
+    function channelLogoUrl(value) {
+        const local = localLogoUrl(value);
+        if (local) return local;
+        if (typeof value !== 'string' || !value || value.length > 2048
+            || /[\s\\\u0000-\u001f\u007f]/u.test(value) || /%(?:0[0-9a-f]|1[0-9a-f]|7f|5c)/iu.test(value)) return '';
+        const authority = /^https?:\/\/([^/?#]+)(?:[/?#]|$)/iu.exec(value)?.[1];
+        if (!authority || authority.includes('@')) return '';
+        try {
+            const url = new URL(value);
+            return ['http:', 'https:'].includes(url.protocol) && url.hostname && !url.username && !url.password
+                && url.href.length <= 2048 ? url.href : '';
+        } catch { return ''; }
+    }
+    function channelLogoSources(channel, pageProtocol) {
+        const primary = channelLogoUrl(channel?.logoUrl);
+        if (!primary) return [];
+        if (localLogoUrl(primary)) return [primary];
+        const fallback = localLogoUrl(channel?.logoFallback);
+        const sources = pageProtocol === 'https:' && primary.startsWith('http:') ? [] : [primary];
+        if (fallback) sources.push(fallback);
+        return sources;
+    }
+    function createChannelIdentity(document, channel, pageProtocol) {
+        const name = string(channel?.name) || string(channel?.id);
+        const identity = document.createElement('span');
+        identity.className = 'channel-identity';
+        identity.title = name;
+        const label = document.createElement('span');
+        label.className = 'channel-name';
+        label.textContent = name;
+        identity.appendChild(label);
+        const sources = channelLogoSources(channel, pageProtocol);
+        if (sources.length) {
+            const logo = document.createElement('img');
+            logo.className = 'channel-logo';
+            logo.alt = name;
+            logo.title = name;
+            logo.width = 110;
+            logo.height = 42;
+            logo.loading = 'lazy';
+            logo.decoding = 'async';
+            logo.referrerPolicy = 'no-referrer';
+            logo.draggable = false;
+            let sourceIndex = 0;
+            let exhausted = false;
+            logo.addEventListener('error', () => {
+                if (exhausted) return;
+                if (++sourceIndex < sources.length) logo.src = sources[sourceIndex];
+                else {
+                    exhausted = true;
+                    logo.hidden = true;
+                    label.hidden = false;
+                }
+            });
+            label.hidden = true;
+            identity.appendChild(logo);
+            logo.src = sources[0];
+        }
+        return identity;
+    }
     function normalizeGuide(input) {
         if (!input || typeof input !== 'object' || input.schemaVersion !== 1 || input.source !== 'tv'
             || !Array.isArray(input.channels) || input.channels.length > 4096 || !timestamp(input.now)) {
@@ -310,6 +374,12 @@
             const channel = { id, name: string(raw.name) || id, number, available: raw.available !== false,
                 status: string(raw.status, 40), lastUpdate: timestamp(raw.lastUpdate) ? raw.lastUpdate : null,
                 lastError: string(raw.lastError, 1500), events: [] };
+            const logoUrl = channelLogoUrl(raw.logoUrl);
+            if (logoUrl) {
+                channel.logoUrl = logoUrl;
+                const fallback = localLogoUrl(raw.logoFallback);
+                if (!localLogoUrl(logoUrl) && fallback) channel.logoFallback = fallback;
+            }
             const keys = new Set();
             const events = Array.isArray(raw.events) ? raw.events : [];
             if (events.length > 128) throw new Error('EPG_GUIDE_RESPONSE_INVALID');
@@ -390,8 +460,8 @@
         container.dataset.mounted = 'true';
         const window = document.defaultView;
         const elements = {};
-        for (const name of ['listName', 'refreshGuide', 'openStandalone', 'detailNumber', 'detailStation', 'detailChannel', 'detailState',
-            'programmeTitle', 'detailTimes', 'detailSubtitle', 'detailDescription', 'detailProgress', 'detailProgressBar',
+        for (const name of ['listName', 'refreshGuide', 'detailChannel', 'detailState',
+            'programmeTitle', 'detailTimes', 'detailSubtitle', 'detailDescription', 'programmeDescription',
             'previousDay', 'nextDay', 'guideDate', 'showNow', 'previousHour', 'nextHour', 'guideDuration', 'visiblePeriod',
             'channelSearch', 'guideStatus', 'statusText', 'retryGuide', 'timelineScroll', 'timelineGrid', 'emptyGuide',
             'emptyTitle', 'emptyDescription', 'guideSummary', 'programmeActions', 'programmeAction', 'programmeActionHint',
@@ -506,11 +576,12 @@
             const note = container.querySelector('.source-note');
             const bottom = (footer?.offsetHeight || 0) + (note?.offsetHeight || 0) + 41;
             const available = window.innerHeight - scroll.getBoundingClientRect().top - bottom;
-            if (Number.isFinite(available)) scroll.style.height = `${Math.max(233, Math.min(760, Math.floor(available)))}px`;
+            if (Number.isFinite(available)) scroll.style.height = `${Math.max(233, Math.floor(available))}px`;
         }
         function renderAction(entry) {
             elements.programmeActions.hidden = !entry;
-            if (!entry) { elements.programmeAction.disabled = true; return; }
+            elements.programmeActionHint.hidden = !entry;
+            if (!entry) { elements.programmeAction.disabled = true; text(elements.programmeActionHint, ''); return; }
             const action = programmeAction(entry.event, clock(), entry.channel.available);
             const reference = programmeSelection(guide, entry.channel, entry.event);
             const supported = typeof bridge?.selectProgramme === 'function' && typeof bridge?.recordProgramme === 'function';
@@ -526,14 +597,14 @@
         function renderDetail() {
             const entry = selection ? programmes.get(selection) : null;
             const channel = entry?.channel || guide?.channels.find(item => item.id === channelSelection);
-            text(elements.detailNumber, channel?.number ?? '·');
-            text(elements.detailStation, channel?.name || '');
-            text(elements.detailChannel, channel ? `${channel.number === null ? '' : `${channel.number}. `}${channel.name}` : t('chooseProgramme'));
+            text(elements.detailChannel, channel ? `${channel.number === null ? '' : `${channel.number}. `}${channel.name}` : '');
+            elements.detailChannel.hidden = !channel;
             elements.detailState.hidden = !entry;
             elements.detailSubtitle.hidden = !entry?.event.subtitle;
-            elements.detailProgress.hidden = true;
+            elements.programmeDescription.hidden = !entry && !channel?.lastError;
             renderAction(entry);
             if (!entry) {
+                if (elements.programmeDescription.hidden) elements.programmeDescription.open = false;
                 text(elements.programmeTitle, channel ? rowMessage(channel) : guide ? t('chooseProgramme') : t('loading'));
                 text(elements.detailTimes, '');
                 text(elements.detailSubtitle, '');
@@ -550,10 +621,6 @@
             text(elements.detailDescription, `${event.description || t('noDescription')}${event.textTruncated ? `\n${t('descriptionTruncated')}` : ''}`);
             text(elements.detailState, t(event.end === null ? 'unknownEnd' : current ? 'current' : event.end <= now ? 'ended' : 'upcoming'));
             elements.detailState.classList.toggle('is-live', current);
-            if (current) {
-                elements.detailProgress.hidden = false;
-                elements.detailProgressBar.style.width = `${Math.max(0, Math.min(100, (now - event.start) / (event.end - event.start) * 100))}%`;
-            }
             fitTimeline();
         }
         function reveal(button) {
@@ -671,7 +738,7 @@
                 channelButton.type = 'button';
                 channelButton.setAttribute('aria-label', t('channelDetails', { name: `${channel.number === null ? '' : `${channel.number}. `}${channel.name}` }));
                 channelButton.appendChild(node('span', 'channel-number', channel.number ?? '·'));
-                channelButton.appendChild(node('span', 'channel-name', channel.name));
+                channelButton.appendChild(createChannelIdentity(document, channel, window.location?.protocol));
                 channelButton.addEventListener('click', () => chooseChannel(channel));
                 label.appendChild(channelButton);
                 row.appendChild(label);
@@ -1084,6 +1151,7 @@
         });
         elements.recordingDialog.addEventListener('close', () => { if (confirmation && !actionPending) closeConfirmation(); });
         elements.recordingsPanel.addEventListener('toggle', () => { if (!stopped) fitTimeline(); });
+        elements.programmeDescription.addEventListener('toggle', () => { if (!stopped) fitTimeline(); });
         elements.timelineGrid.addEventListener('keydown', event => {
             const button = event.target.closest('.programme');
             if (!button || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)
@@ -1099,8 +1167,6 @@
         window.addEventListener('resize', resize);
         document.addEventListener('visibilitychange', visible);
         translatePage();
-        const ownUrl = standaloneUrl(window.location?.href);
-        if (ownUrl) { elements.openStandalone.href = ownUrl; elements.openStandalone.hidden = false; }
         renderControls();
         bridgeTimer = window.setTimeout(() => { if (!bridge && !stopped) setStatus(t('bridgeMissing'), 'warning', true); }, 10000);
         bindBridge();
@@ -1108,6 +1174,7 @@
     }
 
     return { HOUR, DAY, MESSAGES, translate, language, timeWindow, normalizeGuide, filterChannels,
+        channelLogoSources, createChannelIdentity,
         visibleEvents, timelineLayout, eventKey, isCurrent, keyboardTarget, programmeAction, programmeSelection,
         selectionExists, normalizeAction, normalizeRecordings, recordingPresentation, standaloneUrl, mount };
 }));

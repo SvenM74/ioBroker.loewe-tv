@@ -1,0 +1,195 @@
+[
+  {
+    "slug": "das-erste",
+    "name": "Das Erste",
+    "aliases": [
+      "ARD",
+      "ARD Das Erste"
+    ],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Das_Erste_2014.svg",
+    "downloadSource": "https://github.com/Dominique21000/accueil/blob/c5622ebf84c92f0432d9e49b7e5bbb7c4ce86c48/img/Das_Erste_2014.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "4e02f0466f5097c40fb625fdd3502e4c12607f7b2215dc5e2a18c9f81867943b"
+  },
+  {
+    "slug": "zdf",
+    "name": "ZDF",
+    "aliases": [],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:ZDF_logo.svg",
+    "downloadSource": "https://github.com/atishramkhe/atishramkhe.github.io/blob/07242b7d2273891fea9cd31ad8d2524f0fbf845d/sport/logos/Germany/ZDF_logo.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "5ee7004e04c44540b861c65a48d318beaa7b19f66cd54b4182cde9c84d5b1022"
+  },
+  {
+    "slug": "3sat",
+    "name": "3sat",
+    "aliases": [],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:3sat_2019.svg",
+    "downloadSource": "https://github.com/atishramkhe/atishramkhe.github.io/blob/07242b7d2273891fea9cd31ad8d2524f0fbf845d/sport/logos/Germany/3sat_2019.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "ee5e4cd363b55cb18c637f74502f759bbca241a56cd19ec4fe02870b7ddb18b0"
+  },
+  {
+    "slug": "rtl",
+    "name": "RTL",
+    "aliases": [
+      "RTL Television"
+    ],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:RTL_Logo_2021.svg",
+    "downloadSource": "https://github.com/atishramkhe/atishramkhe.github.io/blob/07242b7d2273891fea9cd31ad8d2524f0fbf845d/sport/logos/Germany/RTL_(2021)_II.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "8e30991e8b8fbfc1e798dfe437864242396e477f171e154486ee581cbaffaac5"
+  },
+  {
+    "slug": "pro-sieben",
+    "name": "ProSieben",
+    "aliases": [
+      "Pro7"
+    ],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:ProSieben.svg",
+    "downloadSource": "https://github.com/atishramkhe/atishramkhe.github.io/blob/07242b7d2273891fea9cd31ad8d2524f0fbf845d/sport/logos/Germany/ProSieben.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "52373e033021038fbab04d171e4cd1e71b5384f2f6e7fe4cedae3286e257f3cd"
+  },
+  {
+    "slug": "kabel-eins",
+    "name": "kabel eins",
+    "aliases": [
+      "Kabel 1",
+      "Kabel1"
+    ],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Kabel_eins_Logo_2015.svg",
+    "downloadSource": "https://github.com/atishramkhe/atishramkhe.github.io/blob/07242b7d2273891fea9cd31ad8d2524f0fbf845d/sport/logos/Germany/Kabel_eins_2015.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "ccfb21a8af4afbf4bcbc2e42b0ebd7171f1d19273e48897f63c242b54121b5c9"
+  },
+  {
+    "slug": "sixx",
+    "name": "sixx",
+    "aliases": [],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Sixx_Logo.svg",
+    "downloadSource": "https://github.com/atishramkhe/atishramkhe.github.io/blob/07242b7d2273891fea9cd31ad8d2524f0fbf845d/sport/logos/Germany/Sixx.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "cdce6804520a800501c1a8781be5778e84a722af49202478e0311438c5c5aa13"
+  },
+  {
+    "slug": "rtl-super",
+    "name": "RTL Super",
+    "aliases": [
+      "Super RTL"
+    ],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:RTL_Super_Logo_2023.svg",
+    "downloadSource": "https://github.com/atishramkhe/atishramkhe.github.io/blob/07242b7d2273891fea9cd31ad8d2524f0fbf845d/sport/logos/Germany/RTL_Super_logo_2023.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "ec5f535d2435ec739ae97531ec322aa8741a754e55cfb8fd27657d8d97d9cff9"
+  },
+  {
+    "slug": "zdfinfo",
+    "name": "ZDFinfo",
+    "aliases": [
+      "ZDF info"
+    ],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:ZDFinfo_2011.svg",
+    "downloadSource": "https://github.com/atishramkhe/atishramkhe.github.io/blob/07242b7d2273891fea9cd31ad8d2524f0fbf845d/sport/logos/Germany/ZDFinfo_2011.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "79707d44bf1c27be95d099a7c1a4b3cc2d9a0e6fdaa43f195d2e519a411710a3"
+  },
+  {
+    "slug": "wdr",
+    "name": "WDR Fernsehen",
+    "aliases": [
+      "WDR",
+      "WDR Köln",
+      "WDR Bonn",
+      "WDR Aachen",
+      "WDR Wuppertal",
+      "WDR Düsseldorf",
+      "WDR Duisburg",
+      "WDR Dortmund",
+      "WDR Essen",
+      "WDR Siegen",
+      "WDR Münster",
+      "WDR Bielefeld"
+    ],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:WDR_Dachmarke.svg",
+    "downloadSource": "https://github.com/atishramkhe/atishramkhe.github.io/blob/07242b7d2273891fea9cd31ad8d2524f0fbf845d/sport/logos/Germany/WDR_2012.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "1f183f23974fe42187645cd40a01d42d92a3106c027fc9ed1231f27c17bd05f3"
+  },
+  {
+    "slug": "mdr",
+    "name": "MDR Fernsehen",
+    "aliases": [
+      "MDR",
+      "MDR Sachsen",
+      "MDR S-Anhalt",
+      "MDR Sachsen-Anhalt",
+      "MDR Thüringen"
+    ],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:MDR_Logo_2017.svg",
+    "downloadSource": "https://github.com/atishramkhe/atishramkhe.github.io/blob/07242b7d2273891fea9cd31ad8d2524f0fbf845d/sport/logos/Germany/MDR_2017.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "1632b8bbd93845d951c6742ce6f8f735e300e179633c959cfadd6f3d48e661bc"
+  },
+  {
+    "slug": "ndr",
+    "name": "NDR Fernsehen",
+    "aliases": [
+      "NDR",
+      "NDR FS NDS",
+      "NDR FS HH",
+      "NDR FS SH",
+      "NDR FS MV",
+      "NDR Niedersachsen",
+      "NDR Hamburg",
+      "NDR Schleswig-Holstein",
+      "NDR Mecklenburg-Vorpommern"
+    ],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:NDR_Dachmarke.svg",
+    "downloadSource": "https://github.com/atishramkhe/atishramkhe.github.io/blob/07242b7d2273891fea9cd31ad8d2524f0fbf845d/sport/logos/Germany/NDR_2019.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "ab62829f425793d65d434d38cce57734eb4479e67cbab0daf142346b344dcc23"
+  },
+  {
+    "slug": "br",
+    "name": "BR Fernsehen",
+    "aliases": [
+      "BR",
+      "Bayerisches Fernsehen",
+      "BR Fernsehen Süd",
+      "BR Fernsehen Nord",
+      "BR Süd",
+      "BR Nord"
+    ],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Logo_Bayerischer_Rundfunk_2024.svg",
+    "downloadSource": "https://github.com/atishramkhe/atishramkhe.github.io/blob/07242b7d2273891fea9cd31ad8d2524f0fbf845d/sport/logos/Germany/Bayerischer_Rundfunk_2024.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "af4236fa1d12e09cb8b35a8e5c3f77598bb158dfb1e078f8b81d37eaf12d0b5c"
+  },
+  {
+    "slug": "sr",
+    "name": "SR Fernsehen",
+    "aliases": [
+      "SR",
+      "Saarländischer Rundfunk"
+    ],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:SR_Fernsehen_Logo_2023.svg",
+    "downloadSource": "https://github.com/atishramkhe/atishramkhe.github.io/blob/07242b7d2273891fea9cd31ad8d2524f0fbf845d/sport/logos/Germany/SR_Fernsehen_(2023).svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "5bfd324b60e7a768274db7877daed1c87f0463df4680c397953a12cf587c663c"
+  }
+]

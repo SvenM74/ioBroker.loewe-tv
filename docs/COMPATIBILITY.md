@@ -1,12 +1,18 @@
 # Gerätekompatibilität und bestätigte Tests
 
-Stand: **19. Oktober 2026**. Diese Fassung beschreibt **0.1.13**, Build **`0.1.13-recording-status.1`**.
+Stand: **19. Oktober 2026**. Diese Fassung beschreibt **0.1.14**, Build **`0.1.14-epg-web.1`**.
 
 Seit Version 0.1.11 stehen **EPG-Einstellungen** und **Programmübersicht** in eigenen Reitern. Die [Programmübersicht](EPG_GUI.md) zeigt den TV-EPG-Cache der gespeicherten Senderliste und kann separat über die bestehende Admin-Adresse geöffnet werden. Laufende Sendungen lassen sich zum Umschalten auswählen; zukünftige Sendungen können nach Bestätigung zur Aufnahme vorgemerkt werden. Ein dauerhaftes Journal hält noch nicht übertragene Aufträge bis zur Erreichbarkeit des Fernsehers vor. Der Adapter verwendet dafür die in der App belegten Befehle `ProgramTimer` und `GetTimerList`; die [Aufnahme-Protokollbeschreibung](recording-protocol.md) nennt die Belege und Grenzen.
 
 Die [Netzwerksuche](NETWORK_DISCOVERY.md), die Mindestversion Admin 7.7.28 und der ausschließliche EPG-Abruf vom TV bleiben erhalten. Die [Updateanleitung](INSTALLATION.md#update-auf-0113) beschreibt den Build mit verbesserter Statusanzeige. Der [Prüfbericht zu 0.1.12](PRUEFBERICHT_0.1.12.md) dokumentiert die vorherige Timerkorrektur und ihre automatisierten Prüfungen. Der [Prüfbericht zu 0.1.11](PRUEFBERICHT_0.1.11.md) bleibt ebenfalls als Nachweis für den damaligen Stand erhalten.
 
 **Am 19. Oktober 2026 bestätigt der Nutzer, dass beide Aufnahmeaufträge am Fernseher angekommen sind und die erste Aufnahme tatsächlich gestartet ist.** Eine erfolgreiche Fertigstellung ist damit noch nicht bestätigt. Diese Rückmeldung nennt kein konkretes Modell und wird deshalb keinem der unten aufgeführten Geräte einzeln oder pauschal beiden bild-Geräten zugeschrieben. Die originale `GetTimerList`-XML-Antwort liegt weiterhin nicht vor. Die Rückmeldung entstand vor der Anzeigeverbesserung in **`0.1.13-recording-status.1`**; deren Darstellung im tatsächlichen Admin ist noch zu prüfen. Die folgenden EPG-Bestätigungen stammen vom früher bereitgestellten 0.1.8-Stand und bleiben als historische Geräteergebnisse erhalten.
+
+## Senderlogos und Web-Zugriff in 0.1.14
+
+Das optionale `thumbnailUrl`-Feld der TV-Senderliste wird bis zur Programmübersicht durchgereicht. Eine gefüllte Bildadresse wurde für die unten aufgeführten Geräte noch nicht durch eine echte Antwort belegt. Die mitgelieferten Logos funktionieren unabhängig davon; fehlende oder nicht ladbare Bilder lassen den Sendernamen sichtbar. [Quellen und Verhalten](CHANNEL_LOGOS.md).
+
+Die kompakte Oberfläche und die Zugriffspfade über Admin und ioBroker.web sind mit automatisierten Prüfungen und den offiziellen ioBroker-Schnittstellen abgeglichen. Eine visuelle Prüfung im produktiven Admin/Web des Nutzers und ein Logoabruf von dessen TV stehen noch aus. Die neuen Links und Bilder ändern weder die TV-Programme noch vorhandene Aufträge.
 
 ## Rückmeldungen aus Gerätetests
 

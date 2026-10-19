@@ -82,6 +82,35 @@ test('the default view starts at the preceding half hour and spans three hours',
     assert.equal(result.limit, 20);
 });
 
+test('guide exposes optional TV and bundled logos independently of programme availability', () => {
+    const channels = [service(1, { name: 'ZDF HD', thumbnailUrl: '/images/zdf.png' }),
+        service(2, { name: 'ZDF' }), service(3, { name: 'Unknown', thumbnailUrl: 'javascript:alert(1)' })];
+    const ctx = context(channels, { tvOrigin: 'http://tv.invalid:905' });
+    ctx.entries.clear();
+    const result = read(ctx);
+    assert.equal(result.channels[0].logoUrl, 'http://tv.invalid:905/images/zdf.png');
+    assert.equal(result.channels[0].logoFallback, 'logos/zdf.svg');
+    assert.equal(result.channels[0].status, 'waiting');
+    assert.equal(result.channels[1].logoUrl, 'logos/zdf.svg');
+    assert.equal(Object.hasOwn(result.channels[1], 'logoFallback'), false);
+    assert.equal(Object.hasOwn(result.channels[2], 'logoUrl'), false);
+    channels[0].thumbnailUrl = '/images/zdf-new.png';
+    assert.equal(read(ctx).catalogRevision, result.catalogRevision,
+        'Presentation changes must not invalidate channel selections or recording identity');
+});
+
+test('manager resolves root-relative TV logos with the configured TV address without an extra request', () => {
+    const ctx = context([service(1, { thumbnailUrl: '/logos/one.png' })]);
+    const forbidden = () => { throw new Error('Logo metadata must not start a TV request'); };
+    const runtime = { adapter: { namespace: 'loewe-tv.0' },
+        config: { host: 'tv.invalid', port: 906, channelListView: ctx.listView, epgEnabled: true },
+        channelObjects: { services: ctx.services }, _lastValues: new Map(), _call: forbidden };
+    const manager = new EpgManager(runtime, { now: () => NOW, tvSource: { read: forbidden } });
+    manager.started = true;
+    manager.entries = ctx.entries;
+    assert.equal(manager.guide().channels[0].logoUrl, 'http://tv.invalid:906/logos/one.png');
+});
+
 test('only configured TV services appear in numerical order, including rows without programme data', () => {
     const channels = [service(12), service(3), service(2, { listView: 'other-list' }),
         service(1, { itemClass: 'audio', id: 'channels.radio.Station' }), service(7)];

@@ -6,7 +6,7 @@ const { createHash } = require('node:crypto');
 const { parseChannelPage, parseResponse } = require('../lib/loewe-client');
 const {
     SCHEMA_VERSION, MAX_CATALOG_BYTES, MAX_CATALOG_ENTRIES, MAX_CATALOG_PAGES,
-    serviceId, serviceIdentity, nameSegment, assignServiceIds, mergeServiceRecords,
+    serviceId, serviceIdentity, nameSegment, assignServiceIds, mergeServiceRecords, safeThumbnailUrl,
     normalizeServiceRecord, migrateServiceRecord, mergeChannelPage, restoreChannelCatalog, createChannelDefinitions,
 } = require('../lib/channel-catalog');
 
@@ -397,14 +397,132 @@ test('changing totals or hash starts a new raw page collection without treating 
     assert.equal(changed.lastQuery.reconciled, false);
 });
 
-test('schema-3 caches round-trip while unknown properties and streaming metadata are omitted', () => {
-    const catalog = merge(null, page([item('one', '1', { thumbnailUrl: 'http://tv.example/thumbnail' })]));
+test('schema-3 caches keep optional TV thumbnails while unknown properties and streams are omitted', () => {
+    const catalog = merge(null, page([item('one', '1', { thumbnailUrl: 'http://tv.example/thumbnail',
+        streamingUrl: 'http://tv.example/stream', originalStreamingUrl: 'http://tv.example/original' })]));
     const altered = structuredClone(catalog);
     altered.unexpected = 'discard';
     altered.services[0].unexpected = 'discard';
-    altered.pages[0].items[0].thumbnailUrl = 'discard';
+    altered.pages[0].items[0].streamingUrl = 'discard';
     assert.deepEqual(restoreChannelCatalog(JSON.stringify(altered)), catalog);
-    assert.equal(JSON.stringify(catalog).includes('thumbnailUrl'), false);
+    assert.equal(catalog.pages[0].items[0].thumbnailUrl, 'http://tv.example/thumbnail');
+    assert.equal(catalog.services[0].thumbnailUrl, 'http://tv.example/thumbnail');
+    assert.equal(JSON.stringify(catalog).includes('stream'), false);
+    const old = merge(null, page([item('one')]));
+    assert.deepEqual(restoreChannelCatalog(JSON.stringify(old)), old);
+    assert.equal(Object.hasOwn(old.services[0], 'thumbnailUrl'), false, 'An old cache needs no added field or migration.');
+});
+
+test('thumbnail addresses accept bounded HTTP images or TV-root paths without guessing an origin', () => {
+    for (const address of ['http://192.0.2.4:905/logo.png', 'https://tv.example/logo.svg#symbol',
+        'https://tv.example/logo.png?channel=Das%20Erste&size=64', '/logos/one.png',
+        '/logos/%C3%96sterreich.svg', '/' + 'x'.repeat(2047)]) {
+        assert.equal(safeThumbnailUrl(address), address);
+    }
+    for (const address of [undefined, null, 23, {}, ['https://tv.example/logo.png'], '',
+        'javascript:alert(1)', 'data:image/svg+xml,<svg/>', 'file:///etc/passwd', 'ftp://tv.example/logo',
+        'http:tv.example/logo', 'https:///tv.example/logo', 'https://', 'https://tv.example:invalid/logo',
+        '//other.example/logo', 'logos/one.png', '../logos/one.png', '/\\other.example/logo',
+        'https://tv.example\\@other.example/logo', 'https://user:secret@tv.example/logo',
+        'https://@tv.example/logo', '/logos/a\nb.png', '/logos/a\tb.png', '/logos/a\u0000b.png',
+        '/logos/a\u007fb.png', ' /logos/one.png', '/logos/one.png ', '/' + 'x'.repeat(2048),
+        'http://tv.example/%5clogo.png', '/logos/%0aicon.svg',
+        'https://tv.example/' + '字'.repeat(1000)]) {
+        assert.equal(safeThumbnailUrl(address), '', String(address));
+    }
+});
+
+test('the documented TV thumbnail attribute reaches a persistent selectable channel', () => {
+    const xml = '<Envelope><Body><GetChannelListResponse><ChannelListView>fastscan-fixture</ChannelListView>'
+        + '<ResultItemFragment startIndex="0" returnedResults="1" totalResults="1">'
+        + '<ResultItemReference mediaItemUuid="fixture:one" itemClass="video" shortInfo="Sender One" caption="1" '
+        + 'locator="channel://1:ch-one:sl-fixture" thumbnailUrl="/logos/one.png?width=64&amp;height=32"/>'
+        + '</ResultItemFragment></GetChannelListResponse></Body></Envelope>';
+    const catalog = merge(null, parseChannelPage(parseResponse(xml)));
+    const one = service(catalog, 'fixture:one');
+    assert.equal(one.thumbnailUrl, '/logos/one.png?width=64&height=32');
+    assert.equal(one.available, true);
+    assert.equal(one.locator, 'channel://1:ch-one:sl-fixture');
+    assert.deepEqual(restoreChannelCatalog(JSON.stringify(catalog)), catalog);
+});
+
+test('invalid thumbnail metadata is discarded without disabling live or restored channels', () => {
+    const original = merge(null, page([item('one')]));
+    for (const thumbnailUrl of ['javascript:alert(1)', '//other.example/logo', 'relative.png',
+        'https://user:password@tv.example/logo', '/logos/a\u0000b.png', 'x'.repeat(2049), {}, 42]) {
+        const input = page([item('one', '1', { thumbnailUrl })]);
+        const inputJson = JSON.stringify(input);
+        assert.deepEqual(merge(original, input), original);
+        assert.equal(JSON.stringify(input), inputJson);
+        const cached = structuredClone(original);
+        cached.services[0].thumbnailUrl = thumbnailUrl;
+        cached.pages[0].items[0].thumbnailUrl = thumbnailUrl;
+        assert.deepEqual(restoreChannelCatalog(JSON.stringify(cached)), original);
+    }
+});
+
+test('different or absent thumbnails never make duplicate positions or aliases ambiguous', () => {
+    const references = [item('one', '1', { thumbnailUrl: '/logos/z.png' }), item('one'),
+        item('one', '1', { thumbnailUrl: '/logos/b.png' }),
+        item('one', '100', { thumbnailUrl: '/logos/a.png' }), item('two', '2')];
+    const forward = merge(null, page(references));
+    const backward = merge(null, page([...references].reverse()));
+    assert.deepEqual(forward.services, backward.services);
+    assert.equal(forward.lastQuery.skipped, 0);
+    assert.equal(forward.lastQuery.conflictingPositions, 0);
+    assert.equal(forward.lastQuery.reconciled, true);
+    assert.equal(service(forward, 'one').available, true);
+    assert.equal(service(forward, 'one').thumbnailUrl, '/logos/a.png');
+    assert.deepEqual(service(forward, 'one').positions.map(position => position.caption), ['1', '100']);
+    const sameSlot = merge(null, page(references.slice(0, 3)));
+    assert.equal(service(sameSlot, 'one').thumbnailUrl, '/logos/b.png');
+    const records = references.slice(0, 4).map(reference => normalizeServiceRecord({ ...reference, listView: forward.view }));
+    assert.deepEqual(mergeServiceRecords(records), mergeServiceRecords([...records].reverse()));
+    assert.equal(mergeServiceRecords(records)[0].thumbnailUrl, '/logos/a.png');
+    const conflict = merge(null, page([references[0], item('different', '1', { thumbnailUrl: '/logos/z.png' })]));
+    assert.equal(conflict.services.length, 0, 'Matching images must not hide a real channel conflict.');
+    assert.equal(conflict.lastQuery.conflictingPositions, 1);
+});
+
+test('thumbnail changes preserve service identities, IDs and the original channel selection', () => {
+    for (const mediaItemUuid of ['one', '']) {
+        const base = item('one', '1', { mediaItemUuid });
+        const original = merge(null, page([base]));
+        const changed = merge(original, page([{ ...base, thumbnailUrl: '/logos/new.png' }]));
+        const old = original.services[0];
+        const current = changed.services[0];
+        assert.equal(current.thumbnailUrl, '/logos/new.png');
+        assert.equal(serviceIdentity(current), serviceIdentity(old));
+        assert.equal(current.id, old.id);
+        assert.deepEqual(current.positions, old.positions);
+        assert.deepEqual(createChannelDefinitions(current), createChannelDefinitions(old));
+        assert.deepEqual(merge(changed, page([base])), original, 'A new list may remove an obsolete image.');
+    }
+});
+
+test('optional thumbnails are dropped before the catalog byte limit can invalidate a usable list', () => {
+    const references = Array.from({ length: 160 }, (_, number) => item('fixture-' + number, String(number)));
+    const plain = merge(null, page(references));
+    const thumbnailUrl = '/logos/' + 'x'.repeat(1900) + '.png';
+    const decorated = page(references.map(reference => ({ ...reference, thumbnailUrl })));
+    const decoratedJson = JSON.stringify(decorated);
+    const result = merge(plain, decorated);
+    assert.deepEqual(result, plain);
+    assert.ok(Buffer.byteLength(JSON.stringify(result)) <= MAX_CATALOG_BYTES);
+    assert.equal(result.services.length, references.length);
+    assert.equal(result.lastQuery.reconciled, true);
+    assert.equal(JSON.stringify(decorated), decoratedJson, 'Dropping optional metadata never mutates the caller.');
+    const oversized = structuredClone(plain);
+    for (const service of oversized.services) service.thumbnailUrl = thumbnailUrl;
+    for (const entry of oversized.pages[0].items) entry.thumbnailUrl = thumbnailUrl;
+    const oversizedJson = JSON.stringify(oversized);
+    assert.ok(Buffer.byteLength(oversizedJson) > MAX_CATALOG_BYTES, 'The images exceed the real byte limit.');
+    assert.deepEqual(restoreChannelCatalog(oversized), plain);
+    assert.equal(JSON.stringify(oversized), oversizedJson);
+    assert.deepEqual(restoreChannelCatalog(JSON.stringify(result)), plain);
+    const tooLargeWithoutImages = Array.from({ length: 250 }, (_, number) =>
+        item('fixture-' + number, String(number), { name: 'x'.repeat(1024), thumbnailUrl }));
+    assert.throws(() => merge(null, page(tooLargeWithoutImages)), { code: 'CATALOG_LIMIT' });
 });
 
 test('normalization recomputes selection fields and validates IDs, collisions and availability', () => {

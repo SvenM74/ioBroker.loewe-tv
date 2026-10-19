@@ -1,10 +1,10 @@
 # Programmübersicht und Aufnahmeaufträge
 
-**Version 0.1.13, Build `0.1.13-recording-status.1`**, bietet zwei getrennte Reiter: **EPG-Einstellungen** für Aktivierung und Abrufintervall sowie **Programmübersicht** für die Senderliste mit Zeitachse, Sendungsdetails und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
+**Version 0.1.14, Build `0.1.14-epg-web.1`**, bietet zwei getrennte Reiter: **EPG-Einstellungen** für Aktivierung und Abrufintervall sowie **Programmübersicht** für die Senderliste mit Zeitachse, Sendungsdetails und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
 
 ## Öffnen und vorbereiten
 
-1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0113). `info.adapterBuild` muss **`0.1.13-recording-status.1`** anzeigen.
+1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0114). `info.adapterBuild` muss **`0.1.14-epg-web.1`** anzeigen.
 2. Verwende **ioBroker Admin ab 7.7.28**. Lade Admin nach dem Update vollständig neu und öffne die Instanz-Konfiguration erneut.
 3. Starte die betreffende Instanz, beispielsweise **`loewe-tv.0`**. Prüfe unter **Verbindung** und **Senderlisten** die TV-Adresse und die gewünschte TV-Senderliste.
 4. Aktiviere unter **EPG-Einstellungen** die **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**. Speichere Änderungen, bevor du die Übersicht verwendest.
@@ -14,21 +14,23 @@ Ein EPG-Intervall von `0` deaktiviert automatische EPG-Abfragen einschließlich 
 
 ## Bildaufbau und Navigation
 
-Oben stehen Sender, Titel, Start, bekanntes Ende, Untertitel und Beschreibung der ausgewählten Sendung. Für eine eindeutig laufende Sendung erscheint der Fortschritt. Die Senderkachel zeigt Name und Position; Livevideo ist nicht integriert.
+Die große TV-Kanal-/Detailfläche ist entfernt. In der kompakten Auswahlzeile stehen Sender, Titel, Zeitraum und Status der gewählten Sendung. Unter **Sendungsdetails** lässt sich die Beschreibung aufklappen. Livevideo ist nicht integriert.
 
-Darunter stehen Datum, Zeitfenster, Suche und Abrufstatus. Die Programmtabelle ordnet die Sender links nach ihrer gespeicherten Position und die Sendungen rechts nach der Uhrzeit an. Mehrere Plätze desselben TV-Dienstes teilen sich wie im Senderbaum eine Zeile; die kleinste gültige Position bestimmt ihre Einordnung. Sender ohne passende EPG-Daten bleiben sichtbar. Die Ansicht enthält ausschließlich die TV-Sender der konfigurierten Liste.
+Die gemeinsame Bedienleiste enthält Datum, Stundenpfeile, **Jetzt**, die Stundenauswahl, **Jetzt ansehen / Aufnahme planen**, **EPG aktualisieren** und anschließend die Sendersuche. Auf schmalen Bildschirmen bricht sie in dieser Reihenfolge um. Die Programmtabelle nutzt die verbleibende Höhe und ordnet die Sender nach ihrer gespeicherten Position, die Sendungen nach der Uhrzeit an. Mehrere Plätze desselben TV-Dienstes teilen sich eine Zeile; die kleinste gültige Position bestimmt die Einordnung. Sender ohne passende EPG-Daten bleiben sichtbar.
+
+Senderlogos ersetzen den Namen in der linken Tabellenspalte, wenn ein Bild verfügbar ist. Die Sendernummer bleibt sichtbar; der vollständige Name bleibt für Suche, Tooltip und Screenreader verfügbar. Eine TV-Bildadresse hat Vorrang vor dem mitgelieferten Logo. Bei Ladefehlern fällt die Anzeige auf das mitgelieferte Logo oder den Sendernamen zurück. Unter HTTPS werden unverschlüsselte TV-Bilder übersprungen. Die [Logoquellen und Grenzen](CHANNEL_LOGOS.md) sind einzeln dokumentiert.
 
 | Element | Wirkung |
 |---|---|
 | Sendung anklicken | Wählt die Sendung und zeigt ihre Details sowie die passende Aktion. |
-| Sendername oder Position anklicken | Wählt die Senderzeile für die Detailanzeige. |
+| Senderlogo, Sendername oder Position anklicken | Wählt die Senderzeile für die kompakte Auswahl. |
 | **Sender suchen** | Filtert nach Name oder Position; ein leeres Suchfeld zeigt wieder alle Sender. |
 | Datum und Tagespfeile | Wählen den Tag innerhalb des verfügbaren Navigationsbereichs. |
 | Stundenpfeile | Verschieben den sichtbaren Ausschnitt um eine Stunde. |
 | **Jetzt** | Kehrt zur aktuellen Uhrzeit zurück. |
 | **2 Stunden / 3 Stunden / 6 Stunden** | Wählt die Breite der Zeitachse; Standard sind drei Stunden. |
+| **Jetzt ansehen / Aufnahme planen** | Führt nach Auswahl der Sendung zur passenden TV-Aktion beziehungsweise zum Bestätigungsdialog. |
 | **EPG aktualisieren** | Fordert den vorhandenen TV-Abgleich an. Ein bereits laufender Abgleich wird weiterverwendet. |
-| **Separat öffnen** | Öffnet dieselbe Instanzübersicht als eigene Seite unter der bestehenden Admin-Adresse. |
 | **Aufnahmeaufträge** | Zeigt vorgemerkte Aufträge, ihren Übertragungszustand und gegebenenfalls einen Fehler. |
 
 Tab erreicht die Bedienelemente; Pfeiltasten wechseln innerhalb der Programmtabelle zwischen Sendungen und Zeilen. **Pos1** und **Ende** führen zur ersten beziehungsweise letzten angezeigten Sendung der Zeile. Die Uhrzeiten erscheinen in der lokalen Zeitzone des Browsers. Für Aktionsprüfungen verwendet der Adapter die Uhrzeit des ioBroker-Rechners; diese muss stimmen.
@@ -75,15 +77,34 @@ Jeder Auftrag wird höchstens einmal möglicherweise wirksam an den TV gesendet.
 
 **Vormerkung entfernen** ist nur vor dem Versand verfügbar. Bereits übertragene oder unklare TV-Timer werden damit nicht gelöscht. Prüfe und ändere solche Timer direkt am Fernseher. Änderungen der EPG-Zeiten passen einen gespeicherten Auftrag in dieser Version nicht automatisch an. Aufnahmeregeln, Vor-/Nachlauf und die Wahl eines anderen Aufnahmeziels sind noch nicht integriert.
 
-## Als separate Seite öffnen
+## Instanzübersicht und Schnellzugriff
 
-Die Schaltfläche **Separat öffnen** übernimmt Adresse, HTTP/HTTPS, Port, einen vorhandenen Proxy-Pfad und die Instanznummer aus der aktuellen Ansicht. Diese URL lässt sich als Lesezeichen speichern. Für eine normale Admin-Installation auf Port 8081 lautet sie beispielsweise:
+Der bisherige Button **Separat öffnen** ist aus der Konfiguration entfernt. In der ioBroker-Instanzübersicht bietet die Instanz einen direkten Link **Programmübersicht**. Derselbe Link steht im **Admin-Schnellzugriff** zur Verfügung. Die eigene Seite lässt sich als Lesezeichen speichern. Eine normale Admin-Installation auf Port 8081 verwendet beispielsweise:
 
 ```text
 http://IOBROKER-HOST:8081/adapter/loewe-tv/epg.html?instance=0
 ```
 
-`IOBROKER-HOST` ist die Adresse deines ioBroker-Rechners. Für `loewe-tv.1` lautet der Parameter `instance=1`. Bei HTTPS, abweichendem Port oder einem Reverse Proxy verwende den vom Button geöffneten Link. Die Seite läuft über den **vorhandenen ioBroker Admin** und verwendet dessen konfigurierte Anmeldung und Benutzerrechte. Es gibt keinen eigenen Webserver und keine zusätzliche Portfreigabe für den Adapter. Von außerhalb des Heimnetzes muss derselbe Admin-Zugang bereits erreichbar sein. Eine lokal vom Dateisystem geöffnete HTML-Datei verbindet sich nicht mit dem Adapter.
+`IOBROKER-HOST` ist die Adresse deines ioBroker-Rechners. Für `loewe-tv.1` lautet der Parameter `instance=1`. HTTPS, Port und ein vorgeschalteter Proxy richten sich nach deiner bestehenden Installation. Die Seite verwendet die konfigurierte **Admin-Anmeldung und Benutzerrechte**. Eine lokal vom Dateisystem geöffnete HTML-Datei verbindet sich nicht mit dem Adapter.
+
+## Über ioBroker.web öffnen
+
+1. Eine vorhandene **web-Instanz**, zum Beispiel `web.0`, aktivieren. In dieser Instanz die **integrierte Socket-Verbindung** verwenden.
+2. In der LOEWE-TV-Konfiguration unter **EPG-Einstellungen → Programmübersicht in ioBroker.web** diese Web-Instanz auswählen.
+3. **Speichern**. ioBroker.web kann beim Laden der Erweiterung neu starten. Die TV-Adapterinstanz muss für die Daten und Aktionen laufen.
+4. Auf der Startseite der gewählten Web-Instanz den Schnellzugriff **Loewe TV · Programmübersicht (0)** öffnen. Alternativ den direkten instanzbezogenen Pfad verwenden:
+
+```text
+http://IOBROKER-HOST:8082/loewe-tv.0/epg.html
+```
+
+Der Port `8082` ist ein Beispiel; maßgeblich ist die Konfiguration deiner Web-Instanz. Für die zweite TV-Instanz lautet der Pfad `/loewe-tv.1/epg.html`. Mehrere TVs können dieselbe Web-Instanz verwenden und bekommen getrennte Links. Bei neueren Admin-Versionen kann der Link an der Instanz automatisch zur gewählten Web-Instanz führen; die Admin-Adresse bleibt ebenfalls nutzbar.
+
+Läuft die Web-Instanz auf einem anderen ioBroker-Host, muss das LOEWE-TV-Adapterpaket auch dort verfügbar sein, damit der Web-Adapter die Erweiterungsdatei laden kann.
+
+Die Auswahl ist zunächst **deaktiviert**. Ohne gewählte Web-Instanz steht die Programmübersicht über Admin bereit. Der Web-Zugriff übernimmt **HTTP/HTTPS, Anmeldung und Benutzerrechte** der ausgewählten Web-Instanz. Der Benutzer benötigt das Recht zum Senden von Adapter-Nachrichten. Eine deaktivierte oder separat ausgelagerte Socket-Verbindung wird mit einem Konfigurationshinweis gemeldet. Es entsteht kein zusätzlicher Server oder Port; die Seite verwendet dieselben Daten und Aufnahmeaufträge wie die Admin-Ansicht.
+
+Je nach Admin-Version kann die Instanz bei aktiviertem Web-Zugriff zusätzlich als Web-Erweiterung erscheinen. Für die Verbindung zum Fernseher bleiben `info.connection` und der Verbindungsstatus in der Programmübersicht maßgeblich; die Web-Erreichbarkeit allein belegt keine TV-Verbindung.
 
 ## Datenumfang und Hilfe
 
@@ -97,7 +118,9 @@ Der TV-Abruf reicht ungefähr 24 Stunden voraus; nur tatsächlich gelieferte und
 | Programmdaten veraltet | Nach mehr als 24 Stunden seit dem letzten gültigen Abruf wird der Plan ausgeblendet; erneut abrufen. |
 | Auswahl inzwischen geändert | Übersicht neu laden und die Sendung erneut auswählen. |
 | Instanz oder Ansicht nicht erreichbar | Instanz starten, Build und Admin-Version prüfen; Admin nach dem Update neu laden. |
-| Admin-Sitzung abgelaufen oder nicht berechtigt | Über den vorhandenen Admin-Zugang erneut anmelden beziehungsweise Benutzerrechte prüfen. |
+| Admin-/Web-Sitzung abgelaufen oder nicht berechtigt | Am jeweils verwendeten Admin-/Web-Zugang anmelden und die Benutzerrechte zum Senden von Adapter-Nachrichten prüfen. |
+| Web-Seite meldet eine fehlende integrierte Socket-Verbindung | In der gewählten Web-Instanz die integrierte Verbindung aktivieren und speichern. |
+| Kein Senderlogo | Senderliste bei eingeschaltetem TV über `channels.refresh` neu abrufen; nicht jeder TV und nicht jeder Sender liefert ein Bild. Der Sendername bleibt als Ersatz sichtbar. |
 | **An TV übertragen** | Der TV hat geantwortet; der automatische Timerabgleich ist noch offen. **Details zum Timerabgleich** öffnet die Diagnose. Der Auftrag wird nicht erneut übertragen. |
 | **Übertragung unklar** oder **Timerabgleich offen** | Timerliste direkt am TV prüfen. Für die Protokollanpassung wird eine echte, auswertbare Timerantwort benötigt. |
 

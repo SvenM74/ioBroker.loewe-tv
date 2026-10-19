@@ -1,12 +1,14 @@
 /* global window, document, URL, CustomEvent */
 'use strict';
 
-// Keep the guide independent of Admin's React version. Admin serves this page
-// and its socket client with the current user's existing session and ACLs.
+// Keep the guide independent of Admin's React version. Admin or the selected
+// web instance serves this page and its socket client with the user's own
+// existing session and ACLs. The web extension only serves static UI files.
 // Primary transport contract:
 // https://github.com/ioBroker/ioBroker.admin/blob/v7.7.28/src-admin/public/lib/js/socket.io.js
 // https://github.com/ioBroker/ioBroker.socket-classes/blob/v2.2.21/src/lib/socketCommon.ts
 // https://github.com/ioBroker/ioBroker.socket-classes/blob/v2.2.21/README.md
+// https://github.com/ioBroker/ioBroker.web/blob/e6402003159b17f41c0db1b4004fb37b7edfa684/src/main.ts
 (function initializeEpgBridge() {
     const CONNECT_TIMEOUT_MS = 8000;
     const REQUEST_TIMEOUT_MS = 8000;
@@ -25,18 +27,18 @@
 
     const german = !/^en(?:-|$)/i.test(window.navigator?.language || 'de');
     const words = german ? {
-        unavailable: 'Die Verbindung zur ioBroker-Administration ist nicht verfügbar. Lade die Konfiguration erneut.',
-        timeout: 'Die ioBroker-Administration antwortet nicht rechtzeitig. Prüfe, ob die Adapterinstanz läuft.',
-        auth: 'Die Admin-Sitzung ist abgelaufen oder nicht berechtigt. Melde dich in ioBroker erneut an.',
-        instance: 'Die Adapterinstanz ist nicht eindeutig angegeben. Öffne die Vorschau aus den Instanzeinstellungen.',
+        unavailable: 'Die Verbindung zu ioBroker ist nicht verfügbar. Lade die Programmübersicht erneut.',
+        timeout: 'ioBroker antwortet nicht rechtzeitig. Prüfe, ob die Adapterinstanz läuft.',
+        auth: 'Die ioBroker-Sitzung ist abgelaufen oder nicht berechtigt. Melde dich erneut an und prüfe die Benutzerrechte für Adapter-Nachrichten.',
+        instance: 'Die Adapterinstanz ist nicht eindeutig angegeben. Öffne die Programmübersicht über den Link in der Instanzübersicht oder auf der Web-Startseite.',
         response: 'Die Programmvorschau hat eine unvollständige oder ungültige Antwort erhalten.',
         changed: 'Die Senderliste wurde während des Ladens mehrfach geändert. Lade die Vorschau erneut.',
         busy: 'Eine Anfrage läuft bereits. Bitte warte kurz.',
     } : {
-        unavailable: 'The connection to ioBroker Admin is unavailable. Reload the configuration.',
-        timeout: 'ioBroker Admin did not respond in time. Check that the adapter instance is running.',
-        auth: 'The Admin session has expired or lacks permission. Sign in to ioBroker again.',
-        instance: 'The adapter instance is missing or ambiguous. Open the guide from its instance settings.',
+        unavailable: 'The connection to ioBroker is unavailable. Reload the programme guide.',
+        timeout: 'ioBroker did not respond in time. Check that the adapter instance is running.',
+        auth: 'The ioBroker session has expired or lacks permission. Sign in again and check the user permissions for adapter messages.',
+        instance: 'The adapter instance is missing or ambiguous. Open the guide using its link in the instance overview or on the web start page.',
         response: 'The programme guide received an incomplete or invalid response.',
         changed: 'The channel list changed repeatedly while loading. Reload the guide.',
         busy: 'A request is already running. Please wait a moment.',
@@ -51,7 +53,19 @@
     function context() {
         const url = new URL(window.location.href);
         const instances = url.searchParams.getAll('instance');
-        if (!/^https?:$/.test(url.protocol) || instances.length !== 1 ||
+        if (!/^https?:$/.test(url.protocol) || url.username || url.password) {
+            throw failure('instance', 'EPG_GUIDE_INSTANCE');
+        }
+        // The extension binds the TV instance in the path. A query parameter
+        // must never select another TV. Reverse-proxy prefixes stay intact.
+        const web = url.pathname.match(/\/loewe-tv\.(0|[1-9]\d{0,8})\/epg\.html$/);
+        if (web) {
+            if (instances.length > 1 || (instances.length === 1 && instances[0] !== web[1])) {
+                throw failure('instance', 'EPG_GUIDE_INSTANCE');
+            }
+            return { namespace: `loewe-tv.${web[1]}`, base: new URL('../', url) };
+        }
+        if (instances.length !== 1 ||
             !/^(?:0|[1-9]\d{0,8})$/.test(instances[0]) ||
             !url.pathname.endsWith('/adapter/loewe-tv/epg.html')) {
             throw failure('instance', 'EPG_GUIDE_INSTANCE');
@@ -144,13 +158,20 @@
         });
         void loadSocketLibrary(ctx.base).then(io => {
             if (disposed || connection !== current) return;
-            // Same origin, scheme, port and reverse-proxy prefix as Admin.
+            // Same origin, scheme, port and reverse-proxy prefix as the page.
             // Cookies are sent by the browser; no password or token is copied.
-            current.socket = io.connect(ctx.base.href, {
+            // The regular Socket.IO function treats a URL path as a socket
+            // namespace; its HTTP path is passed separately. ioBroker's WS
+            // object uses the URL itself and needs the full proxy prefix.
+            current.socket = io.connect(typeof io === 'function' ? ctx.base.origin : ctx.base.href, {
                 path: `${ctx.base.pathname}socket.io`,
                 name: 'loewe-epg',
                 connectTimeout: CONNECT_TIMEOUT_MS,
                 authTimeout: CONNECT_TIMEOUT_MS,
+                // Applies to the regular Socket.IO client when web uses it.
+                // Lost mutations must not be buffered for automatic replay.
+                reconnection: false,
+                forceNew: true,
                 // The Admin client explicitly supports an injected WebSocket
                 // constructor. This lets us clean up only this iframe's own
                 // connections without touching the parent's Admin session.
@@ -209,7 +230,9 @@
             try {
                 socket.emit('sendTo', ctx.namespace, command, message, response => {
                     if (finished) return;
-                    if (!response || typeof response !== 'object' || Array.isArray(response)) {
+                    if (response === 'permissionError' || response?.error === 'permissionError') {
+                        entry.finish(failure('auth', 'EPG_GUIDE_PERMISSION'));
+                    } else if (!response || typeof response !== 'object' || Array.isArray(response)) {
                         entry.finish(failure('response'));
                     } else if (response.error) {
                         const code = typeof response.code === 'string' ? response.code

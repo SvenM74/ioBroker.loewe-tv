@@ -18,10 +18,10 @@ const catalog = readJson('docs/protocol-templates.json');
 const remote115 = readJson('docs/remote115-keys.json');
 
 assert.equal(pkg.name, `iobroker.${io.common.name}`);
-assert.equal(pkg.version, '0.1.21');
+assert.equal(pkg.version, '0.1.22');
 assert.equal(pkg.version, io.common.version);
 assert.ok(BUILD_ID.startsWith(`${pkg.version}-`), 'Build identifier must match package version');
-assert.equal(BUILD_ID, '0.1.21-direct-links.1');
+assert.equal(BUILD_ID, '0.1.22-recovery.1');
 assert.ok(pkg.keywords.includes('xmltv'), 'Package keywords must describe optional XMLTV support');
 assert.equal(io.common.mode, 'daemon');
 assert.equal(io.common.messagebox, true, 'Admin list selection requires adapter messaging');
@@ -32,8 +32,8 @@ assert.equal(io.common.compact, false, 'This adapter must run outside a shared c
 assert.ok(fs.existsSync(path.join(root, pkg.main)));
 assert.ok(fs.existsSync(path.join(root, 'admin', io.common.icon)));
 assert.equal(admin.i18n, true);
-assert.equal(io.common.globalDependencies.find(dependency => dependency.admin)?.admin, '>=8.0.22',
-    'Direct instance links require the published Admin web-extension link fix');
+assert.equal(io.common.globalDependencies.find(dependency => dependency.admin)?.admin, '>=7.7.28',
+    'Preserve the previous Admin baseline; an optional link fix must not block the TV adapter startup');
 assert.equal(admin.items._programmeGuide.items._epgGuide.type, 'iframeSendTo');
 for (const asset of ['epg.html', 'epg.css', 'epg.js', 'epg-bridge.js', 'epg-remote.js']) {
     assert.ok(fs.statSync(path.join(root, 'admin', asset)).isFile(), `Missing programme guide asset: ${asset}`);

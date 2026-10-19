@@ -8,8 +8,8 @@ const crypto = require('node:crypto');
 const EpgWebExtension = require('../lib/web-extension');
 const io = require('../io-package.json');
 const sources = require('./fixtures/admin-link-resolver/sources.json');
-const broken = require('./fixtures/admin-link-resolver/admin-8.0.14.cjs');
-const supported = [
+const legacyResolver = require('./fixtures/admin-link-resolver/admin-8.0.14.cjs');
+const directResolvers = [
     ['8.0.22', require('./fixtures/admin-link-resolver/admin-8.0.22.cjs')],
     ['8.3.0', require('./fixtures/admin-link-resolver/admin-8.3.0.cjs')],
 ];
@@ -89,9 +89,11 @@ function followDirect(service, address, publicBase, number) {
     return target;
 }
 
-test('declared Admin minimum matches the first fixed release and fixture sources retain their upstream hashes', () => {
+test('recovery retains the Admin 7.7.28 minimum and fixture sources retain their upstream hashes', () => {
     const dependency = io.common.globalDependencies.find(item => Object.hasOwn(item, 'admin'));
-    assert.equal(dependency?.admin, '>=8.0.22');
+    // Keep the established runtime requirement. Direct extension arrows have
+    // a separate Admin resolver limitation, documented by the tests below.
+    assert.equal(dependency?.admin, '>=7.7.28');
     const directory = path.join(__dirname, 'fixtures', 'admin-link-resolver');
     for (const source of sources.resolvers) {
         const raw = fs.readFileSync(path.join(directory, 'sources', source.sourceFile));
@@ -106,10 +108,10 @@ test('declared Admin minimum matches the first fixed release and fixture sources
         sources.license.blobSha);
 });
 
-test('unmodified Admin 8.0.14 reproduces the reported loss of both TV instance identities', () => {
+test('Admin 8.0.14 still opens the generic entry whose explicit TV links reach their own EPG', () => {
     const configuration = context();
     const service = host(configuration);
-    const urls = [0, 1].map(number => links(broken, configuration, number));
+    const urls = [0, 1].map(number => links(legacyResolver, configuration, number));
     assert.deepEqual(urls, [0, 1].map(() => [{
         url: 'http://192.168.178.24:8083/loewe-tv/', port: 8083, instance: 'web.1',
     }]));
@@ -117,12 +119,19 @@ test('unmodified Admin 8.0.14 reproduces the reported loss of both TV instance i
     assert.equal(response.code, 200);
     assert.equal(response.headers.Location, undefined);
     assert.match(String(response.body), /Fernseher auswählen/);
-    assert.match(String(response.body), /loewe-tv\.0\/epg\.html/);
-    assert.match(String(response.body), /loewe-tv\.1\/epg\.html/);
+    for (const number of [0, 1]) {
+        const href = String(response.body).match(new RegExp(`href="([^"]*loewe-tv\\.${number}/epg\\.html)"`));
+        assert.ok(href, `The generic entry must offer TV ${number}.`);
+        const target = new URL(href[1], urls[number][0].url);
+        assert.equal(target.href, `http://192.168.178.24:8083/loewe-tv.${number}/epg.html`);
+        const guide = service.request(target.pathname);
+        assert.equal(guide.code, 200);
+        assert.deepEqual(guide.body, GUIDE);
+    }
 });
 
-test('first fixed and current released Admin resolve both instance arrows directly to their own EPG', () => {
-    for (const [version, resolver] of supported) {
+test('Admin 8.0.22 and 8.3.0 resolve both instance arrows directly to their own EPG', () => {
+    for (const [version, resolver] of directResolvers) {
         const configuration = context();
         const service = host(configuration);
         for (const number of [0, 1]) {
@@ -139,7 +148,7 @@ test('first fixed and current released Admin resolve both instance arrows direct
 });
 
 test('direct links use each selected Web host, port and HTTPS setting instead of the TV endpoint', () => {
-    for (const [, resolver] of supported) {
+    for (const [, resolver] of directResolvers) {
         const configuration = context({ selected: ['web.0', 'web.1'], secure: true });
         configuration.instances['system.adapter.web.1'].common.host = 'second-host';
         configuration.hosts['system.host.second-host'] = {
@@ -163,7 +172,7 @@ test('direct links use each selected Web host, port and HTTPS setting instead of
 });
 
 test('released Admin reverse-proxy rewriting and the extension redirect preserve the full public prefix', () => {
-    for (const [, resolver] of supported) {
+    for (const [, resolver] of directResolvers) {
         const configuration = context({ bind: '127.0.0.1' });
         const service = host(configuration);
         const proxy = { globalPath: '/home/', paths: [
@@ -181,7 +190,7 @@ test('released Admin reverse-proxy rewriting and the extension redirect preserve
 });
 
 test('released Admin Cloud rewriting keeps TV identity and existing Cloud tiles open canonical EPG pages', () => {
-    for (const [, resolver] of supported) {
+    for (const [, resolver] of directResolvers) {
         const configuration = context();
         configuration.instances['system.adapter.cloud.0'] = {
             common: { name: 'cloud', enabled: true },
@@ -209,7 +218,7 @@ test('released Admin Cloud rewriting keeps TV identity and existing Cloud tiles 
 });
 
 test('without a selected Web instance, both links stay directly on their own Admin EPG with proxy prefix', () => {
-    for (const [, resolver] of supported) {
+    for (const resolver of [legacyResolver, ...directResolvers.map(([, item]) => item)]) {
         const configuration = context({ selected: ['', ''] });
         const service = host(configuration);
         assert.equal(service.handlers.length, 0);
@@ -225,7 +234,7 @@ test('without a selected Web instance, both links stay directly on their own Adm
 test('direct instance links retain Web authentication and reject ambiguous or mismatched TV identities', () => {
     const configuration = context();
     const service = host(configuration, 'web.1', true);
-    const resolver = supported[0][1];
+    const resolver = directResolvers[0][1];
     for (const number of [0, 1]) {
         const [link] = links(resolver, configuration, number);
         const url = new URL(link.url);

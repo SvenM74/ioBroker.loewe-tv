@@ -1,6 +1,6 @@
 # XMLTV: Programmdaten bei ausgeschaltetem Fernseher
 
-Diese Anleitung gilt für **Version 0.1.21**, Build **`0.1.21-direct-links.1`**. Der Adapter kann eine selbst gewählte XMLTV-Quelle laden, deren Sender der gespeicherten TV-Senderliste zuordnen und die Programme auch bei ausgeschaltetem Fernseher anzeigen. Quelle und Senderzuordnung bleiben bei jeder Sendung nachvollziehbar. Eine zukünftige Sendung mit vollständigen Zeiten kann anschließend wie ein TV-EPG-Eintrag zur Aufnahme vorgemerkt werden.
+Diese Anleitung gilt für **Version 0.1.22**, Build **`0.1.22-recovery.1`**. Der Adapter kann eine selbst gewählte XMLTV-Quelle laden, deren Sender der gespeicherten TV-Senderliste zuordnen und die Programme auch bei ausgeschaltetem Fernseher anzeigen. Quelle und Senderzuordnung bleiben bei jeder Sendung nachvollziehbar. Eine zukünftige Sendung mit vollständigen Zeiten kann anschließend wie ein TV-EPG-Eintrag zur Aufnahme vorgemerkt werden.
 
 Eine **eigene HTTP(S)-Adresse** ist erforderlich. Der Adapter wählt keinen Anbieter automatisch und liefert kein Abonnement mit. Die Adresse muss eine XMLTV-Datei oder deren gzip-komprimierte Fassung ausliefern; eine normale Webseite mit einem Fernsehprogramm genügt nicht. Verwende eine Quelle, die du nutzen darfst und die deine Sender einschließlich der passenden regionalen und HD-/SD-/UHD-Varianten abdeckt.
 
@@ -8,7 +8,7 @@ Die [Programmübersicht](EPG_GUI.md) beschreibt die Bedienung, Fernbedienung und
 
 ## Einrichten
 
-1. Aktualisiere nach der [Installationsanleitung](INSTALLATION.md#update-auf-0121). Unter `info.adapterBuild` muss **`0.1.21-direct-links.1`** stehen. Die betreffende LOEWE-TV-Instanz muss laufen; nach dem Update Admin vollständig neu laden.
+1. Aktualisiere nach der [Installationsanleitung](INSTALLATION.md#update-auf-0122). Unter `info.adapterBuild` muss **`0.1.22-recovery.1`** stehen. Die betreffende LOEWE-TV-Instanz muss laufen; nach dem Update Admin vollständig neu laden.
 2. Prüfe die **gespeicherte TV-Senderliste**. Bei der ersten Einrichtung den Fernseher einschalten, die gewünschte Liste wählen und die Sender abrufen. Die zugehörigen Dienste müssen unter `channels.tv` vorhanden sein. XMLTV erzeugt keine TV-Senderliste und erfindet keine Sender-Locators. Eine bereits gespeicherte Liste kann anschließend auch bei TV aus verwendet werden.
 3. Öffne **Instanzen → loewe-tv.0 → Konfiguration → EPG-Einstellungen**. Aktiviere **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**.
 4. Wähle **EPG-Quelle → TV mit XMLTV-Ergänzung** oder **Nur XMLTV**. Trage unter **XMLTV-Adresse** die vollständige Adresse deiner Quelle ein. HTTP und HTTPS sind zulässig; Benutzername/Passwort im URL-Benutzerinfofeld sowie ein Fragment nach `#` sind nicht zulässig.
@@ -208,7 +208,7 @@ Ein XMLTV-Sender darf eine Bildadresse liefern. Sie wird nur nach erfolgreicher 
 
 XMLTV ändert die vorhandene Web-/Cloud-Anbindung nicht. Die ausgewählte `native.webInstance` bleibt erhalten; jede TV-Instanz hat ihre eigene Route wie `/loewe-tv.0/epg.html` oder `/loewe-tv.1/epg.html`. Für Cloud-Zugriff weiterhin dieselbe Web-Instanz in LOEWE-TV und Cloud auswählen und die funktionierenden Web-Startseitenkacheln verwenden. [Web-/Cloud-Einrichtung](EPG_GUI.md#über-iobrokercloud-remote-öffnen).
 
-Für direkte Instanz- und Schnellzugrifflinks verlangt Version **0.1.21 Admin ab 8.0.22**. Der veröffentlichte Admin-Fix erhält die TV-Nummer und öffnet damit die zugehörige Programmübersicht ohne Auswahlmenü. Der allgemeine Einstieg `/loewe-tv/` aus 0.1.20 bleibt für alte Lesezeichen ohne Instanznummer verfügbar. Bei einer vom Browser nicht erreichbaren Web-Adresse die direkte Admin-Adresse mit passendem `?instance=0` beziehungsweise `?instance=1` oder den Reiter **Programmübersicht** verwenden. [Direktlinks und Voraussetzungen](ADMIN_LINKS.md).
+Version **0.1.22** stellt die bisherige Voraussetzung **Admin ab 7.7.28** wieder her. Die strengere Abhängigkeit aus 0.1.21 konnte den LOEWE-Adapterstart und damit EPG und Fernbedienung blockieren. Ältere Admin-Pfeile können weiterhin den allgemeinen Einstieg `/loewe-tv/` mit TV-Auswahl öffnen. Für den direkten Aufruf die passende Web-Adresse `/loewe-tv.0/epg.html` beziehungsweise `/loewe-tv.1/epg.html` oder die direkte Admin-Adresse mit `?instance=0` beziehungsweise `?instance=1` verwenden. [Wiederherstellung und bekannte Linkgrenze](ADMIN_LINKS.md).
 
 ## Nachweisstand
 

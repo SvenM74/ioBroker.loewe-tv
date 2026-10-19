@@ -2,8 +2,10 @@
 
 These fixtures run the released ioBroker.admin link resolver against the current
 LOEWE adapter metadata and its actual Web extension. They reproduce the old
-failure and verify the minimum supported Admin release without simulating a
-manually corrected version of the resolver.
+link failure and verify the published resolver correction without simulating a
+manually corrected version of the resolver. Recovery release 0.1.22 restores
+the adapter's Admin minimum to 7.7.28. This runtime requirement is separate
+from the Admin 8.0.22 correction needed for direct Web-extension arrows.
 
 | Admin release | Purpose | Official source commit |
 | --- | --- | --- |
@@ -47,14 +49,17 @@ TypeScript stripping API is required on Node.js 22.
 `test/admin-link-routing.test.js` passes `io-package.json`'s current link into
 each real resolver. The resolved requests enter a shared Express-compatible
 middleware chain with the actual `EpgWebExtension` for TV 1 and TV 0, in that
-order. The final response must equal the installed EPG HTML. Neither direct
-instance link may visit the generic TV selection entry.
+order. With Admin 8.0.22 and 8.3.0, the final response must equal the installed
+EPG HTML, and neither direct instance link may visit the generic TV selection
+entry. Admin 8.0.14 still resolves both arrows to `/loewe-tv/`: the test expects
+the retained TV selection and follows each explicit TV link to its own EPG.
+The recovery does not claim to change that older Admin resolver.
 
 Coverage includes the original failure, the declared Admin minimum, two TVs
 sharing a Web instance, TVs assigned to different Web instances, host and port
 selection, HTTPS, the released reverse-proxy rewrite, the released Cloud URL
-rewrite, unchanged per-TV Cloud welcome-page links, Admin-only fallback,
-authentication and ambiguous instance parameters.
+rewrite, unchanged per-TV Cloud welcome-page links, Admin-only fallback
+including Admin 8.0.14, authentication and ambiguous instance parameters.
 
 These are resolver and adapter integration tests. They do not start a complete
 Admin frontend or a live Cloud service, test a browser cache, or contact a TV.

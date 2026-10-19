@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.21",
+    "version": "0.1.22",
     "news": {
+      "0.1.22": {
+        "en": "Restore Admin >=7.7.28: the stricter dependency introduced in 0.1.21 could prevent the TV adapter from starting and disable both programme data and remote commands. Keep the existing Web routes and per-TV settings. Older Admin links may still open the TV selector; use the direct per-TV URL.",
+        "de": "Admin >=7.7.28 wieder zulassen: Die strengere Abhängigkeit aus 0.1.21 konnte den TV-Adapterstart und damit Programmdaten und Fernbedienung blockieren. Bestehende Web-Pfade und TV-Zuordnungen erhalten. Ältere Admin-Links können weiterhin die TV-Auswahl öffnen; direkte TV-URL verwenden."
+      },
       "0.1.21": {
         "en": "Require the published Admin 8.0.22 link fix so each instance arrow opens its own programme guide without a TV-selection menu. Verify the full route with original Admin resolvers; retain existing per-TV Web and Cloud access.",
         "de": "Den veröffentlichten Linkfix aus Admin 8.0.22 voraussetzen, damit jeder Instanz-Pfeil ohne TV-Auswahl seine eigene Programmübersicht öffnet. Den vollständigen Aufruf mit originalen Admin-Resolvern prüfen; vorhandenen Web- und Cloud-Zugriff je TV erhalten."
@@ -130,7 +134,7 @@
     ],
     "globalDependencies": [
       {
-        "admin": ">=8.0.22"
+        "admin": ">=7.7.28"
       }
     ],
     "stopTimeout": 500

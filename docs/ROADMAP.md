@@ -2,7 +2,7 @@
 
 ## Aktueller Stand
 
-**Version 0.1.11, Build `0.1.11-epg-recording.1`**, enthält die manuell bestätigte Aufnahmevormerkung aus der Programmübersicht. Die automatische Suche nach Sendungen anhand eigener Regeln bleibt das nächste Ausbauziel.
+**Version 0.1.12, Build `0.1.12-recording-fix.1`**, enthält die manuell bestätigte Aufnahmevormerkung aus der Programmübersicht und korrigiert die Behandlung zusätzlicher Timer-Textmetadaten sowie die falsche Offline-Anzeige nach semantischen Timerfehlern. Die automatische Suche nach Sendungen anhand eigener Regeln bleibt das nächste Ausbauziel.
 
 | Baustein | Implementierter Stand |
 |---|---|
@@ -21,9 +21,9 @@ Die [Bedienungsanleitung zur Programmübersicht](EPG_GUI.md) beschreibt Dialoge,
 
 Der Nutzer hat den direkten TV-EPG-Abruf mit dem früheren 0.1.8-Stand auf **Loewe bild 7.55 / SL420 / V5.4.6.0** und **bild 5.32 / SL310F / V5.4.6.0** bestätigt. Die [Kompatibilitätsübersicht](COMPATIBILITY.md) dokumentiert die bisherigen Rückmeldungen. Daraus folgt keine Bestätigung jeder EPG-Spalte, sämtlicher Sender oder der neuen Aufnahmefunktion.
 
-Für den neuen Build stehen ein aktueller Browser- und Gerätetest aus. **Eine echte Timerantwort der Nutzergeräte liegt noch nicht vor.** Der implementierte `ProgramTimer`-Aufruf und die bekannten Timerlistenfelder stammen aus der Original-App. Die [Aufnahme-Protokollnotizen](recording-protocol.md) halten die Fundstellen und Grenzen fest. Die EPG-Grundlage und zusätzliche Feldquellen sind in [epg-protocol.md](epg-protocol.md) beschrieben. Frühere Prüfberichte bleiben historische Nachweise für ihren jeweiligen Build.
+Laut Nutzerrückmeldung ist ein Aufnahmeauftrag am Fernseher angekommen. Ein Gerätetest des neuen Fixes steht aus. **Die originale XML-Timerantwort des betroffenen Fernsehers liegt noch nicht vor.** Der implementierte `ProgramTimer`-Aufruf und die bekannten Timerlistenfelder stammen aus der Original-App. Die [Aufnahme-Protokollnotizen](recording-protocol.md) halten die Fundstellen und Grenzen fest. Die EPG-Grundlage und zusätzliche Feldquellen sind in [epg-protocol.md](epg-protocol.md) beschrieben. Frühere Prüfberichte bleiben historische Nachweise für ihren jeweiligen Build.
 
-## Verhalten der Aufnahmeaufträge in 0.1.11
+## Verhalten der Aufnahmeaufträge seit 0.1.11
 
 Der Adapter bestätigt eine Vormerkung erst nach dem Speichern des Journals. Bei Offline-TV bleibt ein ungesendeter Auftrag `queued`. Er wird weiterbearbeitet, sobald die Steuerschnittstelle erreichbar ist. Dieser Ablauf gilt auch bei deaktivierten regulären Status-, Sender- oder EPG-Abrufintervallen. Ein noch ungesendeter Auftrag wird nach Erreichen seiner Startzeit `missed` und nicht verspätet übertragen.
 

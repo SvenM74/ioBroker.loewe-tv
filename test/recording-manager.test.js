@@ -6,6 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { setImmediate: nextTurn } = require('node:timers/promises');
 const { RecordingManager, matchesTimer, MAX_JOBS, MAX_JOURNAL_BYTES, RETRY_MS, HISTORY_MS } = require('../lib/recording-manager');
+const { parseResponse, parseTimerList } = require('../lib/loewe-client');
 
 const NOW = Date.UTC(2026, 9, 18, 12);
 const HOUR = 60 * 60 * 1000;
@@ -31,6 +32,24 @@ function timerFor(job, extra = {}) {
         sourceAncestorUuid: 'sl-fixture', start: job.programme.start, end: job.programme.end, ...extra };
 }
 function timerList(timers = [], extra = {}) { return { recognized: true, complete: true, comparable: true, timers, ...extra }; }
+
+// Synthetic XML fixtures exercise the real parser. Their metadata names and
+// values are invented test cases, not a captured response from any TV firmware.
+function timerEntryXml(job, metadata = '') {
+    return '<m:ResultTimerList>'
+        + `<m:EntryUuid>fixture-timer-${job.channel.number}</m:EntryUuid>`
+        + `<m:SourceUuid>${job.channel.mediaItemUuid}</m:SourceUuid>`
+        + '<m:SourceAncestorUuid>sl-fixture</m:SourceAncestorUuid>'
+        + `<m:Start>${new Date(job.programme.start).toISOString()}</m:Start>`
+        + `<m:End>${new Date(job.programme.end).toISOString()}</m:End>`
+        + metadata + '</m:ResultTimerList>';
+}
+function parseTimerFixture(contents = '', totalResults = 0) {
+    return parseTimerList(parseResponse('<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"'
+        + ' xmlns:m="urn:loewe.de:RemoteTV:Tablet"><s:Body><m:GetTimerListResponse>'
+        + `<m:ResultTimerListFragment totalResults="${totalResults}">${contents}</m:ResultTimerListFragment>`
+        + '</m:GetTimerListResponse></s:Body></s:Envelope>'));
+}
 async function settle() { await nextTurn(); await nextTurn(); }
 
 class Clock {
@@ -146,6 +165,79 @@ test('an existing exact TV timer is confirmed without another ProgramTimer call'
     assert.equal(h.calls.send.length, 0);
     assert.equal(h.job(job.id).status, 'scheduled');
     assert.equal(h.job(job.id).attempts, 0);
+});
+
+test('a parsed existing timer with extra text metadata prevents another ProgramTimer call', async t => {
+    const value = selected();
+    const xml = timerEntryXml(value, '<m:SyntheticMetadata>opaque</m:SyntheticMetadata>'
+        + '<m:SyntheticEmptyMetadata/>');
+    const h = await harness(t, { connected: true, listTimers: async () => parseTimerFixture(xml, 1) });
+    const job = await h.manager.enqueue(value);
+    await h.clock.advance(0);
+    assert.equal(h.job(job.id).status, 'scheduled');
+    assert.equal(h.job(job.id).timerId, 'fixture-timer-1');
+    assert.equal(h.job(job.id).attempts, 0);
+    assert.equal(h.calls.send.length, 0);
+    assert.equal(h.clock.timers.size, 0);
+});
+
+test('a submitted timer with parsed extra text metadata receives one durable confirmation', async t => {
+    const value = selected();
+    const xml = timerEntryXml(value, '<m:SyntheticMetadata synthetic="yes">opaque</m:SyntheticMetadata>');
+    let sent = false;
+    const h = await harness(t, {
+        connected: true,
+        listTimers: async () => sent ? parseTimerFixture(xml, 1) : parseTimerFixture(),
+        send: async () => { sent = true; return { acknowledged: true, confirmed: false, result: null }; },
+    });
+    const job = await h.manager.enqueue(value);
+    await h.clock.advance(0);
+    assert.equal(h.calls.send.length, 1);
+    assert.equal(h.job(job.id).status, 'scheduled');
+    assert.equal(h.job(job.id).timerId, 'fixture-timer-1');
+    assert.equal(h.job(job.id).attempts, 1);
+    assert.equal(h.job(job.id).acknowledgedAt, NOW);
+    assert.equal(JSON.parse(h.stored).jobs[0].status, 'scheduled');
+    await h.clock.advance(RETRY_MS);
+    assert.equal(h.calls.send.length, 1);
+});
+
+test('an unreadable parsed timer after submission remains uncertain without resending across restart', async t => {
+    const value = selected();
+    const xml = timerEntryXml(value, '<m:SyntheticMetadata>'
+        + '<m:SourceUuid>concealed-synthetic-source</m:SourceUuid></m:SyntheticMetadata>');
+    let sent = false;
+    const old = await harness(t, {
+        connected: true,
+        listTimers: async () => sent ? parseTimerFixture(xml, 1) : parseTimerFixture(),
+        send: async () => { sent = true; return { acknowledged: true, confirmed: false, result: null }; },
+    });
+    const job = await old.manager.enqueue(value);
+    await old.clock.advance(0);
+    assert.equal(old.calls.send.length, 1);
+    assert.equal(old.job(job.id).status, 'uncertain');
+    assert.equal(old.job(job.id).attempts, 1);
+    assert.equal(old.job(job.id).acknowledgedAt, NOW);
+    assert.equal(old.job(job.id).timerId, '');
+    assert.equal(old.manager.snapshot().ready, true);
+    await old.clock.advance(RETRY_MS);
+    assert.equal(old.calls.send.length, 1);
+    assert.equal(old.job(job.id).status, 'uncertain');
+    old.manager.stop();
+
+    const h = await harness(t, {
+        stored: old.stored, clock: new Clock(old.clock.time), connected: true,
+        listTimers: async () => parseTimerFixture(xml, 1),
+    });
+    await h.clock.advance(0);
+    await h.clock.advance(RETRY_MS);
+    assert.equal(h.calls.send.length, 0);
+    assert.equal(h.job(job.id).status, 'uncertain');
+    assert.equal(h.job(job.id).attempts, 1);
+    assert.equal(h.job(job.id).acknowledgedAt, NOW);
+    assert.equal(h.job(job.id).timerId, '');
+    assert.equal(h.manager.snapshot().ready, true);
+    assert.equal(JSON.parse(h.stored).jobs[0].status, 'uncertain');
 });
 
 test('timer matching requires exact programme times and stable sender identity', () => {

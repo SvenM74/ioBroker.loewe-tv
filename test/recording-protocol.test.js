@@ -144,6 +144,21 @@ test('full timer snapshots retain opaque attributes and direct source identity',
     });
 });
 
+test('additional text metadata leaves the known timer identity and comparison intact', () => {
+    const expected = list(entry());
+    for (const extras of [
+        { SyntheticExtra: 'firmware-specific metadata' },
+        { SyntheticExtra: '', AnotherExtra: '0' },
+        { SyntheticExtra: '<![CDATA[<Start>untrusted text</Start>]]>' },
+    ]) assert.deepEqual(list(entry(extras)), expected);
+    const attributed = entry().replace('</m:ResultTimerList>',
+        '<m:SyntheticExtra unit="opaque">metadata</m:SyntheticExtra></m:ResultTimerList>');
+    assert.deepEqual(list(attributed), expected);
+    const incomplete = list(entry({ Start: undefined, SyntheticExtra: '2026-10-25T00:30:00Z' }));
+    assert.equal(incomplete.timers[0].start, null, 'Extra metadata cannot replace a missing known field.');
+    assert.equal(incomplete.comparable, false);
+});
+
 test('an explicitly empty timer list is complete; empty/missing count metadata is not invented', () => {
     assert.equal(list('', 'totalResults="0"').comparable, true);
     assert.deepEqual(list('', 'totalResults="0"').timers, []);
@@ -185,9 +200,22 @@ test('duplicate identifiers, incompatible counts and unrelated nested fields rej
         [entry(), 'totalResults="9007199254740993"'],
         [`<Unknown>${entry()}</Unknown>`, 'totalResults="0"'],
         [entry({ SourceUuid: '<Other>ch-fixture-tv</Other>' }), 'totalResults="1"'],
-        [entry({ Extra: 'hidden timer data' }), 'totalResults="1"'],
+        [entry({ Extra: '<Start>hidden timer data</Start>' }), 'totalResults="1"'],
+        [entry({ Extra: 'first</m:Extra><m:Extra>second' }), 'totalResults="1"'],
+        [entry().replace('</m:ResultTimerList>', 'unexpected text</m:ResultTimerList>'), 'totalResults="1"'],
         [entry({ EntryUuid: '</m:EntryUuid><m:EntryUuid>duplicate' }), 'totalResults="1"'],
-    ]) assert.throws(() => list(contents, attributes), { code: 'INVALID_RESPONSE', action: 'GetTimerList' });
+    ]) assert.throws(() => list(contents, attributes), {
+        code: 'INVALID_RESPONSE', action: 'GetTimerList', timerListInvalid: true,
+    });
+});
+
+test('unsupported timer metadata reports its field name without exposing its contents', () => {
+    assert.throws(() => list(entry({ SyntheticExtra: '<Details>private fixture value</Details>' })), error => {
+        assert.equal(error.timerListInvalid, true);
+        assert.match(error.message, /SyntheticExtra/u);
+        assert.doesNotMatch(error.message, /private fixture value/u);
+        return true;
+    });
 });
 
 test('timer parsers do not borrow a result from another SOAP operation', () => {
@@ -195,8 +223,13 @@ test('timer parsers do not borrow a result from another SOAP operation', () => {
         + '<ProgramTimerResponse/><GetTimerListResponse><ResultTimerListFragment totalResults="0"/></GetTimerListResponse>'
         + '</s:Body></s:Envelope>');
     assert.throws(() => parseProgramTimerResult(mixed), { code: 'INVALID_RESPONSE' });
-    assert.throws(() => parseTimerList(mixed), { code: 'INVALID_RESPONSE' });
-    assert.throws(() => parseTimerList(parseResponse(response('GetChannelList'))), { code: 'INVALID_RESPONSE' });
+    for (const invalid of [mixed, parseResponse(response('GetChannelList')), parseResponse(response('GetTimerList', 'invalid body'))]) {
+        assert.throws(() => parseTimerList(invalid), error => {
+            assert.equal(error.code, 'INVALID_RESPONSE');
+            assert.equal(error.timerListInvalid, undefined, 'Only a validated GetTimerList response may retain connectivity.');
+            return true;
+        });
+    }
     assert.throws(() => parseProgramTimerResult(parseResponse(response('ZapToMedia', '<Result>0</Result>'))), { code: 'INVALID_RESPONSE' });
 });
 

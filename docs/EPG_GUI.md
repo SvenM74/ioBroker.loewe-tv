@@ -1,10 +1,10 @@
 # Programmübersicht und Aufnahmeaufträge
 
-**Version 0.1.11, Build `0.1.11-epg-recording.1`**, bietet zwei getrennte Reiter: **EPG-Einstellungen** für Aktivierung und Abrufintervall sowie **Programmübersicht** für die Senderliste mit Zeitachse, Sendungsdetails und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
+**Version 0.1.12, Build `0.1.12-recording-fix.1`**, bietet zwei getrennte Reiter: **EPG-Einstellungen** für Aktivierung und Abrufintervall sowie **Programmübersicht** für die Senderliste mit Zeitachse, Sendungsdetails und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
 
 ## Öffnen und vorbereiten
 
-1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0111). `info.adapterBuild` muss **`0.1.11-epg-recording.1`** anzeigen.
+1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0112). `info.adapterBuild` muss **`0.1.12-recording-fix.1`** anzeigen.
 2. Verwende **ioBroker Admin ab 7.7.28**. Lade Admin nach dem Update vollständig neu und öffne die Instanz-Konfiguration erneut.
 3. Starte die betreffende Instanz, beispielsweise **`loewe-tv.0`**. Prüfe unter **Verbindung** und **Senderlisten** die TV-Adresse und die gewünschte TV-Senderliste.
 4. Aktiviere unter **EPG-Einstellungen** die **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**. Speichere Änderungen, bevor du die Übersicht verwendest.
@@ -100,4 +100,4 @@ Der TV-Abruf reicht ungefähr 24 Stunden voraus; nur tatsächlich gelieferte und
 
 Öffnen, Suchen und Blättern lesen den vorhandenen Arbeitsspeicher-Cache und starten keine eigenen EPG-TV-Abfragen. **EPG aktualisieren** und das konfigurierte Intervall verwenden den bestehenden Hintergrundabgleich. Die EPG-Datenpunkte unter jedem Sender bleiben unverändert; neu ist das Aufnahmejournal `recordings.jobs`.
 
-Der direkte TV-EPG-Abruf wurde mit dem früheren 0.1.8-Stand vom Nutzer auf **bild 7.55 / SL420 / V5.4.6.0** und **bild 5.32 / SL310F / V5.4.6.0** bestätigt. Für **`0.1.11-epg-recording.1`**, die separate Seite und den Aufnahmeablauf stehen ein aktueller Browser- und Gerätetest noch aus. Weitere Diagnosefelder und Abrufgrenzen beschreibt die [EPG-Anleitung](EPG.md).
+Der direkte TV-EPG-Abruf wurde mit dem früheren 0.1.8-Stand vom Nutzer auf **bild 7.55 / SL420 / V5.4.6.0** und **bild 5.32 / SL310F / V5.4.6.0** bestätigt. Ein Aufnahmeauftrag ist laut Nutzerrückmeldung am Fernseher angekommen. Für **`0.1.12-recording-fix.1`** stehen die originale XML-Timerantwort und ein Gerätetest des Fixes noch aus. Zusätzliche einfache Textfelder werden nun akzeptiert; nicht auswertbare Timerdaten setzen eine bestehende Verbindung nicht mehr auf offline. Weitere Diagnosefelder und Abrufgrenzen beschreibt die [EPG-Anleitung](EPG.md).

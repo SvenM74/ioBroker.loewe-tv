@@ -1,6 +1,6 @@
 # Aufnahmeprotokoll: belegte Anfragen und Bestätigung
 
-Der Adapter verwendet für einmalige TV-Aufnahmen die in der ursprünglichen **Loewe App 1.4.7** nachgewiesenen Aktionen `ProgramTimer` und `GetTimerList`. Die Requests werden mit den unveränderten Originalvorlagen in [protocol-templates.json](protocol-templates.json) verglichen. Ein Hardwaretest der Aufnahmefunktion und eine reale Timerantwort der Nutzergeräte stehen noch aus. Die funktionierenden EPG-Abfragen bestätigen diese Aufnahmefunktion nicht automatisch.
+Der Adapter verwendet für einmalige TV-Aufnahmen die in der ursprünglichen **Loewe App 1.4.7** nachgewiesenen Aktionen `ProgramTimer` und `GetTimerList`. Die Requests werden mit den unveränderten Originalvorlagen in [protocol-templates.json](protocol-templates.json) verglichen. Laut Nutzerrückmeldung ist ein Aufnahmeauftrag am Fernseher angekommen; beim Rücklesen meldete 0.1.11 eine unbekannte Timerstruktur. Die originale XML-Timerantwort liegt weiterhin nicht vor. Version **0.1.12**, Build **`0.1.12-recording-fix.1`**, korrigiert die zu strenge Behandlung zusätzlicher Textfelder und die dadurch ausgelöste falsche Offline-Anzeige. Ein Gerätetest dieses Fixes steht aus.
 
 ## Quelle und Nachvollziehbarkeit
 
@@ -112,6 +112,16 @@ Ein normalisierter Snapshot hat die Form:
 Die App erkennt `Start` und `End`; eine echte Antwort mit deren Format liegt bisher nicht vor. Der Parser verarbeitet deshalb ausschließlich gültige ISO-Zeitpunkte mit explizitem `Z` oder einem Versatz wie `+01:00`. Bis zu drei Nachkommastellen werden verlustfrei übernommen. Ungültige Kalenderdaten, fehlende Zeitzonen, `-00:00` als unbekannter Versatz und numerische Zeitstrings werden als Rohtext erhalten und ergeben `start=null` beziehungsweise `end=null`. Es gibt keine automatische Vermutung, ob eine Zahl Sekunden oder Millisekunden bezeichnet.
 
 Sollte der Fernseher ein anderes Format liefern, ist dessen Zeitbasis anhand einer vorhandenen, am TV manuell angelegten Aufnahme zu prüfen. Erst danach kann der Parser um dieses belegte Format ergänzt werden.
+
+### Zusätzliche Timerfelder und Verbindungsstatus
+
+Die acht bekannten Felder sind keine abschließende Definition aller Firmware-Metadaten. Seit 0.1.12 akzeptiert der Parser zusätzliche direkte Textfelder, einschließlich leerer Elemente, CDATA und XML-Attributen. Ihre Inhalte werden nicht für die Zuordnung verwendet und können fehlende Senderkennungen oder Zeiten nicht ersetzen.
+
+Unbekannte verschachtelte oder wiederholte Felder, Text außerhalb der Felder, doppelte Timerkennungen, widersprüchliche Zähler und mehrdeutige bekannte Felder bleiben unbrauchbar. Ein unbekannter Unterbaum wird nicht rekursiv nach vermeintlich passenden Kennungen durchsucht. Ein solcher Fehler darf weder eine leere vollständige Timerliste noch eine bestätigte Aufnahme vortäuschen. Bei unbekannten strukturierten Metadaten nennt die Warnung nur den auf 64 Zeichen begrenzten Feldnamen, ohne seine Werte zu protokollieren.
+
+Semantische Timerfehler tragen intern `timerListInvalid=true`, nachdem die eindeutige `GetTimerListResponse`-SOAP-Hülle geprüft wurde. Die Runtime erhält in diesem Fall eine bereits bestehende Verbindung und meldet die Warnung weiterhin in Log und `info.lastError`. Sie setzt eine zuvor fehlende Verbindung dadurch nicht auf wahr. Netzwerkfehler, kaputtes XML, fremde SOAP-Antworten und ungültige Sitzungen setzen die Verbindung wie bisher auf offline.
+
+Ein möglicherweise bereits übertragener Auftrag bleibt bei unklarem Rücklesen `uncertain`. Weitere Abgleiche und ein Neustart senden ihn nicht erneut. Sobald eine vollständige, vergleichbare Liste genau einen passenden Timer enthält, kann der bestehende Auftrag `scheduled` werden.
 
 ## Eindeutige Zuordnung und Grenzen
 

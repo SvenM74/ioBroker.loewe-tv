@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.11",
+    "version": "0.1.12",
     "news": {
+      "0.1.12": {
+        "en": "Accept additional plain-text metadata in TV timer entries. Keep an established connection alive when a valid GetTimerList response contains unsupported timer data. Preserve strict timer matching and prevent repeated recording submissions, including after restart. Report unsupported metadata field names without logging their contents.",
+        "de": "Zusätzliche Textmetadaten in TV-Timereinträgen akzeptieren. Eine bestehende Verbindung bei nicht auswertbaren Timerdaten in einer gültigen GetTimerList-Antwort erhalten. Timer weiterhin eindeutig abgleichen und Aufnahmeaufträge auch nach einem Neustart nicht erneut übertragen. Bei unbekannten strukturierten Metadaten den Feldnamen ohne dessen Inhalt melden."
+      },
       "0.1.11": {
         "en": "Separate EPG settings and the programme guide into their own tabs. Select a running programme to send its channel command; ask for confirmation before queuing a future recording. Persist recording requests across restarts, wait for the TV to become reachable and reconcile submitted requests with its timer list. Do not repeat ambiguous submissions. Open the guide separately through the existing Admin address and session. Add the read-only recordings.jobs journal.",
         "de": "EPG-Einstellungen und Programmübersicht in eigene Reiter aufteilen. Bei laufenden Sendungen den Senderbefehl senden; zukünftige Sendungen erst nach Bestätigung zur Aufnahme vormerken. Aufnahmeaufträge über Neustarts hinweg speichern, auf den erreichbaren TV warten und übertragene Aufträge mit seiner Timerliste abgleichen. Unklare Übertragungen nicht wiederholen. Programmübersicht separat über die vorhandene Admin-Adresse und -Sitzung öffnen. Das lesende Auftragsjournal recordings.jobs ergänzen."

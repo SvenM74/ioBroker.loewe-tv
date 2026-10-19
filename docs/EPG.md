@@ -1,10 +1,10 @@
 # TV-EPG: Programmübersicht und Datenpunkte
 
-Version **0.1.11**, Build **`0.1.11-epg-recording.1`**, trennt die Instanz-Konfiguration in **EPG-Einstellungen** und **Programmübersicht**. Die Übersicht zeigt die gespeicherte TV-Senderliste mit Zeitachse und Details. Aus einer ausgewählten Sendung kannst du auf ein aktuell eindeutig laufendes Programm umschalten oder eine zukünftige Aufnahme nach Bestätigung vormerken. Die Datenpunkte für aktuelle und nächste Sendung bleiben unter jedem TV-Sender erhalten; neu ist das dauerhafte Aufnahmejournal `recordings.jobs`.
+Diese Anleitung gilt für Version **0.1.12**, Build **`0.1.12-recording-fix.1`**. Die Instanz-Konfiguration hat eigene Reiter für **EPG-Einstellungen** und **Programmübersicht**. Die Übersicht zeigt die gespeicherte TV-Senderliste mit Zeitachse und Details. Aus einer ausgewählten Sendung kannst du auf ein aktuell eindeutig laufendes Programm umschalten oder eine zukünftige Aufnahme nach Bestätigung vormerken. Die Datenpunkte für aktuelle und nächste Sendung bleiben unter jedem TV-Sender erhalten; Aufnahmeaufträge stehen im dauerhaften Journal `recordings.jobs`.
 
 Programmdaten stammen ausschließlich direkt vom Loewe-TV. Die Übersicht und die Datenpunkte verwenden denselben EPG-Cache. Reines Blättern, Suchen und Lesen fragt den TV nicht erneut ab. Die [Netzwerksuche](NETWORK_DISCOVERY.md) hilft bei der Auswahl der TV-Adresse.
 
-Der Nutzer hat den direkten TV-EPG-Abruf mit dem früheren 0.1.8-Stand auf **Loewe bild 7.55 / SL420 / V5.4.6.0** und **bild 5.32 / SL310F / V5.4.6.0** bestätigt. Diese Rückmeldungen belegen nicht jedes einzelne EPG-Feld oder sämtliche Sender und Zeiträume. Für **`0.1.11-epg-recording.1`** stehen ein aktueller Browser- und Gerätetest aus. Insbesondere liegt noch keine echte Timerantwort der Nutzergeräte vor. Die [Kompatibilitätsübersicht](COMPATIBILITY.md) beschreibt den bisherigen Nachweis; der [Prüfbericht zu 0.1.8](PRUEFBERICHT_0.1.8_TV_EPG.md) bleibt als historischer Bericht erhalten.
+Der Nutzer hat den direkten TV-EPG-Abruf mit dem früheren 0.1.8-Stand auf **Loewe bild 7.55 / SL420 / V5.4.6.0** und **bild 5.32 / SL310F / V5.4.6.0** bestätigt. Diese Rückmeldungen belegen nicht jedes einzelne EPG-Feld oder sämtliche Sender und Zeiträume. Laut aktueller Nutzerrückmeldung ist außerdem ein Aufnahmeauftrag am Fernseher angekommen. Für **`0.1.12-recording-fix.1`** stehen ein aktueller Browser- und Gerätetest des Fixes aus; die originale XML-Timerantwort fehlt weiterhin. Die [Kompatibilitätsübersicht](COMPATIBILITY.md) beschreibt den bisherigen Nachweis; der [Prüfbericht zu 0.1.8](PRUEFBERICHT_0.1.8_TV_EPG.md) bleibt als historischer Bericht erhalten.
 
 ## Programmübersicht in der Instanz
 
@@ -18,7 +18,7 @@ Die Vorschau kann über `now` und `next` hinausreichen, soweit weitere Sendungen
 
 ## Am Fernseher beginnen
 
-1. Das neue Archiv **`iobroker.loewe-tv-0.1.11-epg-recording.1.tgz`** nach der [Updateanleitung](INSTALLATION.md#update-auf-0111) installieren und die bestehende Instanz starten. Ein Neustart allein übernimmt das Update nicht. `info.adapterBuild` muss **`0.1.11-epg-recording.1`** anzeigen. Für die eingebettete Übersicht wird **Admin ab 7.7.28** benötigt. Admin vollständig neu laden und die Adapter-Konfiguration neu öffnen.
+1. Den Build **`0.1.12-recording-fix.1`** nach der [Updateanleitung](INSTALLATION.md#update-auf-0112) direkt aus GitHub oder über das Archiv **`iobroker.loewe-tv-0.1.12-recording-fix.1.tgz`** installieren und die bestehende Instanz starten. Ein Neustart allein übernimmt das Update nicht. `info.adapterBuild` muss **`0.1.12-recording-fix.1`** anzeigen. Für die eingebettete Übersicht wird **Admin ab 7.7.28** benötigt. Admin vollständig neu laden und die Adapter-Konfiguration neu öffnen.
 2. Fernseher einschalten und prüfen, dass die gewünschte Senderliste in der Adapter-Konfiguration ausgewählt ist. Die zugehörigen Sender müssen unter `channels.tv` vorhanden sein.
 3. Im Reiter **EPG-Einstellungen** die Voreinstellungen verwenden: **Programminformationen aktivieren** eingeschaltet, Abrufintervall **900 Sekunden**.
 4. Nach dem Start und der Senderanlage beginnt der erste EPG-Abgleich automatisch. **EPG aktualisieren** in der Übersicht startet ihn auch manuell. Alternativ **`channels.epgRefresh=true`** wie bei anderen Tastern mit `ack:false` schreiben.

@@ -6,7 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { AdapterRuntime } = require('../lib/adapter-runtime');
-const { parseChannelPage } = require('../lib/loewe-client');
+const { parseChannelPage, parseTimerList } = require('../lib/loewe-client');
 const { runPowerOn } = require('../lib/power-on');
 const { createCache } = require('../lib/epg-data');
 
@@ -429,6 +429,85 @@ test('offline recording waits and transfers once after reconnect, with write-ahe
     await h.runtime.recordings._work();
     assert.equal(h.client.calls.filter(call => call.method === 'programTimer').length, 1);
     assert.equal(h.client.calls.some(call => ['wake', 'key', 'zap'].includes(call.method)), false);
+});
+
+test('a semantic timer-list error keeps the recording worker and an established TV connection alive', async t => {
+    const h = await epgActionHarness(t, { future: true });
+    await h.runtime._connectedNow();
+    h.runtime._deviceRead = true;
+    h.client.hooks.getTimerList = () => parseTimerList(response('GetTimerList', {
+        ResultTimerListFragment: { '@_totalResults': '0', '@_returnedResults': '1' },
+    }));
+    const { job } = await h.runtime.handleMessage('recordEpgProgramme', { ...h.selection, confirmed: true });
+
+    // Exercise the asynchronous worker used by the real button action. The
+    // node:test runner also fails on any unhandled rejection from this work.
+    const handle = h.runtime.recordings._wakeTimer;
+    const timer = h.adapter.timers.get(handle);
+    assert.ok(timer);
+    h.adapter.timers.delete(handle);
+    timer.fn();
+    await h.runtime.recordings._workPromise;
+
+    const snapshot = h.runtime.recordings.snapshot();
+    const saved = snapshot.jobs.find(item => item.id === job.id);
+    assert.equal(snapshot.ready, true);
+    assert.equal(saved.status, 'uncertain');
+    assert.equal(saved.attempts, 1);
+    assert.equal(saved.acknowledgedAt, h.now());
+    assert.equal(h.runtime.stopping, false);
+    assert.equal(h.client.closed, false);
+    assert.equal(h.runtime._connected, true);
+    assert.equal(h.runtime._deviceRead, true);
+    assert.equal(h.adapter.states.get('info.connection').val, true);
+    assert.match(h.adapter.states.get('info.lastError').val, /INVALID_RESPONSE: GetTimerList/u);
+    assert.ok(h.adapter.logs.some(entry => entry.level === 'warn' && /GetTimerList/u.test(entry.text)));
+
+    await h.runtime.recordings._work();
+    assert.equal(h.client.calls.filter(call => call.method === 'programTimer').length, 1);
+    assert.equal(h.runtime.recordings.snapshot().jobs[0].status, 'uncertain');
+    await write(h, 'remote.volume_up', true);
+    assert.ok(h.client.calls.some(call => call.method === 'key' && call.args[0] === 'volume_up'));
+    assert.equal(h.adapter.states.get('info.connection').val, true);
+});
+
+test('a semantic timer-list error does not invent a TV connection that was not established', async t => {
+    const h = await harness(t, { pollInterval: 0 });
+    h.client.hooks.getTimerList = () => parseTimerList(response('GetTimerList', {
+        ResultTimerListFragment: { '@_totalResults': '0', '@_returnedResults': '1' },
+    }));
+    assert.equal(h.runtime._connected, false);
+    const operation = h.runtime._recordingOperation('recordings.getTimers', {},
+        guard => h.runtime._call('getTimerList', { canSend: guard }));
+    await assert.rejects(operation, { code: 'INVALID_RESPONSE', action: 'GetTimerList', timerListInvalid: true });
+    assert.equal(h.runtime._connected, false);
+    assert.equal(h.adapter.states.get('info.connection').val, false);
+    assert.equal(h.runtime.recordings.snapshot().ready, true);
+});
+
+test('unmarked, unrelated and session-invalid response errors still mark the TV connection offline', async t => {
+    const h = await harness(t, { pollInterval: 0 });
+    let foreignResponse;
+    try { parseTimerList(response('GetDeviceData')); } catch (error) { foreignResponse = error; }
+    assert.ok(foreignResponse);
+    assert.equal(foreignResponse.timerListInvalid, undefined);
+    const errors = [
+        foreignResponse,
+        Object.assign(codedError('INVALID_RESPONSE', 'Malformed timer response'), { action: 'GetTimerList' }),
+        Object.assign(codedError('INVALID_RESPONSE', 'Malformed volume response'), { action: 'GetVolume', timerListInvalid: true }),
+        Object.assign(codedError('NETWORK', 'TV network failure'), { action: 'GetTimerList', timerListInvalid: true }),
+        Object.assign(codedError('INVALID_RESPONSE', 'TV session is invalid'), {
+            action: 'GetTimerList', timerListInvalid: true, sessionInvalid: true,
+        }),
+    ];
+    for (const error of errors) {
+        await h.runtime._connectedNow();
+        h.runtime._deviceRead = true;
+        assert.equal(await h.runtime._enqueue('fixture.responseFailure', async () => { throw error; }), false);
+        assert.equal(h.runtime._connected, false, error.message);
+        assert.equal(h.runtime._deviceRead, false, error.message);
+        assert.equal(h.adapter.states.get('info.connection').val, false, error.message);
+    }
 });
 
 test('recording journal survives a runtime restart and supports a read-only list and cancellation', async t => {

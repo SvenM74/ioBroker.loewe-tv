@@ -191,5 +191,37 @@
     "license": "Public domain (PD-textlogo, Wikimedia Commons)",
     "checkedAt": "2026-10-19",
     "sha256": "5bfd324b60e7a768274db7877daed1c87f0463df4680c397953a12cf587c663c"
+  },
+  {
+    "slug": "zdfneo",
+    "name": "ZDFneo",
+    "aliases": [
+      "ZDF neo"
+    ],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:ZDFneo2017_Logo.svg",
+    "downloadSource": "https://github.com/mediathekview/MediathekView/blob/55f8f7dfda8adaeb8f6d4112dac4b38e0d149639/src/main/resources/icons/sender/ZDFneo.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "1095b4177a08dfb8efc18ee9dfcef32fd6256e7de177f82ef91a8b0a4c9db3f9"
+  },
+  {
+    "slug": "kika",
+    "name": "KiKA",
+    "aliases": [],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Kika_2012.svg",
+    "downloadSource": "https://github.com/mediathekview/MediathekView/blob/55f8f7dfda8adaeb8f6d4112dac4b38e0d149639/src/main/resources/icons/sender/kika.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "e4a5c3a0a95400c9cb1bec863d7e20d2dc37f1284a95e6c86e68b3873dad55dc"
+  },
+  {
+    "slug": "phoenix",
+    "name": "phoenix",
+    "aliases": [],
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Phoenix-logo-2018.svg",
+    "downloadSource": "https://github.com/mediathekview/MediathekView/blob/55f8f7dfda8adaeb8f6d4112dac4b38e0d149639/src/main/resources/icons/sender/phoenix.svg",
+    "license": "Public domain (PD-textlogo, Wikimedia Commons)",
+    "checkedAt": "2026-10-19",
+    "sha256": "b685fb1397ca44941daa8deebffe1aa14eff689607946c38a69d4bde4eef3185"
   }
 ]

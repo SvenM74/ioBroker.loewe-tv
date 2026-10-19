@@ -259,6 +259,59 @@ test('all 2000 channels can be collected from small pages without a 32-page trun
     view.dispose();
 });
 
+test('XMLTV and mixed guide pages retain programme sources through bridge collection and UI normalization', async () => {
+    const ui = require('../admin/epg');
+    const now = Date.UTC(2026, 9, 18, 16);
+    for (const source of ['xmltv', 'mixed']) {
+        const view = browser({ respond: ({ payload }) => {
+            const response = page(35, payload.offset, 32, { source, now, from: now, to: now + 2 * 3600000 });
+            for (const row of response.channels) {
+                row.source = 'xmltv';
+                row.events = [{ eventId: `programme-${row.number}`, title: `Programme ${row.number}`,
+                    start: now + 60000, end: now + 120000,
+                    ...(row.number % 2 === 0 ? { source: 'xmltv' } : {}),
+                    ...(source === 'mixed' && row.number % 2 ? { source: 'tv' } : {}) }];
+            }
+            return response;
+        } });
+        const result = await view.bridge.requestGuide({ from: now, to: now + 2 * 3600000 });
+        assert.equal(result.source, source);
+        assert.equal(result.channels.length, 35);
+        assert.deepEqual(view.requests.map(entry => entry.payload.offset), [0, 32]);
+        assert.equal(view.requests[1].payload.catalogRevision, REVISION);
+        const normalized = ui.normalizeGuide(result);
+        assert.equal(normalized.source, source);
+        assert.equal(normalized.invalidEvents, 0);
+        assert.deepEqual(normalized.channels.map(row => row.events[0].source),
+            Array.from({ length: 35 }, (_, index) => source === 'mixed' && index % 2 === 0 ? 'tv' : 'xmltv'));
+        assert.equal(normalized.channels.at(-1).events[0].eventId, 'programme-35');
+        view.dispose();
+        assert.equal(view.timers.size, 0);
+    }
+});
+
+test('a source-only change restarts pagination and discards every channel from the previous source', async () => {
+    for (const [previous, current] of [['tv', 'xmltv'], ['xmltv', 'mixed'], ['mixed', 'tv']]) {
+        const view = browser({ respond: ({ payload }, n) => {
+            const source = n === 1 ? previous : current;
+            const response = page(40, payload.offset, 32, { source });
+            for (const row of response.channels) row.name = `${source}: ${row.id}`;
+            return response;
+        } });
+        const result = await view.bridge.requestGuide({ from: 100000, to: 200000 });
+        assert.deepEqual(view.requests.map(entry => entry.payload.offset), [0, 32, 0, 32]);
+        assert.equal(view.requests[2].payload.catalogRevision, undefined, 'Restart requests a new first-page snapshot');
+        assert.ok(view.requests.every(entry => entry.payload.from === 100000 && entry.payload.to === 200000));
+        assert.equal(result.catalogRevision, REVISION, 'A source change is detected even when the channel catalogue is identical');
+        assert.equal(result.source, current);
+        assert.equal(result.channels.length, 40);
+        assert.equal(new Set(Array.from(result.channels, row => row.id)).size, 40);
+        assert.ok(result.channels.every(row => row.name.startsWith(`${current}: `)), 'No earlier page leaks into the new guide');
+        view.dispose();
+        assert.equal(view.timers.size, 0);
+    }
+});
+
 test('changed catalog error restarts pagination from page 0 and discards partial results', async () => {
     const view = browser({ respond: ({ payload }, n) => n === 2
         ? { error: 'Senderliste geändert', code: 'EPG_GUIDE_CHANGED' }

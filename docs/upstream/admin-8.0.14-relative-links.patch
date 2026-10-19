@@ -1,0 +1,30 @@
+diff --git a/src-admin/src/helpers/utils.ts b/src-admin/src/helpers/utils.ts
+--- a/src-admin/src/helpers/utils.ts
++++ b/src-admin/src/helpers/utils.ts
+@@ -307,7 +307,10 @@
+ 
+         // Adapters running as web-extension have no own web-server / port.
+         // They are served by their host web instance(s) under the path /<adapterName>/.
+-        if (instanceObj?.common.webExtension && native.webInstance) {
++        // Relative Admin assets belong to the Admin origin that opened this page.
++        // Preserve that origin and its proxy/Cloud prefix; only replace placeholders below.
++        const isAdminAssetLink = /^(?:\.\/)?adapter\/[a-z0-9_-]+\//i.test(link);
++        if (instanceObj?.common.webExtension && native.webInstance && !isAdminAssetLink) {
+             const webExtensionUrls = getWebExtensionLinks(adapter, instanceObj, context);
+             if (webExtensionUrls.length) {
+                 return webExtensionUrls;
+diff --git a/src/lib/utils.ts b/src/lib/utils.ts
+--- a/src/lib/utils.ts
++++ b/src/lib/utils.ts
+@@ -307,7 +307,10 @@
+ 
+         // Adapters running as web-extension have no own web-server / port.
+         // They are served by their host web instance(s) under the path /<adapterName>/.
+-        if (instanceObj?.common.webExtension && native.webInstance) {
++        // Relative Admin assets belong to the Admin origin that opened this page.
++        // Preserve that origin and its proxy/Cloud prefix; only replace placeholders below.
++        const isAdminAssetLink = /^(?:\.\/)?adapter\/[a-z0-9_-]+\//i.test(link);
++        if (instanceObj?.common.webExtension && native.webInstance && !isAdminAssetLink) {
+             const webExtensionUrls = getWebExtensionLinks(adapter, instanceObj, context);
+             if (webExtensionUrls.length) {
+                 return webExtensionUrls;

@@ -25,6 +25,25 @@ test('bundled logos match declared channel aliases and quality suffixes without 
     assert.notEqual(bundledLogo('SUPER RTL'), bundledLogo('RTL'));
 });
 
+test('logo aliases accept quality tokens and German spellings while preserving channel distinctions', () => {
+    for (const name of ['WDR HD Köln', 'WDR HD Koeln', 'WDR Muenster HD', 'WDR Duesseldorf',
+        ' WDR_UHD_Düsseldorf ', 'WDR HD Köln SD']) {
+        assert.equal(bundledLogo(name), 'logos/wdr.svg', name);
+    }
+    assert.equal(bundledLogo('BR HD Sued'), 'logos/br.svg');
+    assert.equal(bundledLogo('MDR HD Thueringen'), 'logos/mdr.svg');
+    assert.equal(bundledLogo('NDR HD FS HH'), 'logos/ndr.svg');
+    assert.equal(bundledLogo('ZDFHD'), 'logos/zdf.svg');
+    assert.equal(bundledLogo('ZDF neo HD'), 'logos/zdfneo.svg');
+    assert.equal(bundledLogo('KiKA HD'), 'logos/kika.svg');
+    assert.equal(bundledLogo('phoenix HD'), 'logos/phoenix.svg');
+    for (const name of ['WDR HD Unknown', 'NDR HD Radio', 'WDRHD Köln', 'RTL HD+',
+        'RTL+ HD', 'RTLZWEI HD', 'SUPER RTL extra HD', 'ZDF neo extra', 'ZDF SDInfo',
+        'ZDF' + ' '.repeat(1024), [], {}]) {
+        assert.equal(bundledLogo(name), '', String(name));
+    }
+});
+
 test('TV thumbnail takes precedence while retaining the local fallback and original service', () => {
     const service = { name: 'ZDF HD', thumbnailUrl: 'http://tv.invalid:905/images/zdf.png' };
     const before = structuredClone(service);
@@ -34,6 +53,62 @@ test('TV thumbnail takes precedence while retaining the local fallback and origi
     assert.deepEqual(channelLogo({ name: 'Unknown' }), {});
     assert.deepEqual(channelLogo({ name: 'Unknown', thumbnailUrl: 'https://tv.invalid/image.png' }),
         { logoUrl: 'https://tv.invalid/image.png' });
+});
+
+test('per-service overrides, TV and mapped XMLTV icons retain bounded ordered fallbacks', () => {
+    // Synthetic addresses exercise selection; these are not captured TV/XMLTV data.
+    const service = Object.freeze({ serviceId: '1-2-3', name: 'ZDF HD', thumbnailUrl: '/images/zdf.png' });
+    const options = Object.freeze({ overrideUrl: 'https://manual.invalid/logo.png',
+        xmltvIconUrl: 'https://xmltv.invalid/zdf.png' });
+    assert.deepEqual(channelLogo(service, 'http://tv.invalid:905', options), {
+        logoUrl: options.overrideUrl,
+        logoAlternatives: ['http://tv.invalid:905/images/zdf.png', options.xmltvIconUrl],
+        logoFallback: 'logos/zdf.svg',
+    });
+    assert.deepEqual(channelLogo(service, 'http://tv.invalid:905', { xmltvIconUrl: options.xmltvIconUrl }), {
+        logoUrl: 'http://tv.invalid:905/images/zdf.png',
+        logoAlternatives: [options.xmltvIconUrl],
+        logoFallback: 'logos/zdf.svg',
+    });
+    assert.deepEqual(channelLogo({ name: 'ZDF HD' }, undefined, options), {
+        logoUrl: options.overrideUrl,
+        logoAlternatives: [options.xmltvIconUrl],
+        logoFallback: 'logos/zdf.svg',
+    });
+    assert.deepEqual(channelLogo({ name: 'Unknown' }, undefined, { xmltvIconUrl: options.xmltvIconUrl }),
+        { logoUrl: options.xmltvIconUrl });
+    assert.deepEqual(channelLogo({ name: 'ZDF HD' }, undefined, { xmltvIconUrl: options.xmltvIconUrl }),
+        { logoUrl: options.xmltvIconUrl, logoFallback: 'logos/zdf.svg' });
+    assert.deepEqual(channelLogo({ name: 'ZDF HD' }, undefined, null), { logoUrl: 'logos/zdf.svg' });
+    assert.deepEqual(service, { serviceId: '1-2-3', name: 'ZDF HD', thumbnailUrl: '/images/zdf.png' });
+    assert.deepEqual(options, { overrideUrl: 'https://manual.invalid/logo.png',
+        xmltvIconUrl: 'https://xmltv.invalid/zdf.png' });
+});
+
+test('equivalent external image addresses are attempted only once', () => {
+    assert.deepEqual(channelLogo({ name: 'ZDF', thumbnailUrl: 'https://logos.invalid/zdf.png' }, undefined, {
+        overrideUrl: 'https://LOGOS.invalid:443/./zdf.png',
+        xmltvIconUrl: 'https://logos.invalid/zdf.png',
+    }), { logoUrl: 'https://LOGOS.invalid:443/./zdf.png', logoFallback: 'logos/zdf.svg' });
+    assert.deepEqual(channelLogo({ name: 'Unknown', thumbnailUrl: '/logo.png' }, 'http://tv.invalid:905', {
+        xmltvIconUrl: 'http://tv.invalid:905/logo.png',
+    }), { logoUrl: 'http://tv.invalid:905/logo.png' });
+});
+
+test('manual and XMLTV image URLs must be absolute safe HTTP(S) addresses', () => {
+    for (const value of [undefined, null, 7, {}, '', '/images/zdf.svg', 'logos/zdf.svg',
+        'data:image/svg+xml,test', 'javascript:alert(1)', 'file:///tmp/zdf.svg', '//other.invalid/zdf.svg',
+        'https://user:secret@logos.invalid/zdf.svg', 'https://@logos.invalid/zdf.svg',
+        'https://logos.invalid/\\zdf.svg', 'https://logos.invalid/\nzdf.svg',
+        'https://logos.invalid/%5czdf.svg', 'https://logos.invalid/%0azdf.svg',
+        'https://logos.invalid/' + '字'.repeat(1000), 'https://logos.invalid/' + 'x'.repeat(2048)]) {
+        const options = { overrideUrl: value, xmltvIconUrl: value };
+        assert.deepEqual(channelLogo({ name: 'ZDF', thumbnailUrl: 'https://tv.invalid/zdf.png' }, undefined, options),
+            { logoUrl: 'https://tv.invalid/zdf.png', logoFallback: 'logos/zdf.svg' }, String(value).slice(0, 80));
+        assert.deepEqual(channelLogo({ name: 'Unknown' }, undefined, options), {}, String(value).slice(0, 80));
+    }
+    assert.deepEqual(channelLogo({ name: 'ZDF' }, undefined, { overrideUrl: 'https://logos.invalid/logo.svg?size=2#logo' }),
+        { logoUrl: 'https://logos.invalid/logo.svg?size=2#logo', logoFallback: 'logos/zdf.svg' });
 });
 
 test('TV-relative thumbnails resolve only against a validated configured TV origin', () => {
@@ -75,7 +150,7 @@ test('every bundled logo has traceable licensing, a unique alias and a checked s
         assert.equal(slugs.has(source.slug), false, source.slug);
         slugs.add(source.slug);
         assert.match(source.sourcePage, /^https:\/\/commons\.wikimedia\.org\/wiki\/File:/u);
-        assert.match(source.downloadSource, /^https:\/\/github\.com\//u);
+        assert.match(source.downloadSource, /^https:\/\/github\.com\/[^/]+\/[^/]+\/blob\/[a-f0-9]{40}\//u);
         assert.match(source.license, /PD-textlogo|Public domain/iu);
         assert.match(source.checkedAt, /^\d{4}-\d{2}-\d{2}$/u);
         const svg = fs.readFileSync(path.join(__dirname, '../admin/logos', `${source.slug}.svg`), 'utf8');

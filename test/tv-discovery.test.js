@@ -437,6 +437,7 @@ test('at most four description and port jobs run together even for many responde
 });
 
 test('several slow descriptions from one host do not occupy the slots needed for other TVs', async () => {
+    const maxActiveBySlowHost = new Map([['192.168.1.30', 0], ['192.168.1.31', 0]]);
     const network = fakeNetwork({
         onSearch: socket => {
             for (const host of ['192.168.1.30', '192.168.1.31', '192.168.1.35', '192.168.1.36']) {
@@ -452,13 +453,28 @@ test('several slow descriptions from one host do not occupy the slots needed for
             '192.168.1.36': { xml: description({ name: 'Schlafzimmer' }) },
         },
     });
+    const request = network.deps.request;
+    network.deps.request = (options, callback) => {
+        const req = request(options, callback);
+        if (maxActiveBySlowHost.has(options.hostname)) {
+            const active = network.requests.filter(candidate => candidate.options.hostname === options.hostname
+                && !candidate.destroyed).length;
+            maxActiveBySlowHost.set(options.hostname, Math.max(maxActiveBySlowHost.get(options.hostname), active));
+        }
+        return req;
+    };
     const result = await discoverTvs({ ...network.deps, timeoutMs: 80 });
     assert.deepEqual(result.devices.map(device => device.host), ['192.168.1.35', '192.168.1.36']);
     assert.deepEqual(network.requests.slice(0, 4).map(req => req.options.hostname), [
         '192.168.1.30', '192.168.1.31', '192.168.1.35', '192.168.1.36',
     ]);
-    assert.equal(network.requests.filter(req => req.options.hostname === '192.168.1.30').length, 1);
-    assert.equal(network.requests.filter(req => req.options.hostname === '192.168.1.31').length, 1);
+    // A description timeout can free its slot just before the global deadline
+    // and allow another URL from that host. Only overlapping requests violate
+    // host fairness; the fake request's destroyed flag tracks that lifetime.
+    for (const [host, maximum] of maxActiveBySlowHost) {
+        assert.equal(maximum, 1, `Only one description from ${host} may be active at a time`);
+        assert.ok(network.requests.filter(req => req.options.hostname === host).every(req => req.destroyed));
+    }
     assert.equal(network.probes.length, 2);
 });
 

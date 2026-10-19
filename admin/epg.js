@@ -60,14 +60,14 @@
             scrollable: 'Programmtabelle, horizontal und vertikal scrollbar', grid: 'TV-Programm',
             noChannels: 'Noch keine TV-Sender vorhanden',
             noChannelsDescription: 'Wähle eine Senderliste in der Instanz-Konfiguration und speichere die Einstellungen.',
-            dataSource: 'Programmdaten vom Fernseher',
+            dataSource: 'Programmdaten mit Quellenangabe TV / XMLTV',
             keyboardHelp: 'Sendung anklicken für Details. Mit den Pfeiltasten zwischen Sendungen wechseln.',
             sourceNote: 'Die Übersicht zeigt die gespeicherte Senderliste. Leere Bereiche enthalten keine gelieferten Programmdaten. Die Auswahl zeigt Details; „Jetzt ansehen“ schaltet auf eine laufende Sendung. Zukünftige Sendungen lassen sich nach Bestätigung zur Aufnahme vormerken.',
             current: 'Jetzt im Programm', upcoming: 'Vorschau', ended: 'Vergangene Sendung',
             unknownEnd: 'Ende unbekannt', noDescription: 'Zu dieser Sendung liegt keine Beschreibung vor.',
             descriptionTruncated: 'Die Beschreibung wurde für die Übersicht gekürzt.',
             minutes: '{count} Min.', updated: 'Aktualisiert: {time}', noUpdate: 'Noch keine EPG-Aktualisierung',
-            refreshing: 'EPG wird vom Fernseher geladen: {completed} von {total} Sendern.',
+            refreshing: 'EPG wird geladen: {completed} von {total} Sendern.',
             refreshStarting: 'EPG-Aktualisierung wird angefordert …',
             loadingCache: 'Gespeicherte Programmdaten werden geladen …',
             disabled: 'EPG ist für diese Instanz deaktiviert. Aktiviere EPG und speichere die Einstellungen.',
@@ -82,7 +82,7 @@
             bridgeMissing: 'Die Verbindung zur Instanz ist noch nicht bereit. Öffne die Übersicht über die Adapter-Konfiguration.',
             noResults: 'Kein passender Sender', noResultsDescription: 'Ändere den Suchbegriff, um die Sender wieder anzuzeigen.',
             noProgrammes: 'Keine Sendungen in diesem Zeitraum',
-            noProgrammesDescription: 'Für diesen Zeitraum liegen vom Fernseher noch keine Programmdaten vor. Mit „Jetzt“ kehrst du zur aktuellen Vorschau zurück.',
+            noProgrammesDescription: 'Für diesen Zeitraum liegen aus den eingestellten Quellen keine Programmdaten vor. Mit „Jetzt“ kehrst du zur aktuellen Vorschau zurück.',
             rowWaiting: 'Noch keine Programmdaten vorhanden', rowDisabled: 'EPG deaktiviert',
             rowInactive: 'Sender nicht verfügbar', rowStale: 'Programmdaten veraltet',
             rowError: 'Programmdaten konnten nicht geladen werden', rowUnsupported: 'TV liefert keine EPG-Daten für diesen Sender',
@@ -135,14 +135,14 @@
             scrollable: 'Programme table, scrollable horizontally and vertically', grid: 'TV programmes',
             noChannels: 'No TV channels available yet',
             noChannelsDescription: 'Choose a channel list in the instance configuration and save the settings.',
-            dataSource: 'Programme information from the TV',
+            dataSource: 'Programme information labelled TV / XMLTV',
             keyboardHelp: 'Select a programme for details. Use the arrow keys to move between programmes.',
-            sourceNote: 'This guide shows the saved channel list. Empty areas have no programme information from the TV. Select a programme for details; “Watch now” changes to a current programme. Future programmes can be queued for recording after confirmation.',
+            sourceNote: 'This guide shows the saved channel list. Empty areas have no programme information from the configured sources. Select a programme for details; “Watch now” changes to a current programme. Future programmes can be queued for recording after confirmation.',
             current: 'On now', upcoming: 'Coming up', ended: 'Past programme',
             unknownEnd: 'End time unknown', noDescription: 'No description is available for this programme.',
             descriptionTruncated: 'The description has been shortened for this guide.',
             minutes: '{count} min', updated: 'Updated: {time}', noUpdate: 'EPG has not been updated yet',
-            refreshing: 'Loading EPG from the TV: {completed} of {total} channels.',
+            refreshing: 'Loading EPG: {completed} of {total} channels.',
             refreshStarting: 'Requesting an EPG update …', loadingCache: 'Loading stored programme information …',
             disabled: 'EPG is disabled for this instance. Enable EPG and save the settings.',
             notConfigured: 'No channel list has been saved for this instance yet.',
@@ -156,7 +156,7 @@
             bridgeMissing: 'The connection to the instance is not ready. Open the guide from the adapter configuration.',
             noResults: 'No matching channel', noResultsDescription: 'Change your search to show the channels again.',
             noProgrammes: 'No programmes in this time span',
-            noProgrammesDescription: 'The TV has not supplied programme information for this time span. Select “Now” to return to the current schedule.',
+            noProgrammesDescription: 'The configured sources have no programme information for this time span. Select “Now” to return to the current schedule.',
             rowWaiting: 'No programme information available yet', rowDisabled: 'EPG disabled',
             rowInactive: 'Channel unavailable', rowStale: 'Programme information is out of date',
             rowError: 'Programme information could not be loaded', rowUnsupported: 'The TV does not supply EPG for this channel',
@@ -315,9 +315,9 @@
         if (!primary) return [];
         if (localLogoUrl(primary)) return [primary];
         const fallback = localLogoUrl(channel?.logoFallback);
-        const sources = pageProtocol === 'https:' && primary.startsWith('http:') ? [] : [primary];
-        if (fallback) sources.push(fallback);
-        return sources;
+        const alternatives = Array.isArray(channel?.logoAlternatives) ? channel.logoAlternatives.slice(0, 2).map(channelLogoUrl) : [];
+        return [...new Set([primary, ...alternatives, fallback])]
+            .filter(url => url && !(pageProtocol === 'https:' && url.startsWith('http:')));
     }
     function createChannelIdentity(document, channel, pageProtocol) {
         const name = string(channel?.name) || string(channel?.id);
@@ -358,7 +358,7 @@
         return identity;
     }
     function normalizeGuide(input) {
-        if (!input || typeof input !== 'object' || input.schemaVersion !== 1 || input.source !== 'tv'
+        if (!input || typeof input !== 'object' || input.schemaVersion !== 1 || !['tv', 'xmltv', 'mixed'].includes(input.source)
             || !Array.isArray(input.channels) || input.channels.length > 4096 || !timestamp(input.now)) {
             throw new Error('EPG_GUIDE_RESPONSE_INVALID');
         }
@@ -379,6 +379,9 @@
                 channel.logoUrl = logoUrl;
                 const fallback = localLogoUrl(raw.logoFallback);
                 if (!localLogoUrl(logoUrl) && fallback) channel.logoFallback = fallback;
+                if (Array.isArray(raw.logoAlternatives)) {
+                    channel.logoAlternatives = [...new Set(raw.logoAlternatives.slice(0, 2).map(channelLogoUrl).filter(Boolean))];
+                }
             }
             const keys = new Set();
             const events = Array.isArray(raw.events) ? raw.events : [];
@@ -389,7 +392,8 @@
                     || (event.endEstimated !== undefined && event.endEstimated !== false)) { invalidEvents++; continue; }
                 const normalized = { eventId: string(event.eventId, 256), title: string(event.title),
                     subtitle: string(event.subtitle, 1024), description: string(event.description, 4096),
-                    start: event.start, end: event.end ?? null, textTruncated: event.textTruncated === true };
+                    start: event.start, end: event.end ?? null, textTruncated: event.textTruncated === true,
+                    source: event.source === 'xmltv' ? 'xmltv' : event.source === 'tv' ? 'tv' : raw.source === 'xmltv' ? 'xmltv' : 'tv' };
                 normalized.key = eventKey(id, normalized);
                 if (keys.has(normalized.key)) continue;
                 keys.add(normalized.key);
@@ -401,7 +405,7 @@
         channels.sort((a, b) => (a.number ?? Infinity) - (b.number ?? Infinity) || a.name.localeCompare(b.name));
         const progress = input.progress && typeof input.progress === 'object' ? input.progress : {};
         const count = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;
-        return { instance: string(input.instance, 100), now: input.now, listName: string(input.listName),
+        return { source: input.source, instance: string(input.instance, 100), now: input.now, listName: string(input.listName),
             listView: string(input.listView, 512), catalogRevision: string(input.catalogRevision, 128), status: string(input.status, 40),
             lastUpdate: timestamp(input.lastUpdate) ? input.lastUpdate : null, lastError: string(input.lastError, 1500),
             connected: input.connected === true, refreshing: input.refreshing === true || input.status === 'updating',
@@ -616,7 +620,8 @@
             const now = clock();
             const current = isCurrent(event, now);
             text(elements.programmeTitle, event.title);
-            text(elements.detailTimes, `${eventTime(event, true)}${event.end === null ? '' : ` · ${t('minutes', { count: Math.round((event.end - event.start) / 60000) })}`}`);
+            text(elements.detailTimes, `${eventTime(event, true)}${event.end === null ? '' : ` · ${t('minutes', { count: Math.round((event.end - event.start) / 60000) })}`}`
+                + ` · ${event.source === 'xmltv' ? 'XMLTV' : 'TV'}`);
             text(elements.detailSubtitle, event.subtitle);
             text(elements.detailDescription, `${event.description || t('noDescription')}${event.textTruncated ? `\n${t('descriptionTruncated')}` : ''}`);
             text(elements.detailState, t(event.end === null ? 'unknownEnd' : current ? 'current' : event.end <= now ? 'ended' : 'upcoming'));

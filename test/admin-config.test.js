@@ -229,27 +229,26 @@ test('Admin lists use the saved native selection and a temporary reload trigger'
     assert.equal(translations[reload.label], 'Senderlisten neu laden');
 });
 
-test('EPG configuration keeps TV source settings separate from web access', () => {
+test('EPG configuration provides explicit TV/XMLTV sources separately from web access', () => {
     const config = JSON.parse(fs.readFileSync(path.join(root, 'admin/jsonConfig.json'), 'utf8'));
     const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
     const panel = config.items._epg;
     const items = panel.items;
-    const expected = { epgEnabled: true, epgRefreshInterval: 900 };
+    const expected = { epgEnabled: true, epgRefreshInterval: 900, epgSource: 'tv', epgXmltvUrl: '', epgXmltvMappings: [] };
     assert.equal(panel.type, 'panel');
     assert.deepEqual(Object.keys(items).filter(key => !key.startsWith('_')).sort(), Object.keys(expected).sort());
     for (const [key, value] of Object.entries(expected)) {
         assert.deepEqual(io.native[key], value);
         assert.deepEqual(items[key].default, value);
     }
-    assert.match(items._epgHelp.text, /directly from the TV/u);
-    assert.doesNotMatch(JSON.stringify(panel), /xmltv|epgSource|guide URL/iu);
-    for (const key of ['epgSource', 'epgXmltvUrl', 'epgXmltvMappings']) {
-        assert.equal(Object.hasOwn(io.native, key), false, `Obsolete EPG default: ${key}`);
-    }
+    assert.match(items._epgHelp.text, /even while the TV is off/u);
+    assert.deepEqual(items.epgSource.options.map(option => option.value), ['tv', 'auto', 'xmltv']);
+    assert.equal(items._epgMappingPreview.doNotSave, true);
+    assert.equal(items._epgMappingReload.useNative, true);
+    assert.equal(items._epgMappingReload.onLoaded, undefined, 'A preview download requires an explicit click');
     const translatedItems = [panel, ...Object.values(items)];
     for (const language of ['de', 'en']) {
         const translations = JSON.parse(fs.readFileSync(path.join(root, `admin/i18n/${language}/translations.json`), 'utf8'));
-        assert.doesNotMatch(JSON.stringify(translations), /xmltv/iu, `${language} must not contain obsolete XMLTV guidance`);
         for (const item of translatedItems) {
             for (const key of ['label', 'title', 'text', 'help', 'validatorErrorText']) {
                 if (item[key]) assert.ok(translations[item[key]], `${language} translation missing: ${item[key]}`);
@@ -331,11 +330,14 @@ test('web access has a discoverable tab and distinct local and Cloud instruction
     }
 });
 
-test('instance overview and Admin quick access both link to the exact TV instance', () => {
+test('Admin metadata declares per-TV programme pages as URL strings', () => {
     const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
     const link = io.common.localLinks._default;
     // Admin accepts string links; Intro defaults to intro:true and the adapter
     // title. An object here is also imported as an extra card by older web.
+    // This checks our declaration, not every Admin resolver version. Admin 8
+    // can redirect Web-extension links before opening them; see ADMIN_LINKS.md
+    // and docs/upstream/repro-admin-links.cjs for executed upstream evidence.
     // https://github.com/ioBroker/ioBroker.admin/blob/v7.7.28/src-admin/src/tabs/Instances.tsx#L431-L460
     // https://github.com/ioBroker/ioBroker.admin/blob/v7.7.28/src-admin/src/tabs/Intro.tsx#L920-L981
     // https://github.com/ioBroker/ioBroker.web/blob/v9.0.0/src/main.ts#L824-L850
@@ -343,7 +345,7 @@ test('instance overview and Admin quick access both link to the exact TV instanc
     assert.equal(link, 'adapter/loewe-tv/epg.html?instance=%instance%');
     assert.equal(io.common.webExtension, 'lib/web-extension.js');
     assert.equal(fs.existsSync(path.join(root, io.common.webExtension)), true);
-    for (const instance of [0, 3, 12]) {
+    for (const instance of [0, 1, 3, 12]) {
         const url = new URL(link.replace('%instance%', String(instance)), 'https://broker.example/proxy/admin/');
         assert.equal(url.pathname, '/proxy/admin/adapter/loewe-tv/epg.html');
         assert.equal(url.searchParams.get('instance'), String(instance));
@@ -372,7 +374,7 @@ test('EPG settings and programme guide have separate tabs without moving or dupl
         }
     };
     visit(config.items);
-    assert.deepEqual(savedEpgFields.sort(), ['epgEnabled', 'epgRefreshInterval']);
+    assert.deepEqual(savedEpgFields.sort(), ['epgEnabled', 'epgRefreshInterval', 'epgSource', 'epgXmltvMappings', 'epgXmltvUrl']);
     for (const [field, value] of Object.entries({ epgEnabled: true, epgRefreshInterval: 900 })) {
         assert.equal(settings.items[field].default, value);
         assert.equal(io.native[field], value);

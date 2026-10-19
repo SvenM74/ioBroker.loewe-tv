@@ -1,10 +1,10 @@
 # Gerätekompatibilität und bestätigte Tests
 
-Stand: **19. Oktober 2026**. Diese Fassung beschreibt **0.1.17**, Build **`0.1.17-remote.1`**.
+Stand: **19. Oktober 2026**. Diese Fassung beschreibt **0.1.18**, Build **`0.1.18-epg-offline.1`**.
 
 Seit Version 0.1.11 stehen **EPG-Einstellungen** und **Programmübersicht** in eigenen Reitern. Die [Programmübersicht](EPG_GUI.md) zeigt den TV-EPG-Cache der gespeicherten Senderliste und kann separat über die bestehende Admin-Adresse geöffnet werden. Laufende Sendungen lassen sich zum Umschalten auswählen; zukünftige Sendungen können nach Bestätigung zur Aufnahme vorgemerkt werden. Ein dauerhaftes Journal hält noch nicht übertragene Aufträge bis zur Erreichbarkeit des Fernsehers vor. Der Adapter verwendet dafür die in der App belegten Befehle `ProgramTimer` und `GetTimerList`; die [Aufnahme-Protokollbeschreibung](recording-protocol.md) nennt die Belege und Grenzen.
 
-Die [Netzwerksuche](NETWORK_DISCOVERY.md), die Mindestversion Admin 7.7.28 und der ausschließliche EPG-Abruf vom TV bleiben erhalten. Die [Updateanleitung](INSTALLATION.md#update-auf-0117) beschreibt den aktuellen Build. Der [Prüfbericht zu 0.1.12](PRUEFBERICHT_0.1.12.md) dokumentiert die vorherige Timerkorrektur und ihre automatisierten Prüfungen. Der [Prüfbericht zu 0.1.11](PRUEFBERICHT_0.1.11.md) bleibt ebenfalls als Nachweis für den damaligen Stand erhalten.
+Die [Netzwerksuche](NETWORK_DISCOVERY.md) und die Mindestversion Admin 7.7.28 bleiben erhalten. Version 0.1.18 ergänzt wieder eine optionale [XMLTV-Quelle mit Senderzuordnung](EPG_XMLTV.md). Die [Updateanleitung](INSTALLATION.md#update-auf-0118) beschreibt den aktuellen Build. Der [Prüfbericht zu 0.1.12](PRUEFBERICHT_0.1.12.md) dokumentiert die vorherige Timerkorrektur und ihre automatisierten Prüfungen. Der [Prüfbericht zu 0.1.11](PRUEFBERICHT_0.1.11.md) bleibt ebenfalls als Nachweis für den damaligen Stand erhalten.
 
 **Am 19. Oktober 2026 bestätigt der Nutzer, dass beide Aufnahmeaufträge am Fernseher angekommen sind und die erste Aufnahme tatsächlich gestartet ist.** Eine erfolgreiche Fertigstellung ist damit noch nicht bestätigt. Diese Rückmeldung nennt kein konkretes Modell und wird deshalb keinem der unten aufgeführten Geräte einzeln oder pauschal beiden bild-Geräten zugeschrieben. Die originale `GetTimerList`-XML-Antwort liegt weiterhin nicht vor. Die Rückmeldung entstand vor der Anzeigeverbesserung in **`0.1.13-recording-status.1`**; deren Darstellung im tatsächlichen Admin ist noch zu prüfen. Die folgenden EPG-Bestätigungen stammen vom früher bereitgestellten 0.1.8-Stand und bleiben als historische Geräteergebnisse erhalten.
 
@@ -12,7 +12,15 @@ Die [Netzwerksuche](NETWORK_DISCOVERY.md), die Mindestversion Admin 7.7.28 und d
 
 Die neue [Web-Fernbedienung](REMOTE_CONTROL.md) verwendet die bestehenden TV-Tasten sowie die zusätzlich dokumentierten Codes DR_ARCHIVE=92 und BACK=65. Ihr Layout orientiert sich am vom Nutzer am 19. Oktober 2026 bereitgestellten Foto. Normale Tastendrücke, instanzgebundene Übertragung über Admin/Web/Cloud, begrenzte Eingabefolgen und Fehlerfälle werden automatisiert geprüft. Das Einschalten nutzt den bestehenden Wake-on-LAN-/TV_ON-Ablauf; ausdrücklich gewähltes Ausschalten verwendet TV_OFF=25.
 
-Eine gültige Antwort auf `InjectRCKey` bestätigt keinen sichtbaren Menüwechsel und keine laufende Aufnahme. Die neue Oberfläche und die zusätzlichen Tasten müssen noch auf den tatsächlichen Fernsehern geprüft werden. Die unten stehenden früheren Rückmeldungen zu Fernbedienungsdatenpunkten und Cloud-Seitenaufrufen sind keine vollständige Prüfung dieser neuen Bedienfläche. [Prüfbericht zu 0.1.17](PRUEFBERICHT_0.1.17.md).
+Der Nutzer bestätigt am 19. Oktober 2026 die Funktion der neuen Oberfläche nach ersten kleinen Tests. Er nennt dabei weder eine vollständige Tastenliste noch eine Zuordnung zu bestimmten TV-Modellen. Eine gültige Antwort auf `InjectRCKey` bestätigt für sich genommen keinen sichtbaren Menüwechsel und keine laufende Aufnahme. Weitere Einzeltests der Tasten bleiben nötig. Die unten stehenden früheren Rückmeldungen zu Fernbedienungsdatenpunkten und Cloud-Seitenaufrufen sind keine vollständige Prüfung dieser neuen Bedienfläche. [Prüfbericht zu 0.1.17](PRUEFBERICHT_0.1.17.md).
+
+## Neue Rückmeldung und offener Schnellstart-Test
+
+Am **19. Oktober 2026** bestätigt der Nutzer zusätzlich: Bei ausgeschaltetem Fernseher vorgemerkte Aufnahmeaufträge werden übertragen, sobald er den TV einschaltet. Damit ist dieser Warte-/Übergabeablauf am Nutzergerät grundsätzlich bestätigt. **Ob ein neuer Aufnahmeauftrag bei weiterhin ausgeschaltetem Bildschirm direkt im Schnellstart-Standby übertragen werden kann, ist noch offen.** Das darf nicht aus der Bestätigung zum Einschalten über Schnellstart abgeleitet werden.
+
+Die fehlenden EPG-Daten bei ausgeschaltetem TV werden in 0.1.18 durch eine unabhängig abrufbare, ausdrücklich konfigurierte XMLTV-Quelle ergänzt. Automatische Zuordnung, manuelle Korrekturen, Quellenbindung und Wiederanlauf sind mit synthetischen Daten geprüft; ein tatsächlicher Feed und die Darstellung an der Nutzerinstallation stehen noch zum Test aus.
+
+Der Nutzer meldet außerdem defekte Instanz-/Admin-Schnellzugriffslinks. Fehlerfälle bestimmter Admin-8-Versionen sind mit offiziellem Code reproduziert, aber der konkreten Installation noch nicht zugeordnet. [Ursache, direkte Admin-Pfade und eigene Schnellzugriffs-Kacheln](ADMIN_LINKS.md). Die produktiven Admin-Links gelten weiterhin nicht als repariert.
 
 ## Zwei TVs über Cloud und doppelte Kacheln in 0.1.16
 

@@ -1,0 +1,30 @@
+diff --git a/src-admin/src/helpers/utils.ts b/src-admin/src/helpers/utils.ts
+--- a/src-admin/src/helpers/utils.ts
++++ b/src-admin/src/helpers/utils.ts
+@@ -569,7 +569,10 @@
+         // A link with a hard-coded origin (e.g. to the documentation of the adapter) points exactly
+         // where it says and is left alone - as does one whose origin is an address the adapter keeps
+         // itself (e.g. `http://%native_friurl%`): that is a service of its own, not the web extension.
+-        if (instanceObj?.common.webExtension && native.webInstance) {
++        // Relative Admin assets belong to the Admin origin that opened this page.
++        // Preserve that origin and its proxy/Cloud prefix; only replace placeholders below.
++        const isAdminAssetLink = /^(?:\.\/)?adapter\/[a-z0-9_-]+\//i.test(link);
++        if (instanceObj?.common.webExtension && native.webInstance && !isAdminAssetLink) {
+             const origin = splitLink(link).origin;
+             if (origin === null || (origin.includes('%') && isOwnAddressOrigin(origin))) {
+                 _urls.push(...getWebExtensionLinks(adapter, instanceObj, link, context));
+diff --git a/src/lib/utils.ts b/src/lib/utils.ts
+--- a/src/lib/utils.ts
++++ b/src/lib/utils.ts
+@@ -569,7 +569,10 @@
+         // A link with a hard-coded origin (e.g. to the documentation of the adapter) points exactly
+         // where it says and is left alone - as does one whose origin is an address the adapter keeps
+         // itself (e.g. `http://%native_friurl%`): that is a service of its own, not the web extension.
+-        if (instanceObj?.common.webExtension && native.webInstance) {
++        // Relative Admin assets belong to the Admin origin that opened this page.
++        // Preserve that origin and its proxy/Cloud prefix; only replace placeholders below.
++        const isAdminAssetLink = /^(?:\.\/)?adapter\/[a-z0-9_-]+\//i.test(link);
++        if (instanceObj?.common.webExtension && native.webInstance && !isAdminAssetLink) {
+             const origin = splitLink(link).origin;
+             if (origin === null || (origin.includes('%') && isOwnAddressOrigin(origin))) {
+                 _urls.push(...getWebExtensionLinks(adapter, instanceObj, link, context));

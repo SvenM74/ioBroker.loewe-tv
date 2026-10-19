@@ -324,14 +324,14 @@
                     ids.clear();
                     continue;
                 }
-                if (page.schemaVersion !== 1 || page.source !== 'tv' || page.instance !== ctx.namespace ||
+                if (page.schemaVersion !== 1 || !['tv', 'xmltv', 'mixed'].includes(page.source) || page.instance !== ctx.namespace ||
                     typeof page.listView !== 'string' || !Array.isArray(page.channels) ||
                     page.channels.length > PAGE_SIZE || !Number.isInteger(page.total) ||
                     page.total < 0 || page.total > MAX_CHANNELS ||
                     typeof page.catalogRevision !== 'string' || !/^[a-f0-9]{64}$/.test(page.catalogRevision)) {
                     throw failure('response');
                 }
-                if (snapshot && (page.catalogRevision !== revision || page.total !== snapshot.total)) {
+                if (snapshot && (page.catalogRevision !== revision || page.total !== snapshot.total || page.source !== snapshot.source)) {
                     if (restarts >= MAX_CATALOG_RESTARTS) throw failure('changed', 'EPG_GUIDE_CHANGED');
                     restarts++;
                     channels = [];

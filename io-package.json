@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.17",
+    "version": "0.1.18",
     "news": {
+      "0.1.18": {
+        "en": "Restore optional XMLTV programme data with automatic channel matching, editable mapping suggestions and persistent per-source caches for use while the TV is off. Add manual and XMLTV channel logos plus KiKA, phoenix and ZDFneo fallbacks. Preserve per-TV command targets and recording delivery; document the Admin 8 link resolver issue, direct access and proposed upstream corrections.",
+        "de": "Optionale XMLTV-Programmdaten mit automatischer Senderzuordnung, anpassbaren Vorschlägen und getrennt gespeicherten Quellcaches auch bei ausgeschaltetem TV wieder bereitstellen. Manuelle und XMLTV-Senderlogos sowie Ersatzbilder für KiKA, phoenix und ZDFneo ergänzen. TV-Ziele und Aufnahmeübertragung erhalten; Admin-8-Linkfehler, Direktzugriff und Korrekturvorschläge für Admin dokumentieren."
+      },
       "0.1.17": {
         "en": "Add a remote-control dialog inspired by the Loewe Assist handset to the programme guide. Send supported keys to the page's TV instance through the existing Admin, web or Cloud connection, including documented DR+ archive and BACK commands. Offer explicit power-on and standby actions, bounded ordered input and honest delivery status without replaying lost key presses.",
         "de": "Die Programmübersicht um eine an der Loewe-Assist-Fernbedienung orientierte Bedienfläche ergänzen. Unterstützte Tasten über die bestehende Admin-, Web- oder Cloud-Verbindung an die TV-Instanz der geöffneten Seite senden, einschließlich belegtem DR+-Archiv und BACK-Befehl. Einschalten und Standby ausdrücklich auswählen, Eingaben begrenzt in Reihenfolge senden und verlorene Tastendrücke nicht wiederholen."
@@ -81,8 +85,8 @@
       "de": "Loewe TV"
     },
     "desc": {
-      "en": "Control a Loewe TV locally, view its programme guide, select running programmes and queue confirmed recording requests until the TV is reachable.",
-      "de": "Einen Loewe-Fernseher lokal steuern, seine Programmübersicht anzeigen, laufende Sendungen auswählen und bestätigte Aufnahmeaufträge bis zur Erreichbarkeit des TV speichern."
+      "en": "Control a Loewe TV locally, view TV or configured XMLTV programmes, select running programmes and queue confirmed recording requests until the TV is reachable.",
+      "de": "Einen Loewe-Fernseher lokal steuern, TV- oder konfigurierte XMLTV-Programme anzeigen, laufende Sendungen auswählen und bestätigte Aufnahmeaufträge bis zur Erreichbarkeit des TV speichern."
     },
     "authors": [
       "Loewe TV adapter contributors"
@@ -135,7 +139,11 @@
     "macWlan": "",
     "broadcastAddress": "255.255.255.255",
     "powerOnTimeout": 60,
-    "maxVolume": 99
+    "maxVolume": 99,
+    "epgSource": "tv",
+    "epgXmltvUrl": "",
+    "epgXmltvMappings": [],
+    "channelLogoOverrides": []
   },
   "objects": [],
   "instanceObjects": [

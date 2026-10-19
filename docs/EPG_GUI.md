@@ -1,14 +1,14 @@
 # Programmübersicht und Aufnahmeaufträge
 
-**Version 0.1.17, Build `0.1.17-remote.1`**, bietet getrennte Reiter für **EPG-Einstellungen** mit Aktivierung und Abrufintervall, **Web-Zugriff** mit der Web-Adapter-Auswahl sowie **Programmübersicht** mit Senderliste, Zeitachse und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
+**Version 0.1.18, Build `0.1.18-epg-offline.1`**, bietet getrennte Reiter für **EPG-Einstellungen** mit Aktivierung, Abrufintervall, Quellenwahl und XMLTV-Zuordnung, **Web-Zugriff** mit der Web-Adapter-Auswahl sowie **Programmübersicht** mit Senderliste, Zeitachse und Aktionen. Die Vorschau bleibt an die gespeicherte TV-Senderliste gebunden. Programmdaten können vom TV, aus einer selbst eingetragenen XMLTV-Quelle oder aus beiden Quellen stammen. XMLTV ermöglicht eine aktuelle Vorschau auch bei ausgeschaltetem Fernseher.
 
 ## Öffnen und vorbereiten
 
-1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0117). `info.adapterBuild` muss **`0.1.17-remote.1`** anzeigen.
+1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0118). `info.adapterBuild` muss **`0.1.18-epg-offline.1`** anzeigen.
 2. Verwende **ioBroker Admin ab 7.7.28**. Lade Admin nach dem Update vollständig neu und öffne die Instanz-Konfiguration erneut.
 3. Starte die betreffende Instanz, beispielsweise **`loewe-tv.0`**. Prüfe unter **Verbindung** und **Senderlisten** die TV-Adresse und die gewünschte TV-Senderliste.
-4. Aktiviere unter **EPG-Einstellungen** die **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**. Speichere Änderungen, bevor du die Übersicht verwendest.
-5. Öffne **Programmübersicht**. **EPG aktualisieren** startet bei erreichbarem TV einen Abgleich; der Fortschritt erscheint in der Ansicht.
+4. Aktiviere unter **EPG-Einstellungen** die **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**, die Quelle **Nur TV**. Für externe Programme **TV mit XMLTV-Ergänzung** oder **Nur XMLTV** auswählen, eigene XMLTV-Adresse eintragen und die [Senderzuordnung prüfen](EPG_XMLTV.md#einrichten). Speichere die gewünschten Änderungen.
+5. Öffne **Programmübersicht**. **EPG aktualisieren** startet einen Abgleich der gespeicherten Quellen; der Fortschritt erscheint in der Ansicht. Eine aktivierte XMLTV-Quelle wird vor TV-EPG-Anfragen geladen und benötigt keinen erreichbaren Fernseher.
 
 Ein EPG-Intervall von `0` deaktiviert automatische EPG-Abfragen einschließlich des Erstabrufs. Bei aktiviertem EPG bleiben manuelle Aktualisierungen möglich. Das Intervall beeinflusst weder die Anzeige gespeicherter Programme noch die Bearbeitung bereits vorgemerkter Aufnahmeaufträge.
 
@@ -18,7 +18,9 @@ Die große TV-Kanal-/Detailfläche ist entfernt. In der kompakten Auswahlzeile s
 
 Die gemeinsame Bedienleiste enthält Datum, Stundenpfeile, **Jetzt**, die Stundenauswahl, **Jetzt ansehen / Aufnahme planen**, **EPG aktualisieren**, **Fernbedienung** und anschließend die Sendersuche. Auf schmalen Bildschirmen bricht sie in dieser Reihenfolge um. Die Programmtabelle nutzt die verbleibende Höhe und ordnet die Sender nach ihrer gespeicherten Position, die Sendungen nach der Uhrzeit an. Mehrere Plätze desselben TV-Dienstes teilen sich eine Zeile; die kleinste gültige Position bestimmt die Einordnung. Sender ohne passende EPG-Daten bleiben sichtbar.
 
-Senderlogos ersetzen den Namen in der linken Tabellenspalte, wenn ein Bild verfügbar ist. Die Sendernummer bleibt sichtbar; der vollständige Name bleibt für Suche, Tooltip und Screenreader verfügbar. Eine TV-Bildadresse hat Vorrang vor dem mitgelieferten Logo. Bei Ladefehlern fällt die Anzeige auf das mitgelieferte Logo oder den Sendernamen zurück. Unter HTTPS werden unverschlüsselte TV-Bilder übersprungen. Die [Logoquellen und Grenzen](CHANNEL_LOGOS.md) sind einzeln dokumentiert.
+Senderlogos ersetzen den Namen in der linken Tabellenspalte, wenn ein Bild verfügbar ist. Die Sendernummer bleibt sichtbar; der vollständige Name bleibt für Suche, Tooltip und Screenreader verfügbar. Die Reihenfolge ist: manuell eingetragenes Logo, TV-Bildadresse, Logo des eindeutig zugeordneten XMLTV-Senders, mitgeliefertes Logo, Sendername. Unter HTTPS werden unverschlüsselte Bildadressen übersprungen; bei Ladefehlern wird die nächste Quelle versucht. Manuelle Bilder lassen sich unter **Senderlogos** zuordnen. Die [Logoquellen und Grenzen](CHANNEL_LOGOS.md) sind einzeln dokumentiert.
+
+Die ausgewählte Sendung zeigt ihre Quelle als **TV** oder **XMLTV**. Die Herkunft gehört zu den Programmdaten; sie beschreibt weder den Verbindungszustand des Fernsehers noch den Status einer Aufnahme. In **TV mit XMLTV-Ergänzung** können Sendungen beider Quellen in derselben Zeile stehen. Vollständige TV-Intervalle haben Vorrang, XMLTV ergänzt andere Zeitbereiche. [Zusammenführung ohne geschätzte Zeiten](EPG_XMLTV.md#wie-tv-und-xmltv-zusammenwirken).
 
 | Element | Wirkung |
 |---|---|
@@ -30,13 +32,15 @@ Senderlogos ersetzen den Namen in der linken Tabellenspalte, wenn ein Bild verf�
 | **Jetzt** | Kehrt zur aktuellen Uhrzeit zurück. |
 | **2 Stunden / 3 Stunden / 6 Stunden** | Wählt die Breite der Zeitachse; Standard sind drei Stunden. |
 | **Jetzt ansehen / Aufnahme planen** | Führt nach Auswahl der Sendung zur passenden TV-Aktion beziehungsweise zum Bestätigungsdialog. |
-| **EPG aktualisieren** | Fordert den vorhandenen TV-Abgleich an. Ein bereits laufender Abgleich wird weiterverwendet. |
+| **EPG aktualisieren** | Fordert den Abgleich der gespeicherten EPG-Quellen an. Ein bereits laufender Abgleich wird weiterverwendet. |
 | **Fernbedienung** | Öffnet die TV-Fernbedienung der jeweiligen Instanz, auch ohne ausgewählte Sendung oder geladene EPG-Daten. |
 | **Aufnahmeaufträge** | Zeigt vorgemerkte Aufträge, ihren Übertragungszustand und gegebenenfalls einen Fehler. |
 
 Tab erreicht die Bedienelemente; Pfeiltasten wechseln innerhalb der Programmtabelle zwischen Sendungen und Zeilen. **Pos1** und **Ende** führen zur ersten beziehungsweise letzten angezeigten Sendung der Zeile. Die Uhrzeiten erscheinen in der lokalen Zeitzone des Browsers. Für Aktionsprüfungen verwendet der Adapter die Uhrzeit des ioBroker-Rechners; diese muss stimmen.
 
 Suche, Blättern und reine Detailauswahl ändern keine Einstellungen. Die Übersicht verwendet die **gespeicherte** TV-Adresse und Liste. Ungespeicherte Formularänderungen werden erst nach dem Speichern wirksam.
+
+Die separate Schaltfläche **Quelle laden und Zuordnung prüfen** in den EPG-Einstellungen dient ausschließlich der Vorschau einer XMLTV-Adresse und ihrer Zuordnungen. Sie verwendet die bereits gespeicherte TV-Senderliste, speichert das Formular nicht und ersetzt keine aktiven Programmcaches. Für eine Ausnahme oberhalb der Tabelle den TV-Sender wählen, den XMLTV-Sender suchen oder seine genaue ID eingeben und **Korrektur in die Tabelle übernehmen** drücken. Diese Übernahme ändert nur das Formular; anschließend normal speichern. [Vorschau und Korrekturen](EPG_XMLTV.md#sender-automatisch-zuordnen-und-korrigieren).
 
 ## Fernbedienung öffnen
 
@@ -46,9 +50,13 @@ Seit **0.1.17** öffnet **Fernbedienung** einen eigenen Dialog im Stil der Loewe
 
 Nach dem Update die ausgewählte Web-Instanz neu starten und die Seite vollständig neu laden, damit der neue Fernbedienungs-Code geladen wird. Die vorhandene Web-/Cloud-Auswahl bleibt bestehen.
 
+Der Nutzer bestätigt inzwischen erste erfolgreiche Fernbedienungstests über den Remote-Zugang. Diese Rückmeldung ist keine vollständige Prüfung aller Tasten und aller TV-Modelle.
+
 ## Laufende Sendung ansehen
 
 Wähle eine aktuelle Sendung und drücke **Jetzt ansehen**. Der Adapter prüft Senderzuordnung und Programmzeiten erneut. Der Umschaltbefehl wird nur gesendet, wenn diese Sendung **jetzt eindeutig läuft**. Überschneidungen, unbekannte Endzeiten, veraltete Daten oder eine inzwischen geänderte Senderzuordnung verhindern die Aktion.
+
+Das gilt auch für XMLTV-Sendungen. Der Server löst die Auswahl auf den gespeicherten TV-Dienst und dessen Locator auf. Die XMLTV-Sender-ID oder eine Bildadresse wird nicht als TV-Ziel verwendet.
 
 Die Prüfung erfolgt nochmals unmittelbar vor dem TV-Befehl, auch wenn die Anfrage zuvor auf eine freie Verbindung oder die TV-Anmeldung warten musste. Endet die Sendung währenddessen, wird kein verspäteter Umschaltbefehl mehr gesendet. Eine Meldung über den gesendeten Befehl bestätigt dessen Übergabe; sie ist kein Nachweis des tatsächlich angezeigten Bildes. Der TV muss erreichbar sein. Die Aktion startet keinen Einschaltablauf.
 
@@ -64,6 +72,8 @@ Der Adapter prüft die Auswahl beim Bestätigen erneut. Hat die Sendung inzwisch
 Die Vormerkung wird vor dem Versand dauerhaft in **`loewe-tv.0.recordings.jobs`** gespeichert und übersteht einen Adapterneustart. Der Datenpunkt enthält ein JSON-Journal und ist **nur lesbar**. Die Oberfläche ist der vorgesehene Weg zum Anlegen und Entfernen einer noch ungesendeten Vormerkung.
 
 Ist der TV offline, bleibt der Auftrag in der Warteschlange. Solange Aufträge zu bearbeiten sind, prüft der laufende Adapter die Erreichbarkeit regelmäßig, unabhängig von den drei normalen Abrufintervallen. Sobald die Steuerschnittstelle erreichbar ist und die Sendung noch nicht begonnen hat, kann er den Timer übertragen. **Dafür wird kein Wake-on-LAN und kein Einschaltbefehl ausgelöst.** Ohne Schnellstart ist der TV laut bisheriger Nutzerrückmeldung im Standby nicht über das Netzwerk erreichbar; dann muss er rechtzeitig auf anderem Weg eingeschaltet werden.
+
+Mit XMLTV können zukünftige Sendungen auch dann neu vorgemerkt werden, wenn der TV keine frischen Programmdaten liefern kann. Der Nutzer hat inzwischen bestätigt, dass wartende Aufnahmeaufträge nach dem Einschalten am Fernseher ankommen. Die direkte Timerübertragung bei aktiviertem Schnellstart im Standby bleibt ein noch offener Gerätetest. Ein wartender Auftrag und ein bestätigter Timer sind weiterhin unterschiedliche Zustände.
 
 Jeder Auftrag wird höchstens einmal möglicherweise wirksam an den TV gesendet. Nur wenn sicher noch kein Aufnahmebefehl gesendet wurde, darf ein späterer Versuch folgen. Bei einer mehrdeutigen Antwort oder einem Verbindungsabbruch nach möglichem Versand erfolgt keine automatische Wiederholung. Stattdessen gleicht der Adapter die TV-Timerliste ab.
 
@@ -88,13 +98,17 @@ Jeder Auftrag wird höchstens einmal möglicherweise wirksam an den TV gesendet.
 
 ## Instanzübersicht und Schnellzugriff
 
-Der bisherige Button **Separat öffnen** ist aus der Konfiguration entfernt. In der ioBroker-Instanzübersicht bietet die Instanz einen direkten Link zur Programmübersicht. Im **Admin-Schnellzugriff** ist er seit 0.1.16 über die Kachel mit dem Adaptertitel **Loewe TV** erreichbar. Die eigene Seite lässt sich als Lesezeichen speichern. Eine normale Admin-Installation auf Port 8081 verwendet beispielsweise:
+Der bisherige Button **Separat öffnen** ist aus der Konfiguration entfernt. Die Instanz hinterlegt einen Link für Instanzübersicht und **Admin-Schnellzugriff** mit dem Adaptertitel **Loewe TV**. Unter **Admin 8** kann dessen automatischer Resolver den Link auf die ausgewählte Web-Instanz umschreiben, dabei eine unbrauchbare Adresse bilden oder die TV-Instanzzuordnung verlieren. **Version 0.1.18 behebt dieses Admin-Problem nicht.** Die [Analyse der Admin-Links](ADMIN_LINKS.md) erklärt die geprüften Fälle und den aktuellen Prüfstand.
+
+Die direkte Admin-Seite bleibt nutzbar und lässt sich als Lesezeichen speichern. Eine normale Admin-Installation auf Port 8081 verwendet beispielsweise:
 
 ```text
 http://IOBROKER-HOST:8081/adapter/loewe-tv/epg.html?instance=0
 ```
 
 `IOBROKER-HOST` ist die Adresse deines ioBroker-Rechners. Für `loewe-tv.1` lautet der Parameter `instance=1`. HTTPS, Port und ein vorgeschalteter Proxy richten sich nach deiner bestehenden Installation. Die Seite verwendet die konfigurierte **Admin-Anmeldung und Benutzerrechte**. Eine lokal vom Dateisystem geöffnete HTML-Datei verbindet sich nicht mit dem Adapter.
+
+Für einen funktionierenden Schnellzugriff kannst du im Bearbeitungsmodus von Admin eigene Kacheln mit den vollständigen Admin-Adressen für `instance=0` und `instance=1` anlegen. Diese eigenen Links durchlaufen den problematischen Adapter-Linkresolver nicht. [Schrittfolge für eigene Kacheln](ADMIN_LINKS.md#eigene-kacheln-im-admin-schnellzugriff). Der Reiter **Programmübersicht** in der Adapterkonfiguration bleibt ebenfalls verfügbar; die funktionierende Web-/Cloud-Auswahl wird für diesen Umweg nicht verändert.
 
 ## Über ioBroker.web öffnen
 
@@ -107,7 +121,7 @@ http://IOBROKER-HOST:8081/adapter/loewe-tv/epg.html?instance=0
 http://IOBROKER-HOST:8082/loewe-tv.0/epg.html
 ```
 
-Der Port `8082` ist ein Beispiel; maßgeblich ist die Konfiguration deiner Web-Instanz. Für die zweite TV-Instanz lautet der Pfad `/loewe-tv.1/epg.html`. Mehrere TVs können dieselbe Web-Instanz verwenden und bekommen getrennte Links. Bei neueren Admin-Versionen kann der Link an der Instanz automatisch zur gewählten Web-Instanz führen; die Admin-Adresse bleibt ebenfalls nutzbar.
+Der Port `8082` ist ein Beispiel; maßgeblich ist die Konfiguration deiner Web-Instanz. Für die zweite TV-Instanz lautet der Pfad `/loewe-tv.1/epg.html`. Mehrere TVs können dieselbe Web-Instanz verwenden und bekommen getrennte Links. Verwende deren Startseitenlink oder die direkte passende Adresse; zum getrennten Problem der automatisch umgeschriebenen Admin-Links siehe [oben](#instanzübersicht-und-schnellzugriff).
 
 Läuft die Web-Instanz auf einem anderen ioBroker-Host, muss das LOEWE-TV-Adapterpaket auch dort verfügbar sein, damit der Web-Adapter die Erweiterungsdatei laden kann.
 
@@ -135,38 +149,41 @@ Der EPG-Web-Link und seine JS-, CSS- und mitgelieferten Logo-Dateien werden an d
 
 Die Web-Instanz auf `127.0.0.1` ist vom Browser eines anderen LAN-Geräts nicht direkt erreichbar. Öffne die lokale Ansicht deshalb im Reiter **Programmübersicht** der LOEWE-TV-Instanzeinstellungen oder über die [oben angegebene direkte Admin-Adresse](#instanzübersicht-und-schnellzugriff). Neuere Admin-Versionen können den automatisch erzeugten Instanz-/Schnellzugrifflink auf die ausgewählte Web-Instanz umstellen; ein dort enthaltenes `127.0.0.1` ist für einen anderen LAN-Browser nicht das ioBroker-Gerät. Mitgelieferte Logos sind über die EPG-Seite auch remote erreichbar. Eine private TV-Bildadresse kann außerhalb des Heimnetzes nicht erreichbar sein; dann greift der vorhandene Logo-/Text-Ersatz.
 
-**Prüfstand:** Der Nutzer hat am **19. Oktober 2026** den erfolgreichen Remote-Aufruf beider konfigurierten TV-Instanzen bestätigt. Sein Screenshot zeigt die beiden korrekten Web-Links und zwei zusätzliche generische Admin-Links. Die Korrektur dieser Doppelanzeige in 0.1.16 ist automatisiert geprüft; ihre Wirkung auf der produktiven Cloud-Startseite muss nach dem Update kontrolliert werden. Bedienaktionen und neue Aufnahmeaufträge über die Cloud sind mit dieser Rückmeldung nicht separat bestätigt. Der Adapter ändert keine Web- oder Cloud-Einstellungen selbstständig.
+**Prüfstand:** Der Nutzer hat am **19. Oktober 2026** den erfolgreichen Remote-Aufruf beider konfigurierten TV-Instanzen bestätigt. Der damalige Screenshot zeigte die beiden korrekten Web-Links und zwei zusätzliche generische Admin-Links. Die Änderung des zusätzlichen Web-Linkimports seit 0.1.16 ist automatisiert geprüft und vom weiterhin offenen Admin-8-Resolverproblem zu unterscheiden. Eine neuere Rückmeldung bestätigt erste Remote-Tests der Fernbedienung sowie die Übertragung wartender Aufträge nach dem Einschalten. Sie belegt weder alle Tasten noch einen erfolgreichen Aufnahmeabschluss oder die direkte Timerübertragung im Schnellstart-Standby. Der Adapter ändert keine Web- oder Cloud-Einstellungen selbstständig.
 
 ### Zusätzliche Programmübersichts-Kacheln entfernen
 
 Bei den Builds 0.1.14/0.1.15 können ältere Web-Versionen zusätzlich zu **Loewe TV · Programmübersicht (0)/(1)** zwei generische Kacheln mit `adapter/loewe-tv/...` erzeugen. Ursache ist die Objektform des Admin-Links in `common.localLinks`: Sie wird zusätzlich zu den Web-Links der Erweiterung in die Startseite aufgenommen. Die Links unterscheiden sich, sodass eine Bereinigung allein nach identischen URLs sie nicht zusammenfasst.
 
-Ab **0.1.16** ist der Admin-Link als URL-Text hinterlegt. Admin unterstützt diese Form weiterhin für Instanzlink und Schnellzugriff; der zusätzliche Web-Import übernimmt nur Linkobjekte. Damit liefert allein die Web-Erweiterung ihre passende Kachel pro TV. [Admin-Vertrag](https://github.com/ioBroker/ioBroker.admin/blob/v7.7.28/src-admin/src/tabs/Intro.tsx) · [Web-Linkimport](https://github.com/ioBroker/ioBroker.web/blob/v9.0.0/src/main.ts#L823-L850).
+Ab **0.1.16** ist der Admin-Link als URL-Text hinterlegt. Diese Metadatenform wird weiterhin von Admin eingelesen; der zusätzliche Web-Import übernimmt nur Linkobjekte. Damit liefert allein die Web-Erweiterung ihre passende Kachel pro TV. Das Einlesen eines Admin-Links ist allerdings keine Garantie dafür, dass Admin 8 seine Adresse richtig auflöst; [separate Fehleranalyse](ADMIN_LINKS.md). [Admin-Vertrag](https://github.com/ioBroker/ioBroker.admin/blob/v7.7.28/src-admin/src/tabs/Intro.tsx) · [Web-Linkimport](https://github.com/ioBroker/ioBroker.web/blob/v9.0.0/src/main.ts#L823-L850).
 
 Aktualisiere den Adapter, prüfe den Build bei beiden Instanzen, starte die ausgewählte Web-Instanz neu und öffne die Cloud-Web-Startseite erneut. Die [Anleitung für zwei Fernseher](INSTALLATION.md#doppelte-web-cloud-kacheln-bei-zwei-fernsehern-bereinigen) enthält die Befehle. Die vorhandenen TV-Instanzen und Aufnahmeaufträge bleiben bestehen.
 
 ## Datenumfang und Hilfe
 
-Der TV-Abruf reicht ungefähr 24 Stunden voraus; nur tatsächlich gelieferte und gespeicherte Daten erscheinen. Die Zeitnavigation von ungefähr 24 Stunden zurück bis 48 Stunden voraus erweitert den Abruf nicht. Der Cache ist keine Programmhistorie. Endzeiten werden nicht aus der nächsten Sendung geschätzt; mehrdeutige oder fehlende Angaben bleiben sichtbar unvollständig.
+Der TV-Abruf reicht ungefähr 24 Stunden voraus, die XMLTV-Auswahl bis 48 Stunden. Die Zeitnavigation von ungefähr 24 Stunden zurück bis 48 Stunden voraus erzeugt selbst keine Daten. Es erscheinen nur tatsächlich gelieferte, zugeordnete und gespeicherte Programme; die Vorschau kann daher Lücken haben. Der Cache ist keine Programmhistorie. TV und XMLTV dürfen jeweils höchstens 24 Stunden seit ihrem letzten gültigen Abruf verwendet werden. Endzeiten werden nicht aus der nächsten Sendung geschätzt; mehrdeutige oder fehlende Angaben bleiben sichtbar unvollständig. [Quellenwahl, Zuordnung und Grenzen](EPG_XMLTV.md).
 
 | Situation | Nächster Schritt |
 |---|---|
-| Keine Programme oder leerer Zeitraum | Mit **Jetzt** zur aktuellen Vorschau zurückkehren, gespeicherte Liste prüfen und bei eingeschaltetem TV **EPG aktualisieren** auslösen. |
+| Keine Programme oder leerer Zeitraum | Mit **Jetzt** zur aktuellen Vorschau zurückkehren, gespeicherte Liste und Quellenwahl prüfen und **EPG aktualisieren** auslösen. Für TV-Daten muss der Fernseher erreichbar sein; für XMLTV müssen Adresse und Senderzuordnung passen. |
 | **EPG deaktiviert** | Unter **EPG-Einstellungen** aktivieren und speichern. |
-| TV offline / gespeicherte Daten | Noch gültige Daten bleiben sichtbar. Frische Programmdaten benötigen einen erreichbaren TV. |
+| TV offline / gespeicherte Daten | Noch gültige Daten bleiben sichtbar. Mit konfigurierter XMLTV-Quelle können auch bei TV aus frische Daten geladen werden. |
 | Programmdaten veraltet | Nach mehr als 24 Stunden seit dem letzten gültigen Abruf wird der Plan ausgeblendet; erneut abrufen. |
 | Auswahl inzwischen geändert | Übersicht neu laden und die Sendung erneut auswählen. |
 | Instanz oder Ansicht nicht erreichbar | Instanz starten, Build und Admin-Version prüfen; Admin nach dem Update neu laden. |
+| Automatischer Admin-Link zeigt `127.0.0.1`, `localhost` oder den falschen TV | Die direkte Admin-Adresse mit passendem `instance`-Parameter oder eine [eigene Schnellzugriffskachel](ADMIN_LINKS.md) verwenden. Der Admin-8-Linkresolver ist mit diesem Adapterupdate nicht repariert. |
+| XMLTV-Sender fehlt oder passt nicht | **Quelle laden und Zuordnung prüfen** öffnen; die exakte XMLTV-ID als manuelle Korrektur eintragen beziehungsweise auswählen und speichern. Eine leere ID deaktiviert XMLTV; Löschen der Zeile stellt Automatik wieder her. |
+| `EPG_XMLTV_CONFIG` trotz sichtbarer TV-Programme | Die optionalen XMLTV-Einstellungen korrigieren. Der TV-Betrieb bleibt währenddessen verfügbar. |
 | Admin-/Web-Sitzung abgelaufen oder nicht berechtigt | Am jeweils verwendeten Admin-/Web-Zugang anmelden und die Benutzerrechte zum Senden von Adapter-Nachrichten prüfen. |
 | Web-Seite meldet eine fehlende integrierte Socket-Verbindung | In der gewählten Web-Instanz die integrierte Verbindung aktivieren und speichern. |
-| Kein Feld zur Web-Auswahl sichtbar | `info.adapterBuild = 0.1.17-remote.1` prüfen, Admin mit Strg+F5 neu laden und den Reiter **Web-Zugriff** öffnen. Eine Web-Instanz muss bereits installiert sein. |
+| Kein Feld zur Web-Auswahl sichtbar | `info.adapterBuild = 0.1.18-epg-offline.1` prüfen, Admin mit Strg+F5 neu laden und den Reiter **Web-Zugriff** öffnen. Eine Web-Instanz muss bereits installiert sein. |
 | Cloud zeigt keine EPG-Seite oder einen anderen Fernseher | In LOEWE-TV und Cloud dieselbe Web-Instanz auswählen und speichern; den instanzbezogenen Link auf der Cloud-Web-Startseite öffnen. |
-| Zusätzlich zu den LOEWE-Kacheln erscheinen **Programmübersicht.0/.1** mit `adapter/loewe-tv/...` | Auf 0.1.17 aktualisieren, den Build beider TV-Instanzen prüfen, die ausgewählte Web-Instanz neu starten und die Cloud-Web-Startseite neu öffnen. |
+| Zusätzlich zu den LOEWE-Kacheln erscheinen **Programmübersicht.0/.1** mit `adapter/loewe-tv/...` | Auf 0.1.18 aktualisieren, den Build beider TV-Instanzen prüfen, die ausgewählte Web-Instanz neu starten und die Cloud-Web-Startseite neu öffnen. Das betrifft den zusätzlichen Web-Import, nicht den Admin-Linkresolver. |
 | Cloud meldet Anmeldung, HTTPS oder einen anderen Host als Fehler | Die separate Web-Instanz wie oben auf dem Host des Cloud-Adapters einrichten und **Test web** erneut ausführen. |
-| Kein Senderlogo | Senderliste bei eingeschaltetem TV über `channels.refresh` neu abrufen; nicht jeder TV und nicht jeder Sender liefert ein Bild. Der Sendername bleibt als Ersatz sichtbar. |
+| Kein Senderlogo | TV-Senderliste über `channels.refresh` erneuern, XMLTV-Zuordnung prüfen oder unter **Senderlogos** eine passende HTTPS-Bildadresse hinterlegen. Nicht jede Quelle liefert ein Bild; der Sendername bleibt als Ersatz sichtbar. |
 | **An TV übertragen** | Der TV hat geantwortet; der automatische Timerabgleich ist noch offen. **Details zum Timerabgleich** öffnet die Diagnose. Der Auftrag wird nicht erneut übertragen. |
 | **Übertragung unklar** oder **Timerabgleich offen** | Timerliste direkt am TV prüfen. Für die Protokollanpassung wird eine echte, auswertbare Timerantwort benötigt. |
 
-Öffnen, Suchen und Blättern lesen den vorhandenen Arbeitsspeicher-Cache und starten keine eigenen EPG-TV-Abfragen. **EPG aktualisieren** und das konfigurierte Intervall verwenden den bestehenden Hintergrundabgleich. Die EPG-Datenpunkte unter jedem Sender bleiben unverändert; neu ist das Aufnahmejournal `recordings.jobs`.
+Öffnen, Suchen und Blättern lesen den vorhandenen Arbeitsspeicher-Cache und starten keine eigenen TV- oder XMLTV-Abfragen. **EPG aktualisieren** und das konfigurierte Intervall verwenden den Hintergrundabgleich der gespeicherten Quellen. Die bisherigen EPG-Anzeigedatenpunkte und das Aufnahmejournal `recordings.jobs` bleiben verfügbar; Herkunft und XMLTV-Diagnose ergänzen das zusammenhängende `epg.data`-JSON. Interne Quellcaches werden getrennt gespeichert.
 
-Der direkte TV-EPG-Abruf wurde mit dem früheren 0.1.8-Stand vom Nutzer auf **bild 7.55 / SL420 / V5.4.6.0** und **bild 5.32 / SL310F / V5.4.6.0** bestätigt. Am **19. Oktober 2026** bestätigt der Nutzer nach Bereitstellung von 0.1.12 zwei am TV angekommene Aufnahmeaufträge und den Start der ersten Aufnahme. Der Screenshot zeigt dabei noch die pauschale Anzeige **Übertragung unklar**. Version 0.1.13 korrigiert diese Darstellung anhand der vorhandenen TV-Antwortzeit. Ein erfolgreicher Aufnahmeabschluss und die originale XML-Timerantwort sind weiterhin nicht dokumentiert. Weitere Diagnosefelder und Abrufgrenzen beschreibt die [EPG-Anleitung](EPG.md).
+Der direkte TV-EPG-Abruf wurde mit dem früheren 0.1.8-Stand vom Nutzer auf **bild 7.55 / SL420 / V5.4.6.0** und **bild 5.32 / SL310F / V5.4.6.0** bestätigt. Am **19. Oktober 2026** bestätigt der Nutzer nach Bereitstellung von 0.1.12 zwei am TV angekommene Aufnahmeaufträge und den Start der ersten Aufnahme. Der damalige Screenshot zeigt noch die pauschale Anzeige **Übertragung unklar**. Version 0.1.13 korrigiert diese Darstellung anhand der vorhandenen TV-Antwortzeit. Die neuere Rückmeldung zu wartenden Aufträgen nach dem Einschalten und ersten Remote-Tests wird keinem ungenannten Modell zugeordnet. Ein erfolgreicher Aufnahmeabschluss, die originale XML-Timerantwort und der direkte Timerzugriff im Schnellstart-Standby sind weiterhin nicht dokumentiert. Weitere Diagnosefelder und Abrufgrenzen beschreiben die [EPG-Anleitung](EPG.md) und die [XMLTV-Anleitung](EPG_XMLTV.md).

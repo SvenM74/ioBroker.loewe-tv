@@ -46,13 +46,14 @@ function logoDocument() {
     } };
 }
 
-test('guide accepts only the expected TV snapshot and a bounded event list', () => {
-    for (const invalid of [null, {}, { ...payload([]), source: 'xmltv' },
+test('guide accepts known programme sources and a bounded event list', () => {
+    for (const invalid of [null, {}, { ...payload([]), source: 'unknown' },
         { ...payload([]), schemaVersion: 2 }, { ...payload([]), now: 'today' },
         payload([channel('one', 1, Array.from({ length: 129 }, () => event('too many')))])]) {
         assert.throws(() => ui.normalizeGuide(invalid), /EPG_GUIDE_RESPONSE_INVALID/);
     }
     assert.equal(ui.normalizeGuide(payload([])).channels.length, 0);
+    for (const source of ['tv', 'xmltv', 'mixed']) assert.equal(ui.normalizeGuide({ ...payload([]), source }).source, source);
 });
 
 test('guide sorts by numeric channel position, keeps names and has no generated programmes', () => {
@@ -145,6 +146,42 @@ test('a logo retries only its one local fallback and then restores the full stat
         assert.equal(node.children.length, 1);
         assert.equal(node.children[0].textContent, value.name);
         assert.equal(node.children[0].hidden, false);
+    }
+});
+
+test('manual, TV and XMLTV logos fail over in order and HTTPS never loads an insecure alternative', () => {
+    const manual = 'https://manual.example/station.svg';
+    const tv = 'http://192.0.2.10/channel.png';
+    const xmltv = 'https://guide.example/station.png';
+    const bundled = 'logos/zdf.svg';
+    const cases = [
+        { protocol: 'http:', primary: manual, alternatives: [tv, xmltv], expected: [manual, tv, xmltv, bundled] },
+        { protocol: 'https:', primary: manual, alternatives: [tv, xmltv], expected: [manual, xmltv, bundled] },
+        { protocol: 'https:', primary: 'http://manual.example/station.svg', alternatives: [tv, xmltv], expected: [xmltv, bundled] },
+        { protocol: 'https:', primary: manual, alternatives: [manual, xmltv], expected: [manual, xmltv, bundled] },
+        { protocol: 'https:', primary: manual, alternatives: ['data:image/svg+xml,test', '//other.example/image.png', xmltv],
+            expected: [manual, bundled] },
+    ];
+    for (const { protocol, primary, alternatives, expected } of cases) {
+        const original = { ...channel('Fixture station HD', 1), logoUrl: primary,
+            logoAlternatives: alternatives, logoFallback: bundled };
+        const normalized = ui.normalizeGuide(payload([original])).channels[0];
+        const identity = ui.createChannelIdentity(logoDocument(), normalized, protocol);
+        const [label, image] = identity.children;
+        assert.equal(label.textContent, original.name);
+        assert.deepEqual(image.sources, expected.slice(0, 1));
+        for (let i = 0; i < expected.length; i++) {
+            assert.equal(image.hidden, false, `Image ${i + 1} must remain visible until it fails`);
+            assert.equal(label.hidden, true);
+            image.emit('error');
+            assert.deepEqual(image.sources, expected.slice(0, i + 2));
+        }
+        assert.equal(image.hidden, true);
+        assert.equal(label.hidden, false);
+        image.emit('error');
+        assert.deepEqual(image.sources, expected, 'No exhausted, duplicate or unbounded candidate is retried');
+        if (protocol === 'https:') assert.ok(image.sources.every(url => !url.startsWith('http:')));
+        assert.deepEqual(original.logoAlternatives, alternatives, 'Normalization must not rewrite the source snapshot');
     }
 });
 

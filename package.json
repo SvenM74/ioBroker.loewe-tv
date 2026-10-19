@@ -1,7 +1,7 @@
 {
   "name": "iobroker.loewe-tv",
-  "version": "0.1.17",
-  "description": "Local Loewe TV control with a programme guide, channel selection and persistent recording requests",
+  "version": "0.1.18",
+  "description": "Loewe TV control with TV/XMLTV programme guides, channel selection and persistent recording requests",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SvenM74/ioBroker.loewe-tv.git"
@@ -43,6 +43,7 @@
     "tv",
     "remote",
     "epg",
+    "xmltv",
     "recording",
     "soap",
     "smart-home"

@@ -76,4 +76,4 @@ Der Dialog hat eine scrollbare Tastenfläche sowie eine dauerhaft erreichbare Ko
 
 ## Prüfstand
 
-Die Tastenbelegung, Nachrichtengrenzen, Fehlerfälle, instanzgebundenen Web-/Cloud-Pfade und Dialogabläufe werden automatisiert geprüft. Der [Prüfbericht zu 0.1.17](PRUEFBERICHT_0.1.17.md) nennt den tatsächlich ausgeführten Umfang. Die neue Web-Fernbedienung, DR+- und BACK-Taste sowie ihre konkrete Wirkung auf den beiden Fernsehern sind noch nicht durch einen Gerätetest bestätigt. Die frühere Nutzerbestätigung über den Remote-Aufruf beider EPG-Seiten bleibt davon getrennt.
+Die Tastenbelegung, Nachrichtengrenzen, Fehlerfälle, instanzgebundenen Web-/Cloud-Pfade und Dialogabläufe werden automatisiert geprüft. Der [Prüfbericht zu 0.1.17](PRUEFBERICHT_0.1.17.md) nennt den tatsächlich ausgeführten Umfang. Am 19. Oktober 2026 bestätigt der Nutzer die Funktion der Web-Fernbedienung nach ersten kleinen Tests. Eine vollständige Prüfung aller Tasten, insbesondere der zusätzlichen DR+- und BACK-Funktionen je TV-Modell, ist damit noch nicht dokumentiert. Die frühere Nutzerbestätigung über den Remote-Aufruf beider EPG-Seiten bleibt davon getrennt.

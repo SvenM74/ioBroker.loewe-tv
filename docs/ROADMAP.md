@@ -2,15 +2,18 @@
 
 ## Aktueller Stand
 
-**Version 0.1.16, Build `0.1.16-web-links.1`**, verhindert zusätzliche generische EPG-Kacheln auf der Web-/Cloud-Startseite und erhält die funktionierenden Links je TV sowie den Admin-Schnellzugriff. Der Nutzer hat den Remote-Aufruf zweier TV-Instanzen bestätigt; die bereinigte Startseite nach diesem Update und Bedienaktionen über Cloud sind noch zu prüfen. Web-Auswahl, Senderlogos, kompakte Aktionsleiste und die Aufnahme- und Statuskorrekturen bleiben erhalten. Die automatische Suche nach Sendungen anhand eigener Regeln bleibt das nächste Ausbauziel.
+**Version 0.1.18, Build `0.1.18-epg-offline.1`**, ergänzt die TV-Vorschau wieder um eine selbst konfigurierte XMLTV-Quelle. Automatische Senderzuordnung, anpassbare Vorschläge und getrennt gespeicherte Quellcaches ermöglichen frische Programmdaten auch bei ausgeschaltetem TV. Manuelle und XMLTV-Senderbilder ergänzen jetzt 17 mitgelieferte Logos. Erste Fernbedienungstests über Remote sowie die Übertragung wartender Aufträge nach dem Einschalten sind vom Nutzer bestätigt. Die direkte Timerübertragung im Schnellstart-Standby und die neue XMLTV-Konfiguration benötigen noch Gerätetests.
+
+Die automatisch erzeugten Links an Instanzen und im Admin-Schnellzugriff können durch den Admin-8-Resolver falsch umgeschrieben werden. Dieser Fehler wird nicht durch das Adapterupdate behoben. Die [Linkanalyse](ADMIN_LINKS.md) beschreibt direkte Admin-Adressen, eigene Schnellzugriffskacheln und vorbereitete Korrekturvorschläge für Admin. Die bestehenden Web-/Cloud-Routen je TV bleiben erhalten.
 
 | Baustein | Implementierter Stand |
 |---|---|
 | TV finden und konfigurieren | Netzwerksuche bietet gefundene Loewe-Adressen an. Jede Instanz verwendet den gespeicherten TV und eine ausgewählte Senderliste. [Netzwerksuche](NETWORK_DISCOVERY.md). |
 | Senderbestand | Ausschließlich TV-Dienste unter `channels.tv`, mit Namens-ID und nachgeführter Position. Mehrere Plätze desselben Dienstes teilen sich einen Ordner. |
-| TV-EPG | Abruf ausschließlich vom Fernseher; aktuelle und nächste Sendung unter jedem TV-Sender, weitere gelieferte Vorschauen im Cache. [EPG](EPG.md). |
+| EPG | TV, XMLTV oder TV mit XMLTV-Ergänzung; aktuelle und nächste Sendung unter jedem TV-Sender sowie weitere gelieferte Vorschauen im Cache. [EPG](EPG.md), [XMLTV und Senderzuordnung](EPG_XMLTV.md). |
 | Oberfläche | Senderlogos, Zeitachse und kompakte Sendungsauswahl mit aufklappbarer Beschreibung. Aktionen und EPG-Aktualisierung stehen zwischen Stundenauswahl und Suche. |
-| Zugriff | Link an der Instanz und im Admin-Schnellzugriff. Optional eine vorhandene ioBroker.web-Instanz mit integrierter Socket-Verbindung auswählen; eigener Instanzpfad und Web-Schnellzugriff. |
+| Zugriff | Direkter Admin-Pfad und eigene Schnellzugriffskacheln; automatische Admin-Links sind versionsabhängig betroffen. Optional eine vorhandene ioBroker.web-Instanz mit integrierter Socket-Verbindung auswählen; eigener TV-Instanzpfad und Web-/Cloud-Schnellzugriff. |
+| Fernbedienung | Seit 0.1.17 eigener Dialog mit belegten TV-Befehlen über dieselbe Admin-, Web- oder Cloud-Verbindung. Erste kleine Remote-Tests vom Nutzer bestätigt. [Tasten und Grenzen](REMOTE_CONTROL.md). |
 | Laufende Sendung ansehen | **Jetzt ansehen** sendet nur für eine aktuell eindeutig laufende Sendung. Die Gültigkeit wird direkt vor dem TV-Befehl erneut geprüft. |
 | Aufnahme vormerken | Zukünftige Sendung mit vollständigen, eindeutigen Zeiten auswählen und den Dialog bestätigen. Der Auftrag wird dauerhaft in `recordings.jobs` gespeichert. |
 | Offline-Übergabe | Aufträge warten auf einen erreichbaren TV. Kein Wake-on-LAN und kein Einschaltbefehl. Nur vor Sendungsbeginn darf ein neuer Timer übertragen werden. |
@@ -36,8 +39,10 @@ Die Vormerkung behält den ursprünglichen TV-, Sender- und Sendungsbezug. Eine 
 
 | Schritt | Benötigtes Ergebnis |
 |---|---|
+| XMLTV am Nutzergerät prüfen | Tatsächliche Feedadresse laden, automatische Zuordnungen und Vorschläge für beide TV-Listen prüfen und nötige Ausnahmen speichern. Programme bei TV aus sowie nach Adapterneustart vergleichen. |
+| Admin-Linkfehler zuordnen | Installierte Admin-Version und fehlerhafte Zieladresse gegen die reproduzierten Resolverfälle prüfen. Eigene Direktzugriffskacheln bis zu einem passenden Admin-Fix verwenden. |
 | Automatische Timerbestätigung am Nutzergerät prüfen | Nach den bestätigten Übertragungen die echte `GetTimerList`-Antwort auswerten und Sender, Beginn, Ende sowie Aufnahmeziel am TV vergleichen. Unbekannte Felder nicht raten. |
-| Standby und Aufnahmeabschluss prüfen | Nach dem bestätigten ersten Aufnahmestart den erfolgreichen Abschluss sowie die Ausführung gespeicherter Timer aus Standby separat prüfen. Fehlende Erreichbarkeit ohne Schnellstart bleibt eine Grenze für neue Übertragungen. |
+| Schnellstart und Aufnahmeabschluss prüfen | Bei aktivem Schnellstart und ausgeschaltetem Bildschirm einen zukünftigen Auftrag vormerken und kontrollieren, ob der Timer bereits ohne Einschalten übertragen wird. Die Übertragung nach dem Einschalten ist bestätigt; der erfolgreiche Aufnahmeabschluss und die Ausführung aus Standby sind separat zu prüfen. |
 | Automatische Suchregeln | Sendungen nach Titel, Sender oder weiteren gelieferten Merkmalen auswählen; zunächst eine nachvollziehbare Planungsvorschau, anschließend ausdrücklich aktivierbare Regeln. |
 | Vor- und Nachlauf | Zusätzliche Zeit vor und nach einer Sendung anbieten und die daraus entstehenden Grenzen sowie Überschneidungen prüfen. Im aktuellen Build werden die ausgewählten Sendungszeiten verwendet. |
 | Geänderte Sendezeiten | Abweichungen zwischen gespeicherter Vormerkung und neuem EPG erkennen. Änderungen am TV erst automatisieren, wenn Ändern oder Löschen bestehender Timer belegt ist. |

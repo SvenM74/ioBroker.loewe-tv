@@ -18,11 +18,11 @@ const catalog = readJson('docs/protocol-templates.json');
 const remote115 = readJson('docs/remote115-keys.json');
 
 assert.equal(pkg.name, `iobroker.${io.common.name}`);
-assert.equal(pkg.version, '0.1.17');
+assert.equal(pkg.version, '0.1.18');
 assert.equal(pkg.version, io.common.version);
 assert.ok(BUILD_ID.startsWith(`${pkg.version}-`), 'Build identifier must match package version');
-assert.equal(BUILD_ID, '0.1.17-remote.1');
-assert.ok(!pkg.keywords.includes('xmltv'), 'Package keywords must describe the supported TV-only EPG');
+assert.equal(BUILD_ID, '0.1.18-epg-offline.1');
+assert.ok(pkg.keywords.includes('xmltv'), 'Package keywords must describe optional XMLTV support');
 assert.equal(io.common.mode, 'daemon');
 assert.equal(io.common.messagebox, true, 'Admin list selection requires adapter messaging');
 assert.equal(io.common.connectionType, 'local');
@@ -70,18 +70,28 @@ for (const language of ['de', 'en']) {
     for (const key of translationKeys) assert.ok(translations[key], `${language} translation missing: ${key}`);
 }
 
-const config = normalizeConfig({
-    ...io.native, host: 'fixture.invalid',
-    epgSource: 'xmltv', epgXmltvUrl: 'not a guide URL', epgXmltvMappings: [{}],
-});
-for (const key of ['epgEnabled', 'epgRefreshInterval']) {
+const config = normalizeConfig({ ...io.native, host: 'fixture.invalid' });
+for (const key of ['epgEnabled', 'epgRefreshInterval', 'epgSource', 'epgXmltvUrl']) {
     assert.deepEqual(config[key], io.native[key], `Runtime must preserve the EPG default: ${key}`);
 }
-for (const key of ['epgSource', 'epgXmltvUrl', 'epgXmltvMappings']) {
-    assert.ok(!configFields.has(key), `Removed EPG setting must not appear in Admin: ${key}`);
-    assert.ok(!Object.hasOwn(io.native, key), `Removed EPG setting must not have a native default: ${key}`);
-    assert.ok(!Object.hasOwn(config, key), `Runtime must ignore obsolete EPG settings: ${key}`);
+assert.equal(config.epgSource, 'tv', 'External guides require an explicit source selection');
+assert.equal(config.epgXmltvUrl, '', 'Do not silently choose an external guide provider');
+assert.equal(config.epgConfigError, '');
+for (const key of ['epgXmltvMappings', 'channelLogoOverrides']) {
+    assert.deepEqual(io.native[key], [], `Admin needs an empty correction table by default: ${key}`);
+    assert.deepEqual(config[key], {}, `Runtime must normalize the correction table: ${key}`);
 }
+const externalConfig = normalizeConfig({ ...io.native, host: 'fixture.invalid', epgSource: 'auto',
+    epgXmltvUrl: 'https://guide.example.invalid/guide.xml.gz',
+    epgXmltvMappings: [{ channel: 'channels.tv.example', xmltvId: 'Example.de' }] });
+assert.equal(externalConfig.epgSource, 'auto');
+assert.equal(externalConfig.epgXmltvUrl, 'https://guide.example.invalid/guide.xml.gz');
+assert.deepEqual(externalConfig.epgXmltvMappings, { 'channels.tv.example': 'Example.de' });
+assert.equal(externalConfig.epgConfigError, '');
+const invalidExternalConfig = normalizeConfig({ ...io.native, host: 'fixture.invalid',
+    epgSource: 'xmltv', epgXmltvUrl: 'not a guide URL', epgXmltvMappings: [{}] });
+assert.ok(invalidExternalConfig.epgConfigError, 'Invalid optional EPG settings must be diagnosed without disabling TV control');
+assert.equal(invalidExternalConfig.host, config.host);
 const retiredStaticStates = [
     'info.lastResponse', 'status.volumeRaw',
     'channels.start', 'channels.listStart', 'channels.count',

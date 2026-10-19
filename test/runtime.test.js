@@ -329,7 +329,7 @@ async function epgActionHarness(t, { future = false, endUnknown = false } = {}) 
     assert.ok(service);
     const event = { eventId: 'event-recording-fixture', title: 'Fixture programme',
         start: future ? now + 3600000 : now - 60000, end: endUnknown ? null : now + (future ? 7200000 : 3600000) };
-    h.runtime.epg.entries.get(service.id).cache = createCache(service, { source: 'tv', events: [event] }, now);
+    h.runtime.epg.entries.get(service.id).tvCache = createCache(service, { source: 'tv', events: [event] }, now);
     const guide = h.runtime.epg.guide();
     const selection = { channelId: service.id, eventId: event.eventId, start: event.start, end: event.end,
         listView: service.listView, catalogRevision: guide.catalogRevision };

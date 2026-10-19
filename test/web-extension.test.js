@@ -112,6 +112,39 @@ test('web welcome-page entries keep the TV and assets on local, proxied and Clou
     }
 });
 
+test('older web localLinks import leaves exactly one working extension route per TV', () => {
+    const io = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'io-package.json'), 'utf8'));
+    const services = [0, 1].map(instance => web({ id: `system.adapter.loewe-tv.${instance}` }));
+    const extensionLinks = services.map(service => service.extension.welcomePage().link);
+
+    // Model only the official older web import contract: object localLinks are
+    // expanded per instance; strings are skipped; welcomePage() is added. The
+    // extension entries and routes below are real, but this is no live Cloud test.
+    // https://github.com/ioBroker/ioBroker.web/blob/v9.0.0/src/main.ts#L198-L235
+    // https://github.com/ioBroker/ioBroker.web/blob/v9.0.0/src/main.ts#L824-L850
+    // https://github.com/ioBroker/ioBroker.web/blob/v9.0.0/src/main.ts#L946-L955
+    function collectLinks(localLinks) {
+        const imported = Object.values(localLinks)
+            .filter(link => typeof link === 'object')
+            .flatMap(link => services.map(service => link.link.replace('%instance%', service.extension.instance)));
+        return [...imported, ...extensionLinks];
+    }
+
+    const oldObjectForm = { _default: { link: 'adapter/loewe-tv/epg.html?instance=%instance%' } };
+    assert.deepEqual(collectLinks(oldObjectForm), [
+        'adapter/loewe-tv/epg.html?instance=0', 'adapter/loewe-tv/epg.html?instance=1',
+        'loewe-tv.0/epg.html', 'loewe-tv.1/epg.html',
+    ], 'The former object metadata imports the two unwanted Admin-path cards.');
+
+    const links = collectLinks(io.common.localLinks);
+    assert.deepEqual(links, ['loewe-tv.0/epg.html', 'loewe-tv.1/epg.html']);
+    for (const [index, link] of links.entries()) {
+        const pathname = new URL(link, 'https://iobroker.pro/').pathname;
+        assert.equal(services[index].request(pathname).code, 200);
+        assert.equal(services[1 - index].request(pathname).next, true, 'The other TV must not serve this route.');
+    }
+});
+
 test('Admin extension links redirect to the matching TV and retain the reverse-proxy prefix', () => {
     const service = web();
     const response = service.request('/adapter/loewe-tv/epg.html?instance=3');

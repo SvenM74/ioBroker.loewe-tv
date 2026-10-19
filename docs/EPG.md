@@ -1,6 +1,6 @@
 # TV-EPG: Programmübersicht und Datenpunkte
 
-Diese Anleitung gilt für Version **0.1.15**, Build **`0.1.15-web-cloud.1`**. Die Instanz-Konfiguration hat eigene Reiter für **EPG-Einstellungen**, **Web-Zugriff** und **Programmübersicht**. Die Übersicht zeigt die gespeicherte TV-Senderliste mit Zeitachse und Details. Aus einer ausgewählten Sendung kannst du auf ein aktuell eindeutig laufendes Programm umschalten oder eine zukünftige Aufnahme nach Bestätigung vormerken. Die Datenpunkte für aktuelle und nächste Sendung bleiben unter jedem TV-Sender erhalten; Aufnahmeaufträge stehen im dauerhaften Journal `recordings.jobs`.
+Diese Anleitung gilt für Version **0.1.16**, Build **`0.1.16-web-links.1`**. Die Instanz-Konfiguration hat eigene Reiter für **EPG-Einstellungen**, **Web-Zugriff** und **Programmübersicht**. Die Übersicht zeigt die gespeicherte TV-Senderliste mit Zeitachse und Details. Aus einer ausgewählten Sendung kannst du auf ein aktuell eindeutig laufendes Programm umschalten oder eine zukünftige Aufnahme nach Bestätigung vormerken. Die Datenpunkte für aktuelle und nächste Sendung bleiben unter jedem TV-Sender erhalten; Aufnahmeaufträge stehen im dauerhaften Journal `recordings.jobs`.
 
 Programmdaten stammen ausschließlich direkt vom Loewe-TV. Die Übersicht und die Datenpunkte verwenden denselben EPG-Cache. Reines Blättern, Suchen und Lesen fragt den TV nicht erneut ab. Die [Netzwerksuche](NETWORK_DISCOVERY.md) hilft bei der Auswahl der TV-Adresse.
 
@@ -12,9 +12,11 @@ Der Nutzer hat den direkten TV-EPG-Abruf mit dem früheren 0.1.8-Stand auf **Loe
 
 **Jetzt ansehen** prüft serverseitig, ob die ausgewählte Sendung eindeutig läuft, und kontrolliert dies nochmals unmittelbar vor dem Umschaltbefehl. **Aufnahme planen** öffnet für eine zukünftige Sendung den Bestätigungsdialog. Vergangene, veraltete oder zeitlich mehrdeutige Programme und Sendungen ohne bekannte Start- und Endzeit erlauben diese Aktionen nicht.
 
-Der Link **Programmübersicht** an der Adapterinstanz und im Admin-Schnellzugriff öffnet die separate Seite unter der bestehenden Admin-Adresse, etwa `http://IOBROKER-HOST:8081/adapter/loewe-tv/epg.html?instance=0`. Optional kann unter **Web-Zugriff → Web-Adapter für die Programmübersicht** eine vorhandene Web-Instanz gewählt werden. Sie stellt die Seite unter `/loewe-tv.0/epg.html` und als Schnellzugriff auf ihrer Startseite bereit. Lokal gelten die Anmeldung und Benutzerrechte der Web-Instanz; die integrierte Socket-Verbindung ist erforderlich. [Lokalen Web-Zugriff einrichten](EPG_GUI.md#über-iobrokerweb-öffnen).
+Der Link an der Adapterinstanz und die Kachel **Loewe TV** im Admin-Schnellzugriff öffnen die separate Programmübersicht unter der bestehenden Admin-Adresse, etwa `http://IOBROKER-HOST:8081/adapter/loewe-tv/epg.html?instance=0`. Optional kann unter **Web-Zugriff → Web-Adapter für die Programmübersicht** eine vorhandene Web-Instanz gewählt werden. Sie stellt die Seite unter `/loewe-tv.0/epg.html` und als Schnellzugriff auf ihrer Startseite bereit. Lokal gelten die Anmeldung und Benutzerrechte der Web-Instanz; die integrierte Socket-Verbindung ist erforderlich. [Lokalen Web-Zugriff einrichten](EPG_GUI.md#über-iobrokerweb-öffnen).
 
 Für Fernzugriff über **ioBroker.cloud** muss dort dieselbe Web-Instanz ausgewählt sein. Die Cloud-Anmeldung und ihr Socket-Kontext sind vom lokalen Web-Login getrennt. Die [Cloud-Anleitung](EPG_GUI.md#über-iobrokercloud-remote-öffnen) beschreibt die zusätzliche Web-Instanz auf `localhost` und den passenden EPG-Link.
+
+Seit **0.1.16** verhindert die URL-Textform des Admin-Links dessen zusätzlichen Import als Web-Kachel. Bei zwei TVs bleiben die beiden instanzbezogenen Web-Links erhalten. [Doppelte Kacheln nach dem Update bereinigen](INSTALLATION.md#doppelte-web-cloud-kacheln-bei-zwei-fernsehern-bereinigen).
 
 Seit 0.1.14 ersetzen verfügbare Senderlogos den Sendernamen in der Tabelle; Suche, Tooltip und Screenreader behalten den Namen. Die große Detailfläche ist durch eine kompakte Auswahl mit aufklappbarer Beschreibung ersetzt. **Jetzt ansehen / Aufnahme planen** und **EPG aktualisieren** stehen zwischen Stundenauswahl und Suche. [Bildaufbau und Logoquellen](EPG_GUI.md#bildaufbau-und-navigation).
 
@@ -22,7 +24,7 @@ Die Vorschau kann über `now` und `next` hinausreichen, soweit weitere Sendungen
 
 ## Am Fernseher beginnen
 
-1. Den Build **`0.1.15-web-cloud.1`** nach der [Updateanleitung](INSTALLATION.md#update-auf-0115) direkt aus GitHub oder über das Archiv **`iobroker.loewe-tv-0.1.15-web-cloud.1.tgz`** installieren und die bestehende Instanz starten. Ein Neustart allein übernimmt das Update nicht. `info.adapterBuild` muss **`0.1.15-web-cloud.1`** anzeigen. Für die eingebettete Übersicht wird **Admin ab 7.7.28** benötigt. Admin vollständig neu laden und die Adapter-Konfiguration neu öffnen.
+1. Den Build **`0.1.16-web-links.1`** nach der [Updateanleitung](INSTALLATION.md#update-auf-0116) direkt aus GitHub oder über das Archiv **`iobroker.loewe-tv-0.1.16-web-links.1.tgz`** installieren und die bestehende Instanz starten. Ein Neustart allein übernimmt das Update nicht. `info.adapterBuild` muss **`0.1.16-web-links.1`** anzeigen. Für die eingebettete Übersicht wird **Admin ab 7.7.28** benötigt. Admin vollständig neu laden und die Adapter-Konfiguration neu öffnen.
 2. Fernseher einschalten und prüfen, dass die gewünschte Senderliste in der Adapter-Konfiguration ausgewählt ist. Die zugehörigen Sender müssen unter `channels.tv` vorhanden sein.
 3. Im Reiter **EPG-Einstellungen** die Voreinstellungen verwenden: **Programminformationen aktivieren** eingeschaltet, Abrufintervall **900 Sekunden**.
 4. Nach dem Start und der Senderanlage beginnt der erste EPG-Abgleich automatisch. **EPG aktualisieren** in der Übersicht startet ihn auch manuell. Alternativ **`channels.epgRefresh=true`** wie bei anderen Tastern mit `ack:false` schreiben.

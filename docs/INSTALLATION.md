@@ -1,6 +1,6 @@
 # Installation und Bedienung
 
-Diese Anleitung gilt für **Version 0.1.15**, Build **`0.1.15-web-cloud.1`**. Sie beschreibt Installation, Update, die Programmübersicht mit Senderlogos, die Web-Adapter-Auswahl für lokalen und Cloud-Zugriff, Aufnahmevormerkungen, Netzwerksuche und TV-Steuerung. Der Adapter liest Programminformationen ausschließlich direkt vom Fernseher. Die bestätigten Geräte stehen in der [README](../README.md#getestete-geräte).
+Diese Anleitung gilt für **Version 0.1.16**, Build **`0.1.16-web-links.1`**. Sie beschreibt Installation, Update, die Programmübersicht mit Senderlogos, die Web-Adapter-Auswahl für lokalen und Cloud-Zugriff, Aufnahmevormerkungen, Netzwerksuche und TV-Steuerung. Der Adapter liest Programminformationen ausschließlich direkt vom Fernseher. Die bestätigten Geräte stehen in der [README](../README.md#getestete-geräte).
 
 ## Voraussetzungen
 
@@ -14,7 +14,7 @@ Der laufende Adapter arbeitet lokal. Für die Installation kann ioBroker benöti
 
 ## Installationspaket aus dem Quellcode erzeugen
 
-Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Du kannst das Paket mit den folgenden Schritten selbst erzeugen. Wenn du **`iobroker.loewe-tv-0.1.15-web-cloud.1.tgz`** bereits erhalten hast, verwende diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung.
+Der Quellcode steht im [GitHub-Repository SvenM74/ioBroker.loewe-tv](https://github.com/SvenM74/ioBroker.loewe-tv). Du kannst das Paket mit den folgenden Schritten selbst erzeugen. Wenn du **`iobroker.loewe-tv-0.1.16-web-links.1.tgz`** bereits erhalten hast, verwende diese Datei direkt für die anschließende Update- oder Erstinstallationsanleitung.
 
 Zum Erzeugen des Pakets brauchst du Git und Node.js ab 22. Öffne ein Terminal in einem eigenen Arbeitsverzeichnis und führe aus:
 
@@ -24,10 +24,10 @@ cd ioBroker.loewe-tv
 npm install
 npm test
 npm pack
-mv iobroker.loewe-tv-0.1.15.tgz iobroker.loewe-tv-0.1.15-web-cloud.1.tgz
+mv iobroker.loewe-tv-0.1.16.tgz iobroker.loewe-tv-0.1.16-web-links.1.tgz
 ```
 
-`npm pack` erzeugt zunächst **`iobroker.loewe-tv-0.1.15.tgz`**. Der letzte Befehl ergänzt die Build-Kennung im Dateinamen zu **`iobroker.loewe-tv-0.1.15-web-cloud.1.tgz`**. Prüfe vor dem Erzeugen in `lib/build-info.js`, dass die Build-Kennung **`0.1.15-web-cloud.1`** enthalten ist. Kopiere anschließend das neue Archiv auf den ioBroker-Rechner.
+`npm pack` erzeugt zunächst **`iobroker.loewe-tv-0.1.16.tgz`**. Der letzte Befehl ergänzt die Build-Kennung im Dateinamen zu **`iobroker.loewe-tv-0.1.16-web-links.1.tgz`**. Prüfe vor dem Erzeugen in `lib/build-info.js`, dass die Build-Kennung **`0.1.16-web-links.1`** enthalten ist. Kopiere anschließend das neue Archiv auf den ioBroker-Rechner.
 
 <a id="update-auf-018"></a>
 <a id="update-auf-019"></a>
@@ -36,16 +36,17 @@ mv iobroker.loewe-tv-0.1.15.tgz iobroker.loewe-tv-0.1.15-web-cloud.1.tgz
 <a id="update-auf-0112"></a>
 <a id="update-auf-0113"></a>
 <a id="update-auf-0114"></a>
+<a id="update-auf-0115"></a>
 
-## Update auf 0.1.15
+## Update auf 0.1.16
 
-**Aktueller Stand: Version 0.1.15, Build `0.1.15-web-cloud.1`.** Im eigenen Reiter **Web-Zugriff** steht das Feld **Web-Adapter für die Programmübersicht**. Dort lässt sich eine vorhandene **ioBroker.web**-Instanz auswählen, die die Seite unter `/loewe-tv.N/epg.html` und im Web-Schnellzugriff bereitstellt. Eine bereits unter 0.1.14 gespeicherte Web-Auswahl bleibt erhalten. Für Fernzugriff muss im Cloud-Adapter dieselbe Web-Instanz gewählt sein; die [Cloud-Einrichtung](EPG_GUI.md#über-iobrokercloud-remote-öffnen) beschreibt die dafür vorgesehene zusätzliche Instanz auf `localhost`. Die kompakte Programmfläche, Senderlogos und Aufnahmefunktionen bleiben erhalten. Benötigt wird weiterhin **Admin ab 7.7.28**.
+**Aktueller Stand: Version 0.1.16, Build `0.1.16-web-links.1`.** Das Update verhindert die zusätzlichen generischen **Programmübersicht**-Kacheln mit `adapter/loewe-tv/...` auf der Web-/Cloud-Startseite. Die funktionierenden instanzbezogenen Links **Loewe TV · Programmübersicht** mit `loewe-tv.N/epg.html` bleiben erhalten. Dafür wird nur die Form der Admin-Link-Metadaten korrigiert; der Admin-Schnellzugriff bleibt unter dem Adaptertitel **Loewe TV** verfügbar. Die gewählte Web-Instanz, TV-Konfiguration und Aufnahmeaufträge bleiben erhalten. Benötigt wird weiterhin **Admin ab 7.7.28**.
 
 Die bestehenden Aufnahmevormerkungen und die Statuskorrekturen aus 0.1.12/0.1.13 bleiben erhalten. Mit gespeicherter TV-Antwort zeigt die Oberfläche **An TV übertragen**; ein offener Timerabgleich bleibt unter **Details zum Timerabgleich** zugänglich. Die Nutzerbestätigung über zwei übertragene Aufträge und den Start der ersten Aufnahme bleibt ein Geräteergebnis des vorherigen Stands.
 
 ### Korrektur direkt aus GitHub installieren
 
-Version 0.1.15 ist im Hauptzweig `main` verfügbar. Die bestehende Instanz kann direkt über die normale GitHub-Projektadresse aktualisiert werden:
+Version 0.1.16 ist im Hauptzweig `main` verfügbar. Die bestehende Instanz kann direkt über die normale GitHub-Projektadresse aktualisiert werden:
 
 ```bash
 iobroker stop loewe-tv.0
@@ -53,24 +54,48 @@ iobroker url "https://github.com/SvenM74/ioBroker.loewe-tv" loewe-tv
 iobroker start loewe-tv.0
 ```
 
-Prüfe danach `loewe-tv.0.info.adapterBuild`: Der Wert muss **`0.1.15-web-cloud.1`** sein. Lade Admin mit **Strg+F5** vollständig neu und öffne **Web-Zugriff → Web-Adapter für die Programmübersicht**. Wähle die Web-Instanz aus und speichere. Für Cloud anschließend dieselbe Instanz im Cloud-Adapter konfigurieren und den [Web-Startseitenlink verwenden](EPG_GUI.md#über-iobrokercloud-remote-öffnen). Die vorhandenen Aufnahmeaufträge und ihr Schutz vor erneutem Versand bleiben erhalten. Die Implementierung der GitHub-Installationsangabe ist im [offiziellen ioBroker-Installer](https://github.com/ioBroker/ioBroker.js-controller/blob/master/packages/cli/src/lib/setup/setupInstall.ts) dokumentiert.
+Prüfe danach `loewe-tv.0.info.adapterBuild`: Der Wert muss **`0.1.16-web-links.1`** sein. Lade Admin mit **Strg+F5** vollständig neu. Eine bereits funktionierende Web-/Cloud-Zuordnung weiterverwenden; zum Neuladen der Kacheln die ausgewählte Web-Instanz wie unten beschrieben neu starten. Bei erstmaliger Einrichtung steht die Auswahl unter **Web-Zugriff → Web-Adapter für die Programmübersicht**. Die vorhandenen Aufnahmeaufträge und ihr Schutz vor erneutem Versand bleiben erhalten. Die Implementierung der GitHub-Installationsangabe ist im [offiziellen ioBroker-Installer](https://github.com/ioBroker/ioBroker.js-controller/blob/master/packages/cli/src/lib/setup/setupInstall.ts) dokumentiert.
+
+### Doppelte Web-/Cloud-Kacheln bei zwei Fernsehern bereinigen
+
+Die Kombination aus **Loewe TV · Programmübersicht (0)/(1)** mit `loewe-tv.N/epg.html` und zusätzlichen **Programmübersicht.0/.1**-Kacheln mit `adapter/loewe-tv/...` entsteht durch zwei Linkquellen für dieselben TV-Instanzen. Die zweite Quelle wird mit 0.1.16 aus dem Web-Import entfernt. Das reguläre URL-Update ersetzt die alten `common.localLinks` sowohl im Adapterobjekt als auch in den vorhandenen Instanzen auf diesem Host vollständig; es ist keine manuelle Löschung von Instanzen oder Objekten nötig. Gespeicherte Werte wie `native.webInstance` bleiben erhalten. [Metadatenübernahme im js-controller 7.2.5](https://github.com/ioBroker/ioBroker.js-controller/blob/e4c842b9056eb5b0b18bb56e70611821ecb3cc80/packages/cli/src/lib/setup/setupUpload.ts).
+
+Für zwei vorhandene Instanzen auf demselben ioBroker-Host:
+
+```bash
+iobroker stop loewe-tv.0
+iobroker stop loewe-tv.1
+iobroker url "https://github.com/SvenM74/ioBroker.loewe-tv" loewe-tv
+iobroker start loewe-tv.0
+iobroker start loewe-tv.1
+```
+
+Prüfe bei **beiden** Instanzen `info.adapterBuild = 0.1.16-web-links.1`. Starte danach gezielt die Web-Instanz neu, die in LOEWE-TV und Cloud ausgewählt ist. Wenn das `web.0` ist:
+
+```bash
+iobroker restart web.0
+```
+
+Bei einer anderen Auswahl den tatsächlichen Instanznamen verwenden. Das lädt die Web-Erweiterung und ihre Startseite neu. Öffne anschließend die Cloud-Web-Startseite erneut; bei einer bereits offenen Browseransicht vollständig neu laden. Erwartet werden genau die beiden LOEWE-Webkacheln für die zwei TVs, zusätzlich zu den Einträgen anderer Adapter.
+
+Ein normales erfolgreiches URL-Update enthält den Datei-Upload und die Metadatenübernahme bereits. Falls das neue Paket installiert ist, die Metadatenübernahme aber unterbrochen wurde, kann sie mit `iobroker upload loewe-tv` vollständig wiederholt werden; danach die ausgewählte Web-Instanz neu starten. Dieser Befehl installiert selbst keine neue Version. Bei mehreren ioBroker-Hosts muss das Paket auf jedem betroffenen Adapter-Host aktualisiert werden. Die funktionierende Web-/Cloud-Zuordnung muss für diese Korrektur nicht geändert werden.
 
 ### Update über eine Paketdatei
 
-**Für das Update das neue Paket installieren; ein Neustart allein übernimmt die neuen Funktionen nicht.** Die vorhandene Instanz weiterverwenden. Erzeuge das Paket aus dem aktuellen Quellcode wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende das bereitgestellte Archiv **`iobroker.loewe-tv-0.1.15-web-cloud.1.tgz`**. Kopiere es auf den ioBroker-Rechner, beispielsweise nach `/tmp`, und führe aus:
+**Für das Update das neue Paket installieren; ein Neustart allein übernimmt die neuen Funktionen nicht.** Die vorhandene Instanz weiterverwenden. Erzeuge das Paket aus dem aktuellen Quellcode wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende das bereitgestellte Archiv **`iobroker.loewe-tv-0.1.16-web-links.1.tgz`**. Kopiere es auf den ioBroker-Rechner, beispielsweise nach `/tmp`, und führe aus:
 
 ```bash
 iobroker stop loewe-tv.0
 iobroker compact loewe-tv.0 disable
-iobroker url /tmp/iobroker.loewe-tv-0.1.15-web-cloud.1.tgz loewe-tv
+iobroker url /tmp/iobroker.loewe-tv-0.1.16-web-links.1.tgz loewe-tv
 iobroker start loewe-tv.0
 ```
 
-Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Ab Version 0.1.1 läuft der Adapter in einem eigenen Prozess; das gilt auch für 0.1.15. Die Umstellung erfolgt vor dem Paketupdate, damit sie auch bei einer vorhandenen Instanz wirksam wird. Die Syntax ist in der [offiziellen ioBroker-CLI-Dokumentation](https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/config/cli.md) beschrieben. Verbindungs- und Einschalteinstellungen bleiben erhalten. **Eine bereits in 0.1.6 gespeicherte Senderlistenauswahl bleibt erhalten.** Beim Update von einem älteren Stand muss die Liste einmal in der Konfiguration ausgewählt werden; ein früherer Wert in `channels.view` wird nicht automatisch übernommen.
+Der Compact-Befehl betrifft die Instanz `loewe-tv.0`. Ab Version 0.1.1 läuft der Adapter in einem eigenen Prozess; das gilt auch für 0.1.16. Die Umstellung erfolgt vor dem Paketupdate, damit sie auch bei einer vorhandenen Instanz wirksam wird. Die Syntax ist in der [offiziellen ioBroker-CLI-Dokumentation](https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/config/cli.md) beschrieben. Verbindungs- und Einschalteinstellungen bleiben erhalten. **Eine bereits in 0.1.6 gespeicherte Senderlistenauswahl bleibt erhalten.** Beim Update von einem älteren Stand muss die Liste einmal in der Konfiguration ausgewählt werden; ein früherer Wert in `channels.view` wird nicht automatisch übernommen.
 
 Beim Start werden **`loewe-tv.0.channels.radio`**, **`loewe-tv.0.api`** und **`loewe-tv.0.media`** einschließlich ihrer Unterobjekte sowie `remote.radio_mode_on` und `channels.mediaType` entfernt. Das gilt auch für verwaiste Kinder, deren oberster Ordner bereits fehlt. Alte Radioeinträge aus dem gespeicherten Katalog erzeugen keine neuen Radioordner. Schreibbefehle an entfernte Datenpunkte lösen keine Adapterfunktion mehr aus. `remote.tv_mode_on` und `remote.text` für Teletext bleiben verfügbar.
 
-Lade nach dem Update die Admin-Seite vollständig neu, beispielsweise mit **Strg+F5**, und öffne die Instanzeinstellungen erneut. Im Reiter **Verbindung** bleibt die Fernseher-Suche verfügbar. Du kannst die bisherige TV-Adresse unverändert weiterverwenden oder [einen Fernseher suchen und auswählen](#fernseher-suchen-und-auswählen). Aktivierung und Abrufintervall stehen jetzt unter **EPG-Einstellungen**; die vollständige Vorschau hat den eigenen Reiter **Programmübersicht**. Dafür muss die Instanz laufen; die Vorschau zeigt die gespeicherte Konfiguration. Eine vorhandene Senderlistenauswahl weiterverwenden; andernfalls bei eingeschaltetem TV die gewünschte Senderliste wählen und speichern. Die Anleitung steht unter [TV-Senderliste auswählen](#tv-senderliste-auswählen). Prüfe anschließend **`info.adapterBuild = 0.1.15-web-cloud.1`**. Fehlt dieser Wert oder steht dort eine ältere Kennung, prüfe Paketinstallation und Startprotokoll. Das Startprotokoll enthält die Build-Kennung bereits vor der Bereinigung. Bleiben entfernte globale Objekte wegen eines Datenbankfehlers oder Löschschutzes stehen, meldet der Adapter einen Bereinigungsfehler und setzt die Senderanlage nicht fort.
+Lade nach dem Update die Admin-Seite vollständig neu, beispielsweise mit **Strg+F5**, und öffne die Instanzeinstellungen erneut. Im Reiter **Verbindung** bleibt die Fernseher-Suche verfügbar. Du kannst die bisherige TV-Adresse unverändert weiterverwenden oder [einen Fernseher suchen und auswählen](#fernseher-suchen-und-auswählen). Aktivierung und Abrufintervall stehen jetzt unter **EPG-Einstellungen**; die vollständige Vorschau hat den eigenen Reiter **Programmübersicht**. Dafür muss die Instanz laufen; die Vorschau zeigt die gespeicherte Konfiguration. Eine vorhandene Senderlistenauswahl weiterverwenden; andernfalls bei eingeschaltetem TV die gewünschte Senderliste wählen und speichern. Die Anleitung steht unter [TV-Senderliste auswählen](#tv-senderliste-auswählen). Prüfe anschließend **`info.adapterBuild = 0.1.16-web-links.1`**. Fehlt dieser Wert oder steht dort eine ältere Kennung, prüfe Paketinstallation und Startprotokoll. Das Startprotokoll enthält die Build-Kennung bereits vor der Bereinigung. Bleiben entfernte globale Objekte wegen eines Datenbankfehlers oder Löschschutzes stehen, meldet der Adapter einen Bereinigungsfehler und setzt die Senderanlage nicht fort.
 
 **Beim Update von einem Stand mit Namens-IDs bleiben die TV-Senderpfade erhalten.** Nur beim Wechsel von älteren Hash- oder Nummernordnern ändern sich die IDs einmalig: Aus `channels.tv.service_<Hash>` aus 0.1.3 oder `channels.tv.1` aus dem ersten 0.1.4-Stand werden Ordner wie `channels.tv.Das_Erste_HD`. Passe vorhandene Skripte, Aliase und Visualisierungen an, wenn sie noch auf diese alten IDs verweisen. Anschließend bleibt der Pfad beim Umsortieren erhalten: Verschiebst du Das Erste HD am TV von Platz 1 auf Platz 7, verwendet `channels.tv.Das_Erste_HD.select` nach dem Abgleich dessen neuen Programmplatz. Eine tatsächliche Änderung des Sendernamens führt dagegen zu einer neuen Namens-ID.
 
@@ -98,12 +123,12 @@ Die sieben entfernten Kinddatenpunkte je Sender werden nur gelöscht, wenn sie a
 
 ## Erstinstallation aus der Paketdatei
 
-1. Erzeuge **`iobroker.loewe-tv-0.1.15-web-cloud.1.tgz`** wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Die Datei nicht entpacken.
-2. Kopiere sie auf den Rechner, auf dem ioBroker läuft, beispielsweise nach `/tmp/iobroker.loewe-tv-0.1.15-web-cloud.1.tgz`.
+1. Erzeuge **`iobroker.loewe-tv-0.1.16-web-links.1.tgz`** wie [oben beschrieben](#installationspaket-aus-dem-quellcode-erzeugen) oder verwende eine bereits erhaltene Paketdatei dieser Version. Die Datei nicht entpacken.
+2. Kopiere sie auf den Rechner, auf dem ioBroker läuft, beispielsweise nach `/tmp/iobroker.loewe-tv-0.1.16-web-links.1.tgz`.
 3. Öffne dort ein Terminal oder eine SSH-Verbindung und führe aus:
 
 ```bash
-iobroker url /tmp/iobroker.loewe-tv-0.1.15-web-cloud.1.tgz loewe-tv
+iobroker url /tmp/iobroker.loewe-tv-0.1.16-web-links.1.tgz loewe-tv
 ```
 
 4. Lege beim ersten Installieren eine Instanz an:
@@ -181,7 +206,7 @@ Wähle eine Sendung und betätige **Jetzt ansehen**, um auf ein aktuell eindeuti
 
 ### Separater Zugriff über Admin und ioBroker.web
 
-Der Link **Programmübersicht** befindet sich an der Adapterinstanz und im Admin-Schnellzugriff. Eine typische Admin-Adresse ist `http://IOBROKER-HOST:8081/adapter/loewe-tv/epg.html?instance=0`. Sie nutzt die vorhandene Admin-Anmeldung.
+Die Programmübersicht ist über den Link an der Adapterinstanz und die Kachel **Loewe TV** im Admin-Schnellzugriff erreichbar. Eine typische Admin-Adresse ist `http://IOBROKER-HOST:8081/adapter/loewe-tv/epg.html?instance=0`. Sie nutzt die vorhandene Admin-Anmeldung. Der Web-Schnellzugriff behält die Bezeichnung **Loewe TV · Programmübersicht**.
 
 Unter **Web-Zugriff → Web-Adapter für die Programmübersicht** eine vorhandene Web-Instanz auswählen, zum Beispiel `web.0`, aktivieren und speichern. Diese Web-Instanz muss ihre **integrierte Socket-Verbindung** verwenden. Beim Laden der Erweiterung kann ioBroker.web neu starten. Auf dessen Startseite erscheint **Loewe TV · Programmübersicht (0)** als Schnellzugriff. Die typische direkte Adresse lautet `http://IOBROKER-HOST:8082/loewe-tv.0/epg.html`. Host, Port, HTTPS und Proxy-Pfad richten sich nach der Web-Konfiguration. Für diesen lokalen Web-Zugriff benötigen Benutzer das Recht zum Senden von Adapter-Nachrichten.
 
@@ -441,7 +466,7 @@ Aufträge werden in der **Programmübersicht** angelegt. Eine noch ungesendete V
 | Datenpunkt | Bedeutung |
 |---|---|
 | `info.connection` | Ob der Fernseher zuletzt über die Steuerschnittstelle erreichbar war. |
-| `info.adapterBuild` | Eindeutiger Programmstand; für diese Fassung `0.1.15-web-cloud.1`. |
+| `info.adapterBuild` | Eindeutiger Programmstand; für diese Fassung `0.1.16-web-links.1`. |
 | `info.lastSeen` | Zeitpunkt der letzten erfolgreichen Kommunikation als Unix-Zeit in Millisekunden. |
 | `info.lastError` | Letzter gemeldeter Fehler. Wird nach einem erfolgreichen Vorgang wieder geleert. |
 | `info.lastCommand` | Zuletzt verarbeiteter Steuerbefehl. |
@@ -534,15 +559,15 @@ Die zweite App Löwenbändiger Remote 1.15 lieferte keinen nachgewiesenen WOL-Ab
 | Schnellstart ist deaktiviert und der TV im Standby nicht erreichbar | Mit der normalen Fernbedienung einschalten und Schnellstart am TV aktivieren. Im gemeldeten Gerätetest werden ohne Schnellstart die Netzwerkfunktionen abgeschaltet; der Adapter kann diese Einstellung dann nicht ändern. |
 | `info.wakeReady` ist `true`, aber der TV startet nicht | Zuerst Schnellstart und Einschalten über LAN am TV prüfen. `info.wakeReady` belegt nur eine bekannte MAC-Adresse. Anschließend `info.lastWakeOnLan` und `info.powerOn` prüfen. Nach dem Ausschalten mindestens 30 Sekunden warten. `powerKeySent` bestätigt nur die Antwort auf den Einschaltbefehl, kein Bild. |
 | Ein Einschaltversuch aktualisiert `info.lastWakeOnLan` nicht | `info.lastError` lesen und prüfen, ob `control.powerOn` mit `true` und `ack: false` geschrieben wurde. Eine frühere Versandmeldung ist kein Nachweis für den aktuellen Versuch. |
-| ioBroker wird nach dem Aktivieren der bisherigen Version träge | `loewe-tv.0` stoppen und die Updateanleitung auf 0.1.15 einschließlich der instanzbezogenen Compact-Umstellung ausführen. Für die anschließende Prüfung `pollInterval`, `channelRefreshInterval` und `epgRefreshInterval` auf 0 setzen. |
+| ioBroker wird nach dem Aktivieren der bisherigen Version träge | `loewe-tv.0` stoppen und die Updateanleitung auf 0.1.16 einschließlich der instanzbezogenen Compact-Umstellung ausführen. Für die anschließende Prüfung `pollInterval`, `channelRefreshInterval` und `epgRefreshInterval` auf 0 setzen. |
 | **Fernseher suchen** ist deaktiviert | Die Instanz in der Instanzübersicht aktivieren und ihren Start abwarten. Das ist auch bei noch leerer TV-Adresse möglich. Die Suchfunktion benötigt eine laufende Instanz. |
 | Die Suche findet keinen oder nur einen Teil der Fernseher | Die fehlenden TVs einschalten. Netzwerkverbindung vom ioBroker-Rechner, Multicast, Gastnetz/VLAN und bei Docker das Container-Netz prüfen. Suche erneut auslösen oder die IP-Adresse von Hand eintragen; siehe [Netzwerksuche](NETWORK_DISCOVERY.md#wenn-ein-fernseher-fehlt). |
 | Ein Suchtreffer meldet **Steuerport 905 nicht erreichbar** | Die Adresse wurde als Loewe-TV erkannt, die TCP-Verbindung zum Steuerport konnte aber nicht bestätigt werden. TV einschalten, Port und Netzwerk prüfen. Ein Treffer allein bestätigt keine Adapterkompatibilität. |
-| Speichern-Tasten sind blockiert oder die alte EPG-Maske wird angezeigt | Das neue Paket erneut installieren, `info.adapterBuild = 0.1.15-web-cloud.1` prüfen, Admin vollständig neu laden und die Konfiguration erneut öffnen. EPG, **Web-Zugriff** und **Programmübersicht** haben eigene Reiter; die Übersicht benötigt eine laufende Instanz. Admin ab 7.7.28 ist erforderlich. |
+| Speichern-Tasten sind blockiert oder die alte EPG-Maske wird angezeigt | Das neue Paket erneut installieren, `info.adapterBuild = 0.1.16-web-links.1` prüfen, Admin vollständig neu laden und die Konfiguration erneut öffnen. EPG, **Web-Zugriff** und **Programmübersicht** haben eigene Reiter; die Übersicht benötigt eine laufende Instanz. Admin ab 7.7.28 ist erforderlich. |
 | Senderabfrage scheitert | In der Adapter-Konfiguration eine verfügbare TV-Senderliste auswählen und speichern. `channels.view` zeigt die gespeicherte Kennung. `channels.refreshStatus`, `channels.refreshError` und `channels.catalogError` prüfen. Bei TV-Synchronisierung später wiederholen. |
 | In der Konfiguration fehlen Senderlisten | TV einschalten, Adresse und Port speichern, Instanz aktivieren und Einstellungen erneut öffnen. **Senderlisten neu laden** betätigen und den angezeigten Hinweis beachten. |
 | Programmübersicht fehlt oder ist leer | Admin ab 7.7.28 verwenden, die Instanz starten und Admin nach dem Paketupdate neu laden. Gespeicherte TV-Adresse und Senderliste prüfen. In der Übersicht **EPG aktualisieren** anklicken; leere Senderbereiche können auf fehlende TV-Daten hinweisen. [Weitere Hilfe](EPG_GUI.md). |
-| Entfernte globale Datenpunkte sind weiterhin vorhanden | `info.adapterBuild` muss `0.1.15-web-cloud.1` zeigen. Sonst das neue Paket erneut installieren. Bei passender Build-Kennung das Startprotokoll auf Bereinigungsfehler und Löschschutz prüfen; die Objektansicht anschließend neu laden. |
+| Entfernte globale Datenpunkte sind weiterhin vorhanden | `info.adapterBuild` muss `0.1.16-web-links.1` zeigen. Sonst das neue Paket erneut installieren. Bei passender Build-Kennung das Startprotokoll auf Bereinigungsfehler und Löschschutz prüfen; die Objektansicht anschließend neu laden. |
 | Sender wurden empfangen, unter `channels.tv` fehlen noch Objekte | `channels.catalogStatus` prüfen und bei `updating` die Hintergrundaufbereitung abwarten. Bei `error` steht die Ursache in `channels.catalogError`; danach die passende Senderliste erneut abfragen. |
 | Ein Sendertaster meldet `CHANNEL_UNAVAILABLE` | Die Liste dieses Senders erneut abfragen. Bei `available=false` gehört er nicht zum aktiven Bestand oder es fehlt ein verwendbarer Locator. Nach Änderungen während der Wartezeit den Sender erneut auswählen. |
 | Der Sendertaster ist wieder `false`, aber der Sender läuft nicht | Das Rücksetzen bestätigt nur die Verarbeitung des Tasters. `channels.lastSelection` auf TV-Ergebnis und Fehler prüfen. Die Annahme des Befehls allein bestätigt noch keine Wiedergabe. |

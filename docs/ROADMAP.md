@@ -2,7 +2,7 @@
 
 ## Aktueller Stand
 
-**Version 0.1.15, Build `0.1.15-web-cloud.1`**, macht die Auswahl des Web-Adapters in einem eigenen Reiter **Web-Zugriff** sichtbar und dokumentiert die gemeinsame Web-Instanz für ioBroker.cloud. Der echte Cloud-Fernzugriff bleibt als Praxistest offen. Senderlogos, kompakte Aktionsleiste, Instanz- und Schnellzugriffe aus 0.1.14 sowie Aufnahme- und Statuskorrekturen aus 0.1.12/0.1.13 bleiben erhalten. Die automatische Suche nach Sendungen anhand eigener Regeln bleibt das nächste Ausbauziel.
+**Version 0.1.16, Build `0.1.16-web-links.1`**, verhindert zusätzliche generische EPG-Kacheln auf der Web-/Cloud-Startseite und erhält die funktionierenden Links je TV sowie den Admin-Schnellzugriff. Der Nutzer hat den Remote-Aufruf zweier TV-Instanzen bestätigt; die bereinigte Startseite nach diesem Update und Bedienaktionen über Cloud sind noch zu prüfen. Web-Auswahl, Senderlogos, kompakte Aktionsleiste und die Aufnahme- und Statuskorrekturen bleiben erhalten. Die automatische Suche nach Sendungen anhand eigener Regeln bleibt das nächste Ausbauziel.
 
 | Baustein | Implementierter Stand |
 |---|---|

@@ -334,13 +334,17 @@ test('web access has a discoverable tab and distinct local and Cloud instruction
 test('instance overview and Admin quick access both link to the exact TV instance', () => {
     const io = JSON.parse(fs.readFileSync(path.join(root, 'io-package.json'), 'utf8'));
     const link = io.common.localLinks._default;
-    assert.equal(link.intro, true);
-    assert.equal(link.name.de, 'Programmübersicht');
-    assert.equal(link.link, 'adapter/loewe-tv/epg.html?instance=%instance%');
+    // Admin accepts string links; Intro defaults to intro:true and the adapter
+    // title. An object here is also imported as an extra card by older web.
+    // https://github.com/ioBroker/ioBroker.admin/blob/v7.7.28/src-admin/src/tabs/Instances.tsx#L431-L460
+    // https://github.com/ioBroker/ioBroker.admin/blob/v7.7.28/src-admin/src/tabs/Intro.tsx#L920-L981
+    // https://github.com/ioBroker/ioBroker.web/blob/v9.0.0/src/main.ts#L824-L850
+    assert.equal(typeof link, 'string');
+    assert.equal(link, 'adapter/loewe-tv/epg.html?instance=%instance%');
     assert.equal(io.common.webExtension, 'lib/web-extension.js');
     assert.equal(fs.existsSync(path.join(root, io.common.webExtension)), true);
     for (const instance of [0, 3, 12]) {
-        const url = new URL(link.link.replace('%instance%', String(instance)), 'https://broker.example/proxy/admin/');
+        const url = new URL(link.replace('%instance%', String(instance)), 'https://broker.example/proxy/admin/');
         assert.equal(url.pathname, '/proxy/admin/adapter/loewe-tv/epg.html');
         assert.equal(url.searchParams.get('instance'), String(instance));
         assert.equal(url.origin, 'https://broker.example');

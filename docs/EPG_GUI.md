@@ -1,10 +1,10 @@
 # Programmübersicht und Aufnahmeaufträge
 
-**Version 0.1.15, Build `0.1.15-web-cloud.1`**, bietet getrennte Reiter für **EPG-Einstellungen** mit Aktivierung und Abrufintervall, **Web-Zugriff** mit der Web-Adapter-Auswahl sowie **Programmübersicht** mit Senderliste, Zeitachse und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
+**Version 0.1.16, Build `0.1.16-web-links.1`**, bietet getrennte Reiter für **EPG-Einstellungen** mit Aktivierung und Abrufintervall, **Web-Zugriff** mit der Web-Adapter-Auswahl sowie **Programmübersicht** mit Senderliste, Zeitachse und Aktionen. Die Vorschau verwendet ausschließlich den vom TV geladenen EPG-Bestand der gespeicherten Senderliste.
 
 ## Öffnen und vorbereiten
 
-1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0115). `info.adapterBuild` muss **`0.1.15-web-cloud.1`** anzeigen.
+1. Installiere den Build nach der [Updateanleitung](INSTALLATION.md#update-auf-0116). `info.adapterBuild` muss **`0.1.16-web-links.1`** anzeigen.
 2. Verwende **ioBroker Admin ab 7.7.28**. Lade Admin nach dem Update vollständig neu und öffne die Instanz-Konfiguration erneut.
 3. Starte die betreffende Instanz, beispielsweise **`loewe-tv.0`**. Prüfe unter **Verbindung** und **Senderlisten** die TV-Adresse und die gewünschte TV-Senderliste.
 4. Aktiviere unter **EPG-Einstellungen** die **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**. Speichere Änderungen, bevor du die Übersicht verwendest.
@@ -79,7 +79,7 @@ Jeder Auftrag wird höchstens einmal möglicherweise wirksam an den TV gesendet.
 
 ## Instanzübersicht und Schnellzugriff
 
-Der bisherige Button **Separat öffnen** ist aus der Konfiguration entfernt. In der ioBroker-Instanzübersicht bietet die Instanz einen direkten Link **Programmübersicht**. Derselbe Link steht im **Admin-Schnellzugriff** zur Verfügung. Die eigene Seite lässt sich als Lesezeichen speichern. Eine normale Admin-Installation auf Port 8081 verwendet beispielsweise:
+Der bisherige Button **Separat öffnen** ist aus der Konfiguration entfernt. In der ioBroker-Instanzübersicht bietet die Instanz einen direkten Link zur Programmübersicht. Im **Admin-Schnellzugriff** ist er seit 0.1.16 über die Kachel mit dem Adaptertitel **Loewe TV** erreichbar. Die eigene Seite lässt sich als Lesezeichen speichern. Eine normale Admin-Installation auf Port 8081 verwendet beispielsweise:
 
 ```text
 http://IOBROKER-HOST:8081/adapter/loewe-tv/epg.html?instance=0
@@ -126,7 +126,15 @@ Der EPG-Web-Link und seine JS-, CSS- und mitgelieferten Logo-Dateien werden an d
 
 Die Web-Instanz auf `127.0.0.1` ist vom Browser eines anderen LAN-Geräts nicht direkt erreichbar. Öffne die lokale Ansicht deshalb im Reiter **Programmübersicht** der LOEWE-TV-Instanzeinstellungen oder über die [oben angegebene direkte Admin-Adresse](#instanzübersicht-und-schnellzugriff). Neuere Admin-Versionen können den automatisch erzeugten Instanz-/Schnellzugrifflink auf die ausgewählte Web-Instanz umstellen; ein dort enthaltenes `127.0.0.1` ist für einen anderen LAN-Browser nicht das ioBroker-Gerät. Mitgelieferte Logos sind über die EPG-Seite auch remote erreichbar. Eine private TV-Bildadresse kann außerhalb des Heimnetzes nicht erreichbar sein; dann greift der vorhandene Logo-/Text-Ersatz.
 
-**Prüfstand:** Auswahlfeld, Linkauflösung, EPG-Asset-Routen und Socket-Aufrufe sind automatisiert geprüft und mit den genannten offiziellen Quellen abgeglichen. Ein vollständiger Aufruf mit dem Cloud-Konto und Fernseher des Nutzers steht noch aus. Der Adapter ändert keine Web- oder Cloud-Einstellungen selbstständig.
+**Prüfstand:** Der Nutzer hat am **19. Oktober 2026** den erfolgreichen Remote-Aufruf beider konfigurierten TV-Instanzen bestätigt. Sein Screenshot zeigt die beiden korrekten Web-Links und zwei zusätzliche generische Admin-Links. Die Korrektur dieser Doppelanzeige in 0.1.16 ist automatisiert geprüft; ihre Wirkung auf der produktiven Cloud-Startseite muss nach dem Update kontrolliert werden. Bedienaktionen und neue Aufnahmeaufträge über die Cloud sind mit dieser Rückmeldung nicht separat bestätigt. Der Adapter ändert keine Web- oder Cloud-Einstellungen selbstständig.
+
+### Zusätzliche Programmübersichts-Kacheln entfernen
+
+Bei den Builds 0.1.14/0.1.15 können ältere Web-Versionen zusätzlich zu **Loewe TV · Programmübersicht (0)/(1)** zwei generische Kacheln mit `adapter/loewe-tv/...` erzeugen. Ursache ist die Objektform des Admin-Links in `common.localLinks`: Sie wird zusätzlich zu den Web-Links der Erweiterung in die Startseite aufgenommen. Die Links unterscheiden sich, sodass eine Bereinigung allein nach identischen URLs sie nicht zusammenfasst.
+
+Ab **0.1.16** ist der Admin-Link als URL-Text hinterlegt. Admin unterstützt diese Form weiterhin für Instanzlink und Schnellzugriff; der zusätzliche Web-Import übernimmt nur Linkobjekte. Damit liefert allein die Web-Erweiterung ihre passende Kachel pro TV. [Admin-Vertrag](https://github.com/ioBroker/ioBroker.admin/blob/v7.7.28/src-admin/src/tabs/Intro.tsx) · [Web-Linkimport](https://github.com/ioBroker/ioBroker.web/blob/v9.0.0/src/main.ts#L823-L850).
+
+Aktualisiere den Adapter, prüfe den Build bei beiden Instanzen, starte die ausgewählte Web-Instanz neu und öffne die Cloud-Web-Startseite erneut. Die [Anleitung für zwei Fernseher](INSTALLATION.md#doppelte-web-cloud-kacheln-bei-zwei-fernsehern-bereinigen) enthält die Befehle. Die vorhandenen TV-Instanzen und Aufnahmeaufträge bleiben bestehen.
 
 ## Datenumfang und Hilfe
 
@@ -142,8 +150,9 @@ Der TV-Abruf reicht ungefähr 24 Stunden voraus; nur tatsächlich gelieferte und
 | Instanz oder Ansicht nicht erreichbar | Instanz starten, Build und Admin-Version prüfen; Admin nach dem Update neu laden. |
 | Admin-/Web-Sitzung abgelaufen oder nicht berechtigt | Am jeweils verwendeten Admin-/Web-Zugang anmelden und die Benutzerrechte zum Senden von Adapter-Nachrichten prüfen. |
 | Web-Seite meldet eine fehlende integrierte Socket-Verbindung | In der gewählten Web-Instanz die integrierte Verbindung aktivieren und speichern. |
-| Kein Feld zur Web-Auswahl sichtbar | `info.adapterBuild = 0.1.15-web-cloud.1` prüfen, Admin mit Strg+F5 neu laden und den Reiter **Web-Zugriff** öffnen. Eine Web-Instanz muss bereits installiert sein. |
+| Kein Feld zur Web-Auswahl sichtbar | `info.adapterBuild = 0.1.16-web-links.1` prüfen, Admin mit Strg+F5 neu laden und den Reiter **Web-Zugriff** öffnen. Eine Web-Instanz muss bereits installiert sein. |
 | Cloud zeigt keine EPG-Seite oder einen anderen Fernseher | In LOEWE-TV und Cloud dieselbe Web-Instanz auswählen und speichern; den instanzbezogenen Link auf der Cloud-Web-Startseite öffnen. |
+| Zusätzlich zu den LOEWE-Kacheln erscheinen **Programmübersicht.0/.1** mit `adapter/loewe-tv/...` | Auf 0.1.16 aktualisieren, den Build beider TV-Instanzen prüfen, die ausgewählte Web-Instanz neu starten und die Cloud-Web-Startseite neu öffnen. |
 | Cloud meldet Anmeldung, HTTPS oder einen anderen Host als Fehler | Die separate Web-Instanz wie oben auf dem Host des Cloud-Adapters einrichten und **Test web** erneut ausführen. |
 | Kein Senderlogo | Senderliste bei eingeschaltetem TV über `channels.refresh` neu abrufen; nicht jeder TV und nicht jeder Sender liefert ein Bild. Der Sendername bleibt als Ersatz sichtbar. |
 | **An TV übertragen** | Der TV hat geantwortet; der automatische Timerabgleich ist noch offen. **Details zum Timerabgleich** öffnet die Diagnose. Der Auftrag wird nicht erneut übertragen. |

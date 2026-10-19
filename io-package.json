@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.15",
+    "version": "0.1.16",
     "news": {
+      "0.1.16": {
+        "en": "Prevent duplicate programme-guide tiles on web and cloud start pages by declaring the Admin link as a URL string. Keep the working per-TV web links and Admin quick access. Standard adapter updates replace old link metadata while preserving configured web instances and recording requests.",
+        "de": "Doppelte Programmübersichts-Kacheln auf Web- und Cloud-Startseiten durch einen als URL-Text hinterlegten Admin-Link verhindern. Funktionierende Web-Links je TV und Admin-Schnellzugriff erhalten. Reguläre Adapterupdates ersetzen die bisherigen Link-Metadaten und bewahren die gewählten Web-Instanzen sowie Aufnahmeaufträge."
+      },
       "0.1.15": {
         "en": "Give the programme guide a dedicated Web access tab with an explicit web-adapter selector. Preserve saved selections and show existing disabled instances. Document selecting the same web instance in ioBroker.cloud, the localhost setup and the programme-guide link for remote access.",
         "de": "Einen eigenen Reiter Web-Zugriff mit ausdrücklicher Auswahl des Web-Adapters für die Programmübersicht bereitstellen. Gespeicherte Auswahl erhalten und vorhandene deaktivierte Instanzen anzeigen. Die gemeinsame Web-Instanz in ioBroker.cloud, die Einrichtung über localhost und den EPG-Link für den Fernzugriff dokumentieren."
@@ -96,14 +100,7 @@
       "config": "json"
     },
     "localLinks": {
-      "_default": {
-        "link": "adapter/loewe-tv/epg.html?instance=%instance%",
-        "name": {
-          "en": "Programme guide",
-          "de": "Programmübersicht"
-        },
-        "intro": true
-      }
+      "_default": "adapter/loewe-tv/epg.html?instance=%instance%"
     },
     "webExtension": "lib/web-extension.js",
     "dependencies": [

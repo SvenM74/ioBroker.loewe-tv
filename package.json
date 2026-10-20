@@ -1,6 +1,6 @@
 {
   "name": "iobroker.loewe-tv",
-  "version": "0.1.26",
+  "version": "0.1.27",
   "description": "Loewe TV control with TV/XMLTV programme guides, channel selection and persistent recording requests",
   "repository": {
     "type": "git",

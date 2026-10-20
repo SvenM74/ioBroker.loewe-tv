@@ -120,5 +120,9 @@
   "Directory assignment": "Directory assignment",
   "No directory logo": "No directory logo",
   "Directory logo or exact path": "Directory logo or exact path",
-  "Last logo assignment check": "Last logo assignment check"
+  "Last logo assignment check": "Last logo assignment check",
+  "Set up Internet EPG": "Set up Internet EPG",
+  "Prepare automatic Internet EPG while the TV is off. Keep your existing XMLTV URL, or use the free EPGShare01 Germany feed when the URL is empty. Channel assignments stay unchanged. Check the source and save to activate. A missing or disabled refresh interval becomes one hour.": "Prepare automatic Internet EPG while the TV is off. Keep your existing XMLTV URL, or use the free EPGShare01 Germany feed when the URL is empty. Channel assignments stay unchanged. Check the source and save to activate. A missing or disabled refresh interval becomes one hour.",
+  "HTTP(S) URL to an XMLTV or gzip file. Set up Internet EPG can fill in the EPGShare01 Germany URL. You can edit the address and keep your own source.": "HTTP(S) URL to an XMLTV or gzip file. Set up Internet EPG can fill in the EPGShare01 Germany URL. You can edit the address and keep your own source.",
+  "internetEpgPrepared": "Internet EPG is prepared. Check the source and channel assignments, then save."
 }

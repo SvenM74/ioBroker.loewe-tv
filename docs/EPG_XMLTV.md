@@ -1,17 +1,17 @@
 # XMLTV: Programmdaten bei ausgeschaltetem Fernseher
 
-Diese Anleitung gilt für **Version 0.1.22**, Build **`0.1.22-recovery.1`**. Der Adapter kann eine selbst gewählte XMLTV-Quelle laden, deren Sender der gespeicherten TV-Senderliste zuordnen und die Programme auch bei ausgeschaltetem Fernseher anzeigen. Quelle und Senderzuordnung bleiben bei jeder Sendung nachvollziehbar. Eine zukünftige Sendung mit vollständigen Zeiten kann anschließend wie ein TV-EPG-Eintrag zur Aufnahme vorgemerkt werden.
+Diese Anleitung gilt für **Version 0.1.27**, Build **`0.1.27-internet-epg.1`**. Der Adapter kann eine selbst gewählte XMLTV-Quelle oder die vorbereitete Deutschland-Quelle laden, deren Sender der gespeicherten TV-Senderliste zuordnen und die Programme auch bei ausgeschaltetem Fernseher anzeigen. Quelle und Senderzuordnung bleiben bei jeder Sendung nachvollziehbar. Eine zukünftige Sendung mit vollständigen Zeiten kann anschließend wie ein TV-EPG-Eintrag zur Aufnahme vorgemerkt werden.
 
-Eine **eigene HTTP(S)-Adresse** ist erforderlich. Der Adapter wählt keinen Anbieter automatisch und liefert kein Abonnement mit. Die Adresse muss eine XMLTV-Datei oder deren gzip-komprimierte Fassung ausliefern; eine normale Webseite mit einem Fernsehprogramm genügt nicht. Verwende eine Quelle, die du nutzen darfst und die deine Sender einschließlich der passenden regionalen und HD-/SD-/UHD-Varianten abdeckt.
+Eine **HTTP(S)-Adresse** ist erforderlich. **Internet-EPG einrichten** behält eine vorhandene gültige Adresse bei und setzt bei leerem Feld die kostenlos angebotene Deutschland-Quelle von [EPGShare01](https://epgshare01.online/) ein. Du kannst die Adresse anschließend bearbeiten. Der Klick bereitet einen Konfigurationsentwurf vor; erst das Speichern aktiviert ihn. Eine eigene Quelle muss eine XMLTV-Datei oder deren gzip-komprimierte Fassung ausliefern; eine normale Webseite mit einem Fernsehprogramm genügt nicht.
 
 Die [Programmübersicht](EPG_GUI.md) beschreibt die Bedienung, Fernbedienung und Aufnahmeaufträge. Die [EPG-Datenpunkte](EPG.md) eignen sich für eigene Automationen. Das Datenformat der Quelle ist in der [offiziellen XMLTV-DTD](https://github.com/XMLTV/xmltv/blob/b424ef772a667856ca44b9dac3b4310d02191dea/xmltv.dtd) beschrieben.
 
 ## Einrichten
 
-1. Aktualisiere nach der [Installationsanleitung](INSTALLATION.md#update-auf-0122). Unter `info.adapterBuild` muss **`0.1.22-recovery.1`** stehen. Die betreffende LOEWE-TV-Instanz muss laufen; nach dem Update Admin vollständig neu laden.
+1. Aktualisiere nach der [Installationsanleitung](INSTALLATION.md#update-auf-0127). Unter `info.adapterBuild` muss **`0.1.27-internet-epg.1`** stehen. Die betreffende LOEWE-TV-Instanz muss laufen; nach dem Update Admin vollständig neu laden.
 2. Prüfe die **gespeicherte TV-Senderliste**. Bei der ersten Einrichtung den Fernseher einschalten, die gewünschte Liste wählen und die Sender abrufen. Die zugehörigen Dienste müssen unter `channels.tv` vorhanden sein. XMLTV erzeugt keine TV-Senderliste und erfindet keine Sender-Locators. Eine bereits gespeicherte Liste kann anschließend auch bei TV aus verwendet werden.
-3. Öffne **Instanzen → loewe-tv.0 → Konfiguration → EPG-Einstellungen**. Aktiviere **Programminformationen**. Das Abrufintervall beträgt standardmäßig **900 Sekunden**.
-4. Wähle **EPG-Quelle → TV mit XMLTV-Ergänzung** oder **Nur XMLTV**. Trage unter **XMLTV-Adresse** die vollständige Adresse deiner Quelle ein. HTTP und HTTPS sind zulässig; Benutzername/Passwort im URL-Benutzerinfofeld sowie ein Fragment nach `#` sind nicht zulässig.
+3. Öffne **Instanzen → loewe-tv.0 → Konfiguration → EPG-Einstellungen** und drücke **Internet-EPG einrichten**. Das aktiviert **Programminformationen**, setzt **TV mit XMLTV-Ergänzung** und ergänzt bei leerer Adresse die Deutschland-Quelle. Eine bereits gewählte Einstellung **Nur XMLTV**, eine vorhandene gültige Adresse und deine Senderzuordnungen bleiben erhalten. Ein deaktiviertes, fehlendes oder ungültiges Intervall wird auf **3600 Sekunden** gesetzt; ein vorhandenes gültiges Intervall bleibt bestehen.
+4. Prüfe **EPG-Quelle** und **XMLTV-Adresse**. Statt der Vorlage kannst du deine eigene Quelle eintragen. HTTP und HTTPS sind zulässig; Benutzername/Passwort im URL-Benutzerinfofeld sowie ein Fragment nach `#` sind nicht zulässig. Eine ungültige vorhandene Adresse muss korrigiert oder vor dem Einrichten bewusst geleert werden.
 5. Die Tabelle wird beim Öffnen mit den **gespeicherten TV-Sendern** gefüllt. Das benötigt weder einen eingeschalteten TV noch eine bereits eingetragene XMLTV-Adresse. Falls die lokale Wiederherstellung länger dauert, zeigt das Formular einen Hinweis; drücke dann **TV-Senderliste laden**. Eine gerade erst ungespeichert ausgewählte andere TV-Liste muss zuerst gespeichert und geladen werden.
 6. Drücke **Quelle laden und Zuordnung prüfen**. Danach zeigt die Ergebnisspalte eindeutige automatische Treffer oder Vorschläge. Für eine Korrektur wähle in der Zeile des TV-Senders **Manuell**, suche direkt daneben nach dem XMLTV-Sender und wähle ihn aus oder trage seine exakte XMLTV-ID ein. Mit **Automatisch** setzt du eine frühere manuelle Entscheidung zurück; **Deaktiviert** schaltet alternative EPG-Daten nur für diesen Sender aus.
 7. **Speichere** die Konfiguration. Die Vorschau allein aktiviert keine neue Quelle, speichert keine Zuordnung und ersetzt keine laufenden Programmcaches. Der laufende Betrieb verwendet ausschließlich die gespeicherten Einstellungen.
@@ -19,11 +19,23 @@ Die [Programmübersicht](EPG_GUI.md) beschreibt die Bedienung, Fernbedienung und
 
 Bei zwei Fernsehern gilt die Konfiguration je LOEWE-TV-Instanz. Beide können dieselbe Feedadresse nutzen, behalten aber ihre eigene TV-Senderliste, Zuordnung, Bedienung und Aufnahmeaufträge. Eine erfolgreiche Zuordnung bei `loewe-tv.0` ist keine Freigabe eines anderen TV-Ziels.
 
+### Deutschland-Vorlage
+
+Die vorbelegte Adresse lautet:
+
+```text
+https://epgshare01.online/epgshare01/epg_ripper_DE1.xml.gz
+```
+
+Der Anbieter stellt das [Dateiverzeichnis](https://epgshare01.online/epgshare01/), eine [Anleitung](https://epgshare01.online/epgshare01/0_READ_ME_FIRST_AS_I_CONTAIN_VERY_HELPFUL_INFO.html) und die [Senderkennungen der Deutschland-Datei](https://epgshare01.online/epgshare01/epg_ripper_DE1.txt) bereit. Verwende die XML-Datei mit `.xml.gz`, nicht die Textdatei mit Senderkennungen. Senderabdeckung und Programmhorizont bestimmen die tatsächlich gelieferten Daten. **Quelle laden und Zuordnung prüfen** testet die Datei vom ioBroker-Rechner aus; anschließend speichern und die Programme kontrollieren.
+
+Für diese genaue Adresse ergänzt ein Anbieterprofil 23 bekannte nationale Sender. Beispielsweise kann **Das Erste HD** dem Programm **Das Erste** mit `Das.Erste.de` und **ZDF HD** dem Programm **ZDF** mit `ZDF.de` zugeordnet werden. Dafür müssen sowohl die erwartete Kennung als auch ein passender deklarierter Sendername im Feed vorkommen. Die Profile gelten auch für die Vorauswahl beim Einlesen der Programme. Andere Anbieter, regionale Sender, UHD und zeitversetzte Varianten erhalten keine solche pauschale Gleichsetzung. Eine vorhandene manuelle oder deaktivierte Zeile hat weiterhin Vorrang.
+
 ## Quellenmodi
 
 | Auswahl | Gespeicherter Wert | Verhalten |
 |---|---|---|
-| **Nur TV** | `tv` | Standard für eine neue oder nicht ausdrücklich anders konfigurierte Instanz. Programmdaten werden direkt vom TV gelesen. Eine unbenutzte XMLTV-Adresse oder Korrekturtabelle aktiviert keine externen Abfragen. |
+| **Nur TV** | `tv` | Standard bei neuer Instanz ohne Internetquelle. Programmdaten werden direkt vom TV gelesen. Solange dieser Modus ausdrücklich gespeichert ist, aktiviert eine unbenutzte XMLTV-Adresse oder Korrekturtabelle keine externen Abfragen. |
 | **TV mit XMLTV-Ergänzung** | `auto` | Lädt zuerst XMLTV und veröffentlicht die zugeordneten Programme. Anschließend wird TV-EPG abgefragt. Vollständige TV-Intervalle haben Vorrang; XMLTV ergänzt andere Zeitbereiche. |
 | **Nur XMLTV** | `xmltv` | Liest EPG ausschließlich aus der konfigurierten XMLTV-Quelle. Dafür wird kein TV-Client benötigt, wohl aber die bereits gespeicherte TV-Senderliste. Andere TV-Funktionen wie Fernbedienung und Aufnahmeversand bleiben an ihre normale Verbindung gebunden. |
 
@@ -31,7 +43,7 @@ Bei zwei Fernsehern gilt die Konfiguration je LOEWE-TV-Instanz. Beide können di
 
 `epgRefreshInterval=0` schaltet automatische EPG-Abfragen einschließlich des Erstabrufs aus. Bei eingeschaltetem EPG bleiben **EPG aktualisieren**, der Taster `channels.epgRefresh` und die ausdrücklich angeforderte Zuordnungsvorschau verfügbar. Die Uhrzeitauswahl innerhalb vorhandener Daten läuft weiter. Bei deaktivierten **Programminformationen** werden die EPG-Anzeigen geleert und es findet kein regulärer Quellenabruf statt. Bereits gespeicherte Aufnahmeaufträge werden unabhängig davon weiterbearbeitet.
 
-Gültige, noch vorhandene Werte in `native.epgSource`, `native.epgXmltvUrl` und `native.epgXmltvMappings` aus früheren Versionen werden wieder ausgewertet. Dabei wird kein alter Anbieter geraten und kein früherer externer Programmcache ungeprüft übernommen. Prüfe nach dem Update die angezeigte Quellenwahl, Adresse und Senderzuordnung. Ohne ausdrücklichen gültigen Quellenmodus gilt **Nur TV**.
+Gültige, noch vorhandene Werte in `native.epgSource`, `native.epgXmltvUrl` und `native.epgXmltvMappings` aus früheren Versionen werden wieder ausgewertet. Fehlt der Quellenmodus vollständig, liegt aber eine gültige gespeicherte Feedadresse vor, verwendet der Adapter ab 0.1.27 **TV mit XMLTV-Ergänzung**. Eine ausdrücklich gespeicherte Wahl **Nur TV** bleibt bestehen. Ohne gültige Adresse oder bei einem ungültigen Quellenmodus wird kein Anbieter geraten. Prüfe nach dem Update die angezeigte Quellenwahl, Adresse und Senderzuordnung.
 
 Ungültige optionale XMLTV-Einstellungen legen den Adapter und sein TV-EPG nicht still. Der Manager verwendet dann TV-Daten und meldet das Problem als `EPG_XMLTV_CONFIG` unter `channels.epgLastError`. Bei erfolgreichem TV-Abruf kann der einzelne Sender `ready` sein, während der Gesamtstatus wegen der fehlerhaften externen Konfiguration `partial` zeigt. Das Formular zeigt einen Hinweis zur fehlenden oder ungültigen Feedadresse, blockiert damit aber nicht das Speichern der übrigen Konfiguration. **Quelle laden und Zuordnung prüfen** prüft die tatsächlich eingetragene Adresse ausdrücklich. Das EPG-Intervall akzeptiert auch von Admin als Text gelieferte ganze Zahlen wie `"900"`; ungültige Werte bleiben Speichersperren.
 
@@ -39,7 +51,7 @@ Ungültige optionale XMLTV-Einstellungen legen den Adapter und sein TV-EPG nicht
 
 Die automatische Zuordnung vergleicht die Namen und ausdrücklich vorhandenen Aliasse des gespeicherten TV-Dienstes mit den Anzeigenamen der XMLTV-Sender. Groß-/Kleinschreibung, wiederholte Leerzeichen und übliche Trennzeichen werden normalisiert. Ein eindeutiger exakter Hauptname hat Vorrang vor einem weniger spezifischen Alias.
 
-**HD, SD, UHD, Zahlen, zeitversetzte Varianten und Regionen bleiben unterscheidend.** Ein ähnlicher Name genügt nicht für eine automatische Auswahl. Auch ein scheinbar passender XMLTV-ID-Text oder die Position eines Senders ist kein Namensnachweis. Aliasse mit zusätzlichen oder fehlenden Editions-/Regionalwörtern bleiben konservativ Vorschläge. Ein mehrfach im Feed vorkommender passender Anzeigename wird nicht nach Reihenfolge, Logo oder besonders plausibel aussehender ID entschieden.
+**HD, SD, UHD, Zahlen, zeitversetzte Varianten und Regionen bleiben bei der allgemeinen Namenssuche unterscheidend.** Die ausdrücklichen nationalen Zuordnungen der [Deutschland-Vorlage](#deutschland-vorlage) sind eine auf diesen Anbieter begrenzte Ergänzung. Ansonsten genügt ein ähnlicher Name nicht für eine automatische Auswahl. Auch ein scheinbar passender XMLTV-ID-Text oder die Position eines Senders ist kein Namensnachweis. Aliasse mit zusätzlichen oder fehlenden Editions-/Regionalwörtern bleiben konservativ Vorschläge. Ein mehrfach im Feed vorkommender passender Anzeigename wird nicht nach Reihenfolge, Logo oder besonders plausibel aussehender ID entschieden.
 
 | Ergebnis in der Senderzeile | Bedeutung | Nächster Schritt |
 |---|---|---|
@@ -176,6 +188,10 @@ Eine Überschreitung liefert einen nachvollziehbaren Fehler und keinen still unv
 Eine übliche externe Deklaration wie `<!DOCTYPE tv SYSTEM "xmltv.dtd">` wird als inerte Formatangabe akzeptiert. Externe DTD-Dateien werden nicht geladen. Interne DTD-Teilmengen und Entitätsdeklarationen werden abgewiesen; es findet keine DTD-basierte Entitätserweiterung und kein Zugriff auf darin genannte Dateien oder Adressen statt. Die üblichen XML-Zeichenreferenzen wie `&amp;` bleiben verwendbar. [XMLTV-Loader und Limits](../lib/epg-xmltv.js).
 
 ## Diagnose
+
+Ab 0.1.27 zeigt die Programmübersicht einen eigenen Internetstatus. **Internet-EPG verfügbar** bedeutet, dass noch nutzbare aktuelle oder zukünftige Programme aus XMLTV vorliegen. Bei nicht verbundenem TV wird ausdrücklich auf die Aufnahmevormerkung hingewiesen. Fehlende Einrichtung, fehlende Senderliste, fehlende Zuordnungen, ein Feed ohne aktuelle Sendungen und ein Downloadfehler werden getrennt erklärt. Die Anzeige nennt außerdem eine ausgeschaltete automatische Aktualisierung und den Button **EPG aktualisieren**.
+
+Schlägt ein späterer Abruf fehl, können noch gültige gespeicherte Programme sichtbar und planbar bleiben. Der Hinweis unterscheidet diesen Bestand von einem erfolgreich aktualisierten Feed. Auch ein noch laufender TV-Abgleich verdeckt erfolgreich geladene Internetdaten nicht. Die Zähler beziehen sich auf die gespeicherten TV-Sender der Instanz; der Zeitraum, den ein einzelnes Programmfenster gerade zeigt, kann davon abweichen.
 
 Zuerst **Quelle laden und Zuordnung prüfen**, danach den gespeicherten Betrieb mit **EPG aktualisieren** kontrollieren. Unter `channels.epgLastError` steht der erste Fehler des aktuellen beziehungsweise letzten Abgleichs. Das `epg.data` des betroffenen TV-Senders enthält bei aktiver externer Quelle zusätzliche Angaben:
 

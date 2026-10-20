@@ -180,6 +180,30 @@ async function harness(t, options = {}) {
         restoreEntered, restoreRelease, materializeEntered, materializeRelease };
 }
 
+test('the actual Internet EPG setup route works before TV restoration and never changes live configuration', async t => {
+    const { EPGSHARE_DE_URL } = require('../lib/epg-provider');
+    const h = await harness(t, { start: false, saved: false, config: { epgSource: 'tv', epgXmltvUrl: '' } });
+    const before = structuredClone(h.runtime.config);
+    const request = formRequest({ epgXmltvUrl: '', epgSource: 'tv', epgRefreshInterval: 0 }, '_epgInternetSetup');
+    const response = await h.send(request);
+    assert.deepEqual(response, { native: { epgEnabled: true, epgSource: 'auto',
+        epgXmltvUrl: EPGSHARE_DE_URL, epgRefreshInterval: 3600 }, result: 'internetEpgPrepared' });
+    assert.deepEqual(h.runtime.config, before);
+    assert.equal(h.adapter.config.epgSource, 'tv');
+    assert.equal(h.adapter.states.size, 0);
+    assert.equal(h.adapter.objects.size, 0);
+    assert.deepEqual(h.calls, [], 'Preparation must neither contact a TV nor download a guide.');
+
+    for (const url of ['not a URL', 'file:///private/guide.xml', 'https://user:secret@guide.fixture.invalid/guide.xml', {}]) {
+        const failure = await h.send({ command: request.command, message: { ...request.message, url } });
+        assert.match(failure.error, /vorhandene XMLTV-Adresse ist ungültig/u);
+        assert.equal(failure.native, undefined, 'Invalid existing addresses must not be silently replaced.');
+        assert.equal(failure.error.includes('secret'), false);
+    }
+    assert.deepEqual(h.runtime.config, before);
+    assert.deepEqual(h.calls, []);
+});
+
 test('the actual Admin form and message route wait for offline TV channels before materialization', async t => {
     for (const epgEnabled of [true, false]) {
         await t.test(`epgEnabled=${epgEnabled}`, async t => {

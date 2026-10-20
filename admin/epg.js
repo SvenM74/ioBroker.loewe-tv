@@ -73,6 +73,21 @@
             disabled: 'EPG ist für diese Instanz deaktiviert. Aktiviere EPG und speichere die Einstellungen.',
             notConfigured: 'Für diese Instanz ist noch keine Senderliste gespeichert.',
             offline: 'Der Fernseher ist nicht verbunden. Vorhandene Programmdaten werden angezeigt.',
+            internetReady: 'Internet-EPG ist für {channels} von {total} Sendern verfügbar.',
+            internetOfflineReady: 'Der Fernseher ist nicht verbunden. Internet-EPG ist für {channels} von {total} Sendern verfügbar. Du kannst zukünftige Sendungen zur Aufnahme vormerken.',
+            internetTvOnly: 'Internet-EPG ist ausgeschaltet. Wähle in den EPG-Einstellungen „Internet-EPG einrichten“ für „TV mit XMLTV-Ergänzung“. Prüfe die Internetquelle und speichere, um bei ausgeschaltetem TV Aufnahmen zu planen.',
+            internetNotConfigured: 'Für den Internet-EPG fehlt eine gültige Quelle. Wähle in den EPG-Einstellungen „Internet-EPG einrichten“ oder trage eine gültige eigene XMLTV-Adresse ein. Prüfe die Quelle und speichere die Einstellungen.',
+            internetConfigurationError: 'Die Einstellungen für den Internet-EPG sind ungültig. Prüfe Quelle und Senderzuordnung in den EPG-Einstellungen.',
+            internetNoChannels: 'Für den Internet-EPG fehlt die gespeicherte TV-Senderliste. Wähle die Liste in der Konfiguration und lies sie einmal bei eingeschaltetem Fernseher ein.',
+            internetWaiting: 'Internet-EPG ist eingerichtet; der erste Abruf steht noch aus.',
+            internetLoading: 'Internet-EPG wird geladen.',
+            internetLoadingCached: 'Internet-EPG wird aktualisiert. Gespeicherte Programmdaten für {channels} Sender bleiben verfügbar.',
+            internetError: 'Die Internet-EPG-Quelle konnte nicht geladen werden. Prüfe die Quelle in den EPG-Einstellungen und starte „EPG aktualisieren“ erneut.',
+            internetCached: 'Internet-EPG konnte nicht aktualisiert werden. Gespeicherte Programmdaten für {channels} Sender bleiben verfügbar.',
+            internetUnmapped: 'Die Internetquelle wurde geladen, aber keinem der {total} TV-Sender zugeordnet. Prüfe die Senderzuordnung in den EPG-Einstellungen.',
+            internetEmpty: 'Die Internetquelle ist {matched} von {total} Sendern zugeordnet, liefert aber keine aktuellen oder zukünftigen Sendungen.',
+            internetManual: 'Die automatische EPG-Aktualisierung ist ausgeschaltet. Mit „EPG aktualisieren“ kannst du die Daten jetzt laden.',
+            internetOfflineRecording: 'Auch bei ausgeschaltetem Fernseher kannst du zukünftige Sendungen zur Aufnahme vormerken.',
             partial: 'Für einige Sender fehlen vollständige Programmdaten.',
             stale: 'Die vorhandenen Programmdaten sind veraltet. Starte eine EPG-Aktualisierung.',
             failed: 'Die letzte EPG-Aktualisierung war nicht erfolgreich. Vorhandene Programmdaten bleiben sichtbar.',
@@ -147,6 +162,21 @@
             disabled: 'EPG is disabled for this instance. Enable EPG and save the settings.',
             notConfigured: 'No channel list has been saved for this instance yet.',
             offline: 'The TV is not connected. Available programme information is still shown.',
+            internetReady: 'Internet EPG is available for {channels} of {total} channels.',
+            internetOfflineReady: 'The TV is not connected. Internet EPG is available for {channels} of {total} channels. You can queue future programmes for recording.',
+            internetTvOnly: 'Internet EPG is disabled. In EPG settings, choose “Set up Internet EPG” for “TV with XMLTV supplement”. Check the internet source and save to plan recordings while the TV is off.',
+            internetNotConfigured: 'Internet EPG needs a valid source. In EPG settings, choose “Set up Internet EPG” or enter your own valid XMLTV URL. Check the source and save the settings.',
+            internetConfigurationError: 'The internet EPG settings are invalid. Check the source and channel assignments in EPG settings.',
+            internetNoChannels: 'Internet EPG needs the saved TV channel list. Select the list in the configuration and read it once while the TV is on.',
+            internetWaiting: 'Internet EPG is configured; its first download is pending.',
+            internetLoading: 'Loading internet EPG.',
+            internetLoadingCached: 'Updating internet EPG. Saved programme information for {channels} channels remains available.',
+            internetError: 'The internet EPG source could not be loaded. Check the source in EPG settings and try “Refresh EPG” again.',
+            internetCached: 'Internet EPG could not be updated. Saved programme information for {channels} channels remains available.',
+            internetUnmapped: 'The internet source was loaded, but none of the {total} TV channels is assigned. Check the channel assignments in EPG settings.',
+            internetEmpty: 'The internet source is assigned to {matched} of {total} channels but has no current or future programmes.',
+            internetManual: 'Automatic EPG updates are disabled. Use “Refresh EPG” to download programme information now.',
+            internetOfflineRecording: 'You can queue future programmes for recording while the TV is off.',
             partial: 'Complete programme information is not available for every channel.',
             stale: 'Stored programme information is out of date. Start an EPG update.',
             failed: 'The last EPG update failed. Available programme information is still shown.',
@@ -172,6 +202,42 @@
     }
     function timestamp(value) { return Number.isSafeInteger(value) && value >= 946684800000 && value < 4102444800000; }
     function language(value) { return String(value || '').toLowerCase().startsWith('en') ? 'en' : 'de'; }
+    function normalizeInternet(value) {
+        const statuses = ['tvOnly', 'disabled', 'notConfigured', 'configurationError', 'noChannels', 'waiting',
+            'loading', 'error', 'unmapped', 'empty', 'ready', 'cached'];
+        if (!value || typeof value !== 'object' || Array.isArray(value)
+            || !['tv', 'auto', 'xmltv'].includes(value.mode) || !statuses.includes(value.status)) return null;
+        const counts = ['matchedChannels', 'totalChannels', 'channelsWithData'];
+        if (counts.some(key => !Number.isSafeInteger(value[key]) || value[key] < 0 || value[key] > 4096)
+            || value.matchedChannels > value.totalChannels || value.channelsWithData > value.matchedChannels) return null;
+        return { mode: value.mode, status: value.status, automatic: value.automatic === true,
+            matchedChannels: value.matchedChannels, totalChannels: value.totalChannels, channelsWithData: value.channelsWithData,
+            lastUpdate: timestamp(value.lastUpdate) ? value.lastUpdate : 0,
+            // The adapter already removes source URLs. Keep this boundary in
+            // the browser too so an error can never expose URL credentials.
+            error: string(value.error, 4096).replace(/https?:\/\/[^\s<>"']+/giu, '[URL]').slice(0, 1000) };
+    }
+    function internetPresentation(guide, lang) {
+        const internet = guide?.internet;
+        if (!internet || internet.status === 'disabled' || (internet.status === 'tvOnly' && guide.connected)) return null;
+        const values = { channels: internet.channelsWithData, total: internet.totalChannels, matched: internet.matchedChannels };
+        const key = internet.status === 'ready' ? guide.connected ? 'internetReady' : 'internetOfflineReady'
+            : internet.status === 'loading' && internet.channelsWithData ? 'internetLoadingCached'
+                : `internet${internet.status[0].toUpperCase()}${internet.status.slice(1)}`;
+        let message = translate(lang, key, values);
+        if (internet.channelsWithData && !guide.connected && ['cached', 'loading'].includes(internet.status)) {
+            message += ` ${translate(lang, 'internetOfflineRecording')}`;
+        }
+        if (internet.error && ['configurationError', 'notConfigured', 'error', 'cached'].includes(internet.status)) {
+            message += ` ${internet.error}`;
+        }
+        if (!internet.automatic && ['waiting', 'ready', 'cached', 'empty'].includes(internet.status)) {
+            message += ` ${translate(lang, 'internetManual')}`;
+        }
+        const tone = internet.status === 'ready' ? 'ready'
+            : ['loading', 'waiting'].includes(internet.status) ? 'waiting' : 'warning';
+        return { message, tone, lastUpdate: internet.lastUpdate };
+    }
     function translate(lang, key, values = {}) {
         return (MESSAGES[language(lang)][key] || MESSAGES.de[key] || key)
             .replace(/\{([a-z]+)\}/giu, (_match, name) => values[name] === undefined ? '' : String(values[name]));
@@ -411,7 +477,8 @@
             listView: string(input.listView, 512), catalogRevision: string(input.catalogRevision, 128), status: string(input.status, 40),
             lastUpdate: timestamp(input.lastUpdate) ? input.lastUpdate : null, lastError: string(input.lastError, 1500),
             connected: input.connected === true, refreshing: input.refreshing === true || input.status === 'updating',
-            progress: { completed: count(progress.completed), total: count(progress.total) }, channels, invalidEvents };
+            progress: { completed: count(progress.completed), total: count(progress.total) },
+            internet: normalizeInternet(input.internet), channels, invalidEvents };
     }
     function filterChannels(channels, query) {
         const terms = String(query || '').trim().toLocaleLowerCase().split(/\s+/u).filter(Boolean);
@@ -550,12 +617,18 @@
             if (refreshPending) { setStatus(t('refreshStarting'), 'waiting'); return; }
             if (pending) { setStatus(t('loadingCache'), 'waiting'); return; }
             if (!guide) return;
-            if (guide.refreshing) {
-                setStatus(t('refreshing', { completed: guide.progress.completed, total: guide.progress.total }), 'waiting'); return;
-            }
             if (guide.status === 'disabled') { setStatus(t('disabled'), 'warning'); return; }
             if (guide.status === 'notConfigured') { setStatus(t('notConfigured'), 'warning'); return; }
             if (guide.status === 'unavailable') { setStatus(t('unavailable'), 'warning', true); return; }
+            const internet = internetPresentation(guide, lang);
+            if (internet) {
+                const updated = internet.lastUpdate ? ` ${t('updated', { time: stamp(internet.lastUpdate) })}` : '';
+                setStatus(`${internet.message}${updated}`, internet.tone);
+                return;
+            }
+            if (guide.refreshing) {
+                setStatus(t('refreshing', { completed: guide.progress.completed, total: guide.progress.total }), 'waiting'); return;
+            }
             if (guide.status === 'stale') { setStatus(t('stale'), 'warning'); return; }
             let message = guide.lastUpdate ? t('updated', { time: stamp(guide.lastUpdate) }) : t('noUpdate');
             let tone = 'ready';
@@ -1180,7 +1253,7 @@
         return { destroy, reload: loadGuide };
     }
 
-    return { HOUR, DAY, MESSAGES, translate, language, timeWindow, normalizeGuide, filterChannels,
+    return { HOUR, DAY, MESSAGES, translate, language, timeWindow, normalizeGuide, internetPresentation, filterChannels,
         channelLogoSources, createChannelIdentity,
         visibleEvents, timelineLayout, eventKey, isCurrent, keyboardTarget, programmeAction, programmeSelection,
         selectionExists, normalizeAction, normalizeRecordings, recordingPresentation, standaloneUrl, mount };

@@ -63,6 +63,17 @@ test('optional source mistakes remain an EPG diagnostic instead of throwing duri
     assert.equal(config({ epgSource: 'tv', epgXmltvUrl: 7, epgXmltvMappings: 'invalid' }).epgConfigError, '');
 });
 
+test('an older saved feed without a mode enables fallback while an explicit TV-only choice remains unchanged', () => {
+    const epgXmltvUrl = 'https://guide.invalid/older.xml';
+    assert.equal(normalizeEpgConfig({ epgXmltvUrl }).epgSource, 'auto');
+    assert.equal(usesXmltv(normalizeEpgConfig({ epgXmltvUrl })), true);
+    assert.equal(normalizeEpgConfig({ epgSource: 'tv', epgXmltvUrl }).epgSource, 'tv');
+    assert.equal(usesXmltv(normalizeEpgConfig({ epgSource: 'tv', epgXmltvUrl })), false);
+    assert.equal(normalizeEpgConfig({ epgSource: 'invalid', epgXmltvUrl }).epgSource, 'tv');
+    assert.equal(normalizeEpgConfig({ epgXmltvUrl: 'not a URL' }).epgSource, 'tv');
+    assert.equal(normalizeEpgConfig({}).epgSource, 'tv');
+});
+
 test('harmless saved table gaps no longer disable XMLTV or alter established source bindings', () => {
     const complete = [
         { channel: SERVICE.id, xmltvId: XMLTV_ID },

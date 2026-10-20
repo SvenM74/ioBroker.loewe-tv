@@ -6,6 +6,8 @@ const config = require('../admin/jsonConfig.json');
 const createAdminContract = require('./fixtures/admin-json-config/contract.cjs');
 const { normalizeManualMappings } = require('../lib/epg-mapping');
 const { buildMappingRows } = require('../lib/epg-config');
+const { prepareInternetEpg } = require('../lib/epg-presets');
+const { EPGSHARE_DE_URL } = require('../lib/epg-provider');
 
 const items = config.items._epg.items;
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -195,6 +197,37 @@ function admin(initial, { instance = 0, alive = true, language = 'en' } = {}) {
         noErrors() { assert.deepEqual(logs, [], 'Upstream Admin must evaluate every expression/template without errors'); },
     };
 }
+
+test('Internet EPG setup prepares a saveable Admin draft and retains each TV list and manual assignments', async () => {
+    for (const instance of [0, 1]) {
+        const initial = { ...form(instance), epgEnabled: false,
+            epgSource: instance ? 'xmltv' : 'tv', epgXmltvUrl: instance ? form(instance).epgXmltvUrl : '',
+            epgRefreshInterval: instance ? ' 900 ' : 0,
+            epgXmltvMappings: [fullRow(instance, 'manual', `retained-${instance}`)] };
+        const harness = admin(initial, { instance, language: 'de' });
+        const setup = harness.control('_epgInternetSetup', harness.classes.ConfigSendto);
+        await setup.componentDidMount();
+        assert.equal(harness.calls.length, 0, 'Opening the configuration must not enable an external source.');
+        setup._onClick();
+        const call = harness.calls[0];
+        assert.equal(call.target, `loewe-tv.${instance}`);
+        assert.equal(call.command, 'prepareInternetEpg');
+        assert.deepEqual(call.data, { url: initial.epgXmltvUrl, source: initial.epgSource, refreshInterval: initial.epgRefreshInterval });
+        await harness.reply(call, prepareInternetEpg(call.data));
+        assert.equal(harness.saveRequests, 0, 'The button must not save or restart a running adapter.');
+        const native = harness.saveNative();
+        assert.equal(native.epgEnabled, true);
+        assert.equal(native.epgSource, instance ? 'xmltv' : 'auto');
+        assert.equal(native.epgXmltvUrl, instance ? initial.epgXmltvUrl : EPGSHARE_DE_URL);
+        assert.equal(native.epgRefreshInterval, instance ? 900 : 3600);
+        assert.equal(native.channelListView, initial.channelListView);
+        assert.deepEqual(native.epgXmltvMappings, initial.epgXmltvMappings);
+        assert.equal(native._epgInternetSetup, undefined);
+        assert.equal(harness.saveBlocked, false);
+        assert.match(harness.alerts.join(' '), /vorbereitet.*speichern/u);
+        harness.noErrors();
+    }
+});
 
 test('upstream Admin accepts numeric interval strings and keeps required interval validation', async () => {
     for (const value of [undefined, 0, '0', 300, '300', 900, '900', ' 900 ', 86400, '86400']) {

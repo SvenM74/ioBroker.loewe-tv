@@ -4,7 +4,7 @@ const utils = require('@iobroker/adapter-core');
 const { AdapterRuntime } = require('./lib/adapter-runtime');
 const EPG_COMMANDS = ['getEpgGuide', 'refreshEpgGuide', 'selectEpgProgramme', 'recordEpgProgramme', 'getRecordings', 'cancelRecording'];
 const REMOTE_COMMANDS = ['sendRemoteCommand', 'getRemoteStatus'];
-const MAPPING_COMMANDS = ['getEpgTvChannels', 'getXmltvChannels', 'getEpgMappingRows', 'previewEpgMappings', 'applyEpgMapping'];
+const MAPPING_COMMANDS = ['getEpgTvChannels', 'getXmltvChannels', 'getEpgMappingRows', 'previewEpgMappings', 'applyEpgMapping', 'prepareInternetEpg'];
 const LOGO_COMMANDS = ['getLogoMappingRows', 'getLogoRegistryChannels'];
 
 function epgGuideUrl(namespace, message) {

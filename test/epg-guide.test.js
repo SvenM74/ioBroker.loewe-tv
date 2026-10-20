@@ -82,6 +82,31 @@ test('the default view starts at the preceding half hour and spans three hours',
     assert.equal(result.limit, 20);
 });
 
+test('Internet diagnostics expose only bounded source status without URLs or extra internal metadata', () => {
+    const ctx = context([], { internet: { mode: 'auto', status: 'cached', automatic: true,
+        totalChannels: 20, matchedChannels: 5, channelsWithData: 3, lastUpdate: NOW,
+        error: 'XMLTV_NETWORK: https://user:password@fixture.invalid/feed?token=private-secret',
+        url: 'https://fixture.invalid/private', internal: 'not for the browser' } });
+    const result = read(ctx);
+    assert.deepEqual(result.internet, { mode: 'auto', status: 'cached', automatic: true,
+        matchedChannels: 5, totalChannels: 20, channelsWithData: 3, lastUpdate: NOW, error: 'XMLTV_NETWORK: [URL]' });
+    assert.doesNotMatch(JSON.stringify(result.internet), /password|private-secret|fixture\.invalid|internal/u);
+    ctx.internet = { mode: 'invented', status: 'invented', automatic: 'yes', matchedChannels: 2001,
+        totalChannels: -1, channelsWithData: 0.5, lastUpdate: -1, error: 'x'.repeat(2000) };
+    const invalid = read(ctx).internet;
+    assert.equal(invalid.mode, 'tv');
+    assert.equal(invalid.status, 'tvOnly');
+    assert.equal(invalid.automatic, false);
+    assert.equal(invalid.matchedChannels, 0);
+    assert.equal(invalid.totalChannels, 0);
+    assert.equal(invalid.channelsWithData, 0);
+    assert.equal(invalid.lastUpdate, 0);
+    assert.equal(invalid.error.length, 1500);
+    ctx.internet = { mode: 'xmltv', status: 'ready', totalChannels: 3, matchedChannels: 5, channelsWithData: 7 };
+    assert.deepEqual(Object.fromEntries(Object.entries(read(ctx).internet).filter(([key]) => key.endsWith('Channels') || key === 'channelsWithData')),
+        { matchedChannels: 3, totalChannels: 3, channelsWithData: 3 });
+});
+
 test('guide exposes optional TV and bundled logos independently of programme availability', () => {
     const channels = [service(1, { name: 'ZDF HD', thumbnailUrl: '/images/zdf.png' }),
         service(2, { name: 'ZDF' }), service(3, { name: 'Unknown', thumbnailUrl: 'javascript:alert(1)' })];

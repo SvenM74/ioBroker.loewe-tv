@@ -1,6 +1,12 @@
 # Loewe TV Adapter für ioBroker
 
-## Version 0.1.26
+## Version 0.1.27
+
+Build **`0.1.27-internet-epg.1`** ergänzt **Internet-EPG einrichten** in den EPG-Einstellungen. Eine vorhandene eigene XMLTV-Adresse bleibt erhalten; bei leerer Adresse wird die editierbare Deutschland-Vorlage von EPGShare01 eingesetzt. Der Button bereitet automatische Abrufe vor. Danach **Quelle laden und Zuordnung prüfen** und **speichern**. Mit einer bereits gespeicherten TV-Senderliste können die Programme auch bei ausgeschaltetem Fernseher geladen und zukünftige Sendungen zur Aufnahme vorgemerkt werden. Beide TV-Instanzen werden getrennt eingerichtet.
+
+Die Programmübersicht zeigt den Internetstatus separat: verfügbare Programme, fehlende Einrichtung, fehlende Zuordnung oder einen Abruffehler mit gegebenenfalls weiter nutzbarem Bestand. Die Deutschland-Vorlage berücksichtigt ausgewählte nationale HD-Namen wie **Das Erste HD** und **ZDF HD**, deren Programm der Anbieter ohne HD-Zusatz führt. Manuelle Entscheidungen und regionale Varianten bleiben erhalten. Eine gültige ältere Quellenadresse ohne gespeicherten Quellenmodus wird wieder verwendet; eine ausdrücklich gewählte Einstellung **Nur TV** bleibt bestehen. [Einrichtung](docs/EPG_XMLTV.md#einrichten) · [Update](docs/INSTALLATION.md#update-auf-0127) · [Prüfbericht](docs/PRUEFBERICHT_0.1.27.md).
+
+## Fernsehernamen seit 0.1.26
 
 Build **`0.1.26-tv-names.1`** korrigiert die in 0.1.25 unvollständige Übernahme der **Fernsehernamen**. Bisher wurde der Namensspeicher nur bei einer manuellen Netzwerksuche gefüllt. Jetzt übernimmt der Adapter den gemeldeten Netzwerknamen auch aus seinen regulären Geräte- und Einstellungsabfragen; als Ersatz kann der vom TV gemeldete Streamingname dienen. Die Namen werden mit der genauen konfigurierten Adresse und dem Steuerport gespeichert und bleiben anschließend auch offline erhalten.
 

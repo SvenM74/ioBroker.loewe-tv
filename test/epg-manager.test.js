@@ -9,6 +9,7 @@ const { AdapterRuntime, normalizeConfig } = require('../lib/adapter-runtime');
 const { BATCH_SIZE } = require('../lib/epg-manager');
 const { createEpgDefinitions, OBSOLETE_EPG_CHILD_TYPES } = require('../lib/epg-states');
 const { createCache, MAX_CACHE_AGE } = require('../lib/epg-data');
+const { EPGSHARE_DE_URL } = require('../lib/epg-provider');
 
 const NOW = Date.UTC(2026, 9, 17, 12);
 const MINUTE = 60000;
@@ -317,22 +318,29 @@ test('TV failure diagnostics identify the actual request and skipped channels se
     assert.equal(h.snapshot(service(2).id).tvDiagnostic.details, undefined, 'Do not attribute another station response to this one');
 });
 
-test('a stored URL and mapping do not activate external requests while the source defaults to TV', async t => {
+test('a legacy stored URL and mapping activate Internet data when the source setting is absent', async t => {
     let externalCalls = 0;
     const h = await harness(t, {
         config: { epgXmltvUrl: 'http://fixture.invalid/guide.xml',
             epgXmltvMappings: [{ channel: service().id, xmltvId: 'other' }] },
-        epgOptions: { xmltvLoader() { externalCalls++; throw error('UNEXPECTED_EXTERNAL_REQUEST'); } },
+        epgOptions: { async xmltvLoader(_url, options) {
+            externalCalls++;
+            assert.deepEqual(options.manualMappings, { [service().id]: 'other' });
+            return { fetchedAt: options.now, channels: [{ id: 'other', names: [service().name] }],
+                mappings: [{ tvChannelId: service().id, xmltvId: 'other', status: 'manual' }],
+                eventsByChannel: new Map([[service().id, programmes('Saved Internet')]]) };
+        } },
         readTv: async () => { throw Object.assign(error('SOAP'), { epgDiagnostic: { schema: 'basic', requests: 1 } }); },
     });
     await h.manager.refresh({ manual: true });
-    assert.equal(h.config.epgSource, 'tv');
+    assert.equal(h.config.epgSource, 'auto');
     assert.equal(h.calls.tv.length, 1);
-    assert.equal(externalCalls, 0);
-    assert.equal(h.snapshot().status, 'error');
-    assert.equal(h.snapshot().now, null);
-    assert.match(h.snapshot().lastError, /SOAP/u);
+    assert.equal(externalCalls, 1);
+    assert.equal(h.snapshot().status, 'ready');
+    assert.equal(h.snapshot().now.title, 'Saved Internet current');
+    assert.equal(h.snapshot().lastError, '');
     assert.equal(h.snapshot().tvDiagnostic.code, 'SOAP');
+    assert.equal(h.manager.guide().internet.status, 'ready');
 });
 
 test('TV attempt diagnostics are bounded and are reset when a channel service is replaced', async t => {
@@ -344,12 +352,12 @@ test('TV attempt diagnostics are bounded and are reset when a channel service is
 
 });
 
-test('default and explicit TV-only mode preserve complete, partial and empty responses despite unused XMLTV settings', async t => {
+test('default mode without a feed and explicit TV-only mode preserve complete, partial and empty TV responses', async t => {
     for (const epgSource of [undefined, 'tv']) {
         for (const events of [programmes(), programmes().slice(0, 1), []]) {
             let externalCalls = 0;
             const h = await harness(t, {
-                config: { epgSource, epgXmltvUrl: 'http://fixture.invalid/guide.xml',
+                config: { epgSource, epgXmltvUrl: epgSource === 'tv' ? 'http://fixture.invalid/guide.xml' : '',
                     epgXmltvMappings: [{ channel: service().id, xmltvId: 'other' }] },
                 epgOptions: { xmltvLoader() { externalCalls++; throw error('UNEXPECTED_EXTERNAL_REQUEST'); } },
                 readTv: async () => tvResult(events),
@@ -434,6 +442,146 @@ test('explicit valid XMLTV mode loads the selected source even when no TV client
     assert.equal(h.snapshot().lastError, '');
     assert.equal(h.snapshot().tvDiagnostic, null);
     assert.equal(h.value('channels.epgStatus'), 'ready');
+});
+
+function externalResult(options, { status = 'automatic', events = programmes('Internet') } = {}) {
+    return { fetchedAt: options.now, channels: options.services.map(selected => ({ id: `feed-${selected.number}`, names: [selected.name] })),
+        mappings: options.services.map(selected => ({ tvChannelId: selected.id,
+            xmltvId: status === 'automatic' ? `feed-${selected.number}` : null, status })),
+        eventsByChannel: new Map(options.services.map(selected => [selected.id, events])) };
+}
+
+test('guide internet diagnostics explain source configuration independently of an offline TV', async t => {
+    const h = await harness(t, { config: { epgSource: 'tv', epgRefreshInterval: 900 } });
+    h.runtime._connected = false;
+    assert.deepEqual(h.manager.guide().internet, { mode: 'tv', status: 'tvOnly', automatic: false,
+        matchedChannels: 0, totalChannels: 1, channelsWithData: 0, lastUpdate: 0, error: '' });
+    Object.assign(h.config, { epgSource: 'auto', epgXmltvUrl: '', epgConfigError: 'XMLTV URL is missing' });
+    assert.equal(h.manager.guide().internet.status, 'notConfigured');
+    assert.equal(h.manager.guide().internet.mode, 'auto', 'The requested source mode must not disappear behind the TV fallback');
+    Object.assign(h.config, { epgXmltvUrl: 'https://fixture.invalid/guide?token=must-not-leak', epgConfigError: 'Die Senderzuordnung ist ungültig.' });
+    const invalid = h.manager.guide();
+    assert.equal(invalid.internet.status, 'configurationError');
+    assert.match(invalid.internet.error, /Senderzuordnung/u);
+    assert.doesNotMatch(JSON.stringify(invalid.internet), /fixture\.invalid|must-not-leak/u);
+    h.config.epgEnabled = false;
+    assert.equal(h.manager.guide().internet.status, 'disabled');
+    assert.equal(h.manager.guide().internet.automatic, false);
+    Object.assign(h.config, { epgEnabled: true, epgConfigError: '', epgRefreshInterval: 0 });
+    assert.equal(h.manager.guide().internet.status, 'waiting');
+    assert.equal(h.manager.guide().internet.automatic, false);
+    await h.catalog([]);
+    assert.equal(h.manager.guide().internet.status, 'noChannels');
+    assert.equal(h.manager.guide().internet.totalChannels, 0);
+    assert.equal(h.calls.tv.length, 0, 'Reading the diagnostic never starts a source request');
+});
+
+test('internet diagnostics distinguish waiting, loading and ready data while the TV stays offline', async t => {
+    const pending = deferred();
+    const entered = deferred();
+    const h = await harness(t, { services: [service(1), service(2)],
+        config: { epgSource: 'auto', epgXmltvUrl: 'https://fixture.invalid/guide.xml', epgRefreshInterval: 900 },
+        readTv: async () => { throw error('NETWORK', 'TV is switched off'); },
+        epgOptions: { async xmltvLoader(_url, options) {
+            entered.resolve();
+            await pending.promise;
+            return externalResult(options);
+        } } });
+    h.runtime._connected = false;
+    assert.equal(h.manager.guide().internet.status, 'waiting');
+    const update = h.manager.refresh({ manual: true });
+    await entered.promise;
+    assert.equal(h.manager.guide().internet.status, 'loading');
+    pending.resolve();
+    await update;
+    const guide = h.manager.guide({ limit: 1 });
+    assert.equal(guide.connected, false);
+    assert.deepEqual(guide.internet, { mode: 'auto', status: 'ready', automatic: true,
+        matchedChannels: 2, totalChannels: 2, channelsWithData: 2, lastUpdate: NOW, error: '' });
+    assert.equal(guide.channels.length, 1, 'Source totals describe the whole list, independently of pagination');
+    assert.ok(guide.channels[0].events.length > 0);
+    assert.equal(h.calls.tv.length, 1, 'The TV failure remains independent of the successful Internet source');
+});
+
+test('internet diagnostics distinguish download failure, unmatched channels and empty programmes', async t => {
+    const h = await harness(t, { config: { epgSource: 'xmltv', epgXmltvUrl: 'https://fixture.invalid/guide.xml' },
+        epgOptions: { async xmltvLoader() { throw error('XMLTV_NETWORK', 'Cannot read https://fixture.invalid/feed?token=must-not-leak'); } } });
+    await h.manager.refresh({ manual: true });
+    let internet = h.manager.guide().internet;
+    assert.equal(internet.status, 'error');
+    assert.match(internet.error, /XMLTV_NETWORK.*\[URL\]/u);
+    assert.doesNotMatch(internet.error, /must-not-leak/u);
+    h.manager.xmltvLoader = async (_url, options) => externalResult(options, { status: 'unmatched', events: [] });
+    await h.manager.refresh({ manual: true });
+    internet = h.manager.guide().internet;
+    assert.equal(internet.status, 'unmapped');
+    assert.equal(internet.matchedChannels, 0);
+    assert.equal(internet.lastUpdate, NOW);
+    assert.equal(internet.error, '');
+    h.manager.xmltvLoader = async (_url, options) => externalResult(options, { events: [] });
+    await h.manager.refresh({ manual: true });
+    internet = h.manager.guide().internet;
+    assert.equal(internet.status, 'empty');
+    assert.equal(internet.matchedChannels, 1);
+    assert.equal(internet.channelsWithData, 0);
+    assert.equal(h.calls.tv.length, 0);
+});
+
+test('an Internet refresh error retains usable programmes and is distinct from an expired cache', async t => {
+    const h = await harness(t, { config: { epgSource: 'xmltv', epgXmltvUrl: 'https://fixture.invalid/guide.xml' },
+        epgOptions: { xmltvLoader: async (_url, options) => externalResult(options) } });
+    await h.manager.refresh({ manual: true });
+    assert.equal(h.manager.guide().internet.status, 'ready');
+    const saved = h.value(service().id, 'epg.cache');
+    h.manager.xmltvLoader = async () => { throw error('XMLTV_HTTP', 'Source temporarily unavailable'); };
+    await h.manager.refresh({ manual: true });
+    let guide = h.manager.guide();
+    assert.equal(guide.internet.status, 'cached');
+    assert.equal(guide.internet.channelsWithData, 1);
+    assert.equal(guide.internet.lastUpdate, NOW);
+    assert.match(guide.internet.error, /XMLTV_HTTP/u);
+    assert.ok(guide.channels[0].events.length > 0);
+    h.setTime(NOW + MAX_CACHE_AGE + 1);
+    guide = h.manager.guide();
+    assert.equal(guide.internet.status, 'error');
+    assert.equal(guide.internet.channelsWithData, 0);
+    const restored = await harness(t, { config: { epgSource: 'xmltv', epgXmltvUrl: 'https://fixture.invalid/guide.xml' },
+        saved: [[`${service().id}.epg.cache`, saved]] });
+    assert.equal(restored.manager.guide().internet.status, 'ready');
+    assert.equal(restored.manager.guide().internet.lastUpdate, NOW);
+    assert.equal(restored.calls.tv.length, 0, 'Restored Internet data is diagnosed without a new TV query');
+});
+
+test('a successful source preview explicitly asks to save before the guide uses its draft', async t => {
+    const h = await harness(t, { config: { epgSource: 'tv' },
+        epgOptions: { xmltvLoader: async (_url, options) => externalResult(options) } });
+    const before = JSON.stringify(h.config);
+    const reply = await h.manager.previewMappings({ url: 'https://fixture.invalid/preview.xml',
+        mappings: [], listView: h.config.channelListView });
+    assert.match(reply.native._epgMappingResponse.status, /Änderungen speichern, damit die Programmübersicht diese Quelle verwendet/u);
+    assert.equal(reply.native._epgMappingResponse.rows.length, 1);
+    assert.equal(JSON.stringify(h.config), before, 'A source preview must not silently activate the Internet source');
+    assert.equal(h.manager.guide().internet.status, 'tvOnly');
+    assert.equal(h.calls.tv.length, 0);
+});
+
+test('provider mapping stays consistent between preview rows, reloaded rows and sender choices', async t => {
+    const selected = service(1, { name: 'ZDF HD' });
+    const h = await harness(t, { services: [selected], config: { epgSource: 'tv' },
+        epgOptions: { async xmltvLoader() {
+            return { fetchedAt: NOW, channels: [{ id: 'ZDF.de', names: ['ZDF'] }], mappings: [] };
+        } } });
+    const query = { url: EPGSHARE_DE_URL, mappings: [], listView: h.config.channelListView };
+    const preview = await h.manager.previewMappings(query);
+    assert.match(preview.native._epgMappingResponse.rows[0].assignment, /Automatisch: ZDF \[ZDF\.de\]/u);
+    const reloaded = h.manager.mappingRows(query);
+    assert.equal(reloaded.native._epgMappingResponse.rows[0].assignment, preview.native._epgMappingResponse.rows[0].assignment);
+    const choices = h.manager.xmltvOptions({ url: EPGSHARE_DE_URL, listView: h.config.channelListView, channel: selected.id });
+    assert.match(choices.find(choice => choice.value === 'ZDF.de').label, /^Automatischer Treffer:/u);
+    await h.manager.previewMappings({ ...query, url: 'https://other.invalid/guide.xml' });
+    const unrelated = h.manager.mappingRows({ ...query, url: 'https://other.invalid/guide.xml' });
+    assert.doesNotMatch(unrelated.native._epgMappingResponse.rows[0].assignment, /^Automatisch:/u,
+        'The provider profile must not spill into another source with coincidentally similar IDs');
 });
 
 test('unsupported TV EPG remains visible with no substitute source', async t => {

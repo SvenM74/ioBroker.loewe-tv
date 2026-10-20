@@ -120,5 +120,9 @@
   "Directory assignment": "Verzeichniszuordnung",
   "No directory logo": "Kein Verzeichnislogo",
   "Directory logo or exact path": "Logo im Verzeichnis oder genauer Pfad",
-  "Last logo assignment check": "Letzte Prüfung der Logo-Zuordnung"
+  "Last logo assignment check": "Letzte Prüfung der Logo-Zuordnung",
+  "Set up Internet EPG": "Internet-EPG einrichten",
+  "Prepare automatic Internet EPG while the TV is off. Keep your existing XMLTV URL, or use the free EPGShare01 Germany feed when the URL is empty. Channel assignments stay unchanged. Check the source and save to activate. A missing or disabled refresh interval becomes one hour.": "Automatischen Internet-EPG bei ausgeschaltetem TV vorbereiten. Eine vorhandene XMLTV-Adresse bleibt erhalten; bei leerer Adresse wird die kostenlose Deutschland-Quelle von EPGShare01 eingesetzt. Senderzuordnungen bleiben bestehen. Die Quelle prüfen und zum Aktivieren speichern. Ein fehlendes oder ausgeschaltetes Abrufintervall wird auf eine Stunde gesetzt.",
+  "HTTP(S) URL to an XMLTV or gzip file. Set up Internet EPG can fill in the EPGShare01 Germany URL. You can edit the address and keep your own source.": "HTTP(S)-Adresse einer XMLTV- oder gzip-Datei. „Internet-EPG einrichten“ kann die Deutschland-Adresse von EPGShare01 einsetzen. Die Adresse bleibt editierbar; eine eigene Quelle kann weiterverwendet werden.",
+  "internetEpgPrepared": "Internet-EPG ist vorbereitet. Jetzt die Quelle und Senderzuordnungen prüfen und anschließend speichern."
 }

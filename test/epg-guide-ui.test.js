@@ -14,6 +14,79 @@ const event = (title, start = START, end = START + ui.HOUR, extra = {}) => ({
 const channel = (id, number, events = []) => ({ id, name: id, number, available: true, status: 'ready', events });
 const payload = channels => ({ schemaVersion: 1, source: 'tv', now: NOW, instance: 'loewe-tv.0',
     listName: 'ASTRA LCN', listView: 'selected-list', catalogRevision: 'verified-catalogue', status: 'ready', lastUpdate: NOW, connected: true, channels });
+const internet = (status, extra = {}) => ({ mode: 'auto', status, automatic: true,
+    matchedChannels: 1, totalChannels: 2, channelsWithData: 1, lastUpdate: NOW, error: '', ...extra });
+
+// Run the real mounted guide against a small DOM surface. This exercises
+// syncStatus and textContent without loading images, a browser or a TV.
+async function mountedGuide(t, response, lang = 'de') {
+    const html = fs.readFileSync(path.join(__dirname, '../admin/epg.html'), 'utf8');
+    const nodes = new Map();
+    const timers = new Map();
+    let timerId = 0;
+    const surface = () => ({ addEventListener() {}, removeEventListener() {} });
+    const document = { ...surface(), hidden: false, documentElement: {}, activeElement: null };
+    const walk = node => [node, ...node.children.flatMap(walk)];
+    function element(tag) {
+        let content = '';
+        const value = { ...surface(), tagName: tag.toUpperCase(), children: [], dataset: {}, attributes: new Map(),
+            className: '', value: '', hidden: false, disabled: false, clientWidth: 1200, scrollLeft: 0, scrollTop: 0,
+            style: { setProperty(key, val) { this[key] = val; } },
+            appendChild(child) {
+                if (child.tagName === '#FRAGMENT') for (const nested of child.children) this.appendChild(nested);
+                else { this.children.push(child); child.parentElement = this; }
+                return child;
+            },
+            replaceChildren(...children) { this.children = []; content = ''; for (const child of children) this.appendChild(child); },
+            setAttribute(key, val) { this.attributes.set(key, String(val)); },
+            getAttribute(key) { return this.attributes.get(key) ?? null; },
+            removeAttribute(key) { this.attributes.delete(key); },
+            getBoundingClientRect() { return { top: 200, left: 0, right: 1200, width: 1200, height: 600 }; },
+            querySelectorAll(selector) {
+                const classes = selector.split(',').map(item => item.trim().slice(1));
+                return this.children.flatMap(walk).filter(item => classes.some(name => item.classList.contains(name)));
+            },
+            querySelector(selector) { return this.querySelectorAll(selector)[0] || null; },
+            focus() { document.activeElement = this; },
+        };
+        value.classList = {
+            contains: name => value.className.split(/\s+/u).includes(name),
+            toggle(name, enabled) {
+                const names = new Set(value.className.split(/\s+/u).filter(Boolean));
+                if (enabled) names.add(name); else names.delete(name);
+                value.className = [...names].join(' ');
+            },
+            add(name) { this.toggle(name, true); }, remove(name) { this.toggle(name, false); },
+        };
+        Object.defineProperties(value, {
+            textContent: { get() { return content + this.children.map(child => child.textContent).join(''); },
+                set(text) { content = String(text); this.children = []; } },
+            innerHTML: { set() { assert.fail('Guide content must remain plain text or DOM nodes'); } },
+        });
+        return value;
+    }
+    for (const [, id] of html.matchAll(/\bid="([^"]+)"/gu)) nodes.set(id, element('div'));
+    const container = nodes.get('epgGuide');
+    for (const [id, node] of nodes) if (id !== 'epgGuide') container.appendChild(node);
+    document.getElementById = id => nodes.get(id) || null;
+    document.createElement = element;
+    document.createDocumentFragment = () => element('#fragment');
+    document.querySelectorAll = () => [];
+    document.contains = node => walk(container).includes(node);
+    document.defaultView = { ...surface(), navigator: { language: lang }, location: { protocol: 'https:' }, innerHeight: 900,
+        getComputedStyle() { return { getPropertyValue() { return '190'; } }; },
+        setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; },
+        clearTimeout(id) { timers.delete(id); },
+        setInterval(fn) { return this.setTimeout(fn); }, clearInterval(id) { this.clearTimeout(id); },
+        LoeweEpgBridge: { language: lang, async requestGuide() { return response; }, async refresh() {},
+            async selectProgramme() { assert.fail('Displaying source status must not send a TV action'); },
+            async recordProgramme() { assert.fail('Displaying source status must not queue a recording'); } },
+    };
+    const controller = ui.mount(document);
+    t.after(() => { controller.destroy(); assert.equal(timers.size, 0); });
+    await new Promise(resolve => setImmediate(resolve));
+    return { get: id => nodes.get(id), controller };
+}
 
 // Synthetic schema-1 journal snapshot, including metadata already persisted
 // by earlier adapter versions. No live TV response is used by these tests.
@@ -54,6 +127,88 @@ test('guide accepts known programme sources and a bounded event list', () => {
     }
     assert.equal(ui.normalizeGuide(payload([])).channels.length, 0);
     for (const source of ['tv', 'xmltv', 'mixed']) assert.equal(ui.normalizeGuide({ ...payload([]), source }).source, source);
+});
+
+test('internet status is optional and discards malformed metadata without losing the guide', () => {
+    assert.equal(ui.normalizeGuide(payload([])).internet, null);
+    for (const invalid of [null, [], {}, internet('unknown'), internet('ready', { mode: 'unknown' }),
+        internet('ready', { totalChannels: 4097 }), internet('ready', { matchedChannels: -1 }),
+        internet('ready', { matchedChannels: 3 }), internet('ready', { channelsWithData: 2 }),
+        internet('ready', { channelsWithData: '1' })]) {
+        const value = ui.normalizeGuide({ ...payload([channel('ZDF', 2)]), internet: invalid });
+        assert.equal(value.internet, null);
+        assert.equal(value.channels[0].name, 'ZDF');
+    }
+});
+
+test('mounted guide shows working internet EPG and an enabled recording action while the TV is offline', async t => {
+    const now = Date.now();
+    const response = { ...payload([channel('ZDF HD', 2, [event('Future internet programme', now + 600000,
+        now + 2400000, { source: 'xmltv' })])]), source: 'mixed', now, connected: false,
+        internet: internet('ready', { lastUpdate: now }) };
+    const view = await mountedGuide(t, response);
+    assert.match(view.get('statusText').textContent, /Internet-EPG ist für 1 von 2 Sendern verfügbar/u);
+    assert.match(view.get('statusText').textContent, /zur Aufnahme vormerken/u);
+    assert.equal(view.get('guideStatus').dataset.tone, 'ready');
+    assert.equal(view.get('programmeAction').disabled, false);
+    assert.equal(view.get('programmeAction').textContent, 'Aufnahme planen');
+    assert.match(view.get('programmeActionHint').textContent, /offline.*trotzdem vorgemerkt/u);
+    assert.equal(view.get('programmeTitle').textContent, 'Future internet programme');
+});
+
+test('mounted guide distinguishes missing internet setup, failed downloads and missing channel assignments', async t => {
+    const cases = [
+        [internet('tvOnly', { mode: 'tv', matchedChannels: 0, channelsWithData: 0 }), /Internet-EPG einrichten.*TV mit XMLTV-Ergänzung.*Internetquelle.*speichere/u],
+        [internet('notConfigured', { matchedChannels: 0, channelsWithData: 0 }), /fehlt eine gültige Quelle.*Internet-EPG einrichten.*eigene XMLTV-Adresse.*speichere/u],
+        [internet('configurationError', { matchedChannels: 0, channelsWithData: 0 }), /Quelle und Senderzuordnung/u],
+        [internet('unmapped', { matchedChannels: 0, channelsWithData: 0 }), /keinem der 2 TV-Sender zugeordnet/u],
+        [internet('empty', { channelsWithData: 0 }), /keine aktuellen oder zukünftigen Sendungen/u],
+        [internet('error', { channelsWithData: 0 }), /Internet-EPG-Quelle konnte nicht geladen/u],
+    ];
+    for (const [source, expected] of cases) {
+        const view = await mountedGuide(t, { ...payload([]), status: 'error', connected: false, internet: source });
+        assert.match(view.get('statusText').textContent, expected);
+        assert.equal(view.get('guideStatus').dataset.tone, 'warning');
+        assert.equal(view.get('refreshGuide').disabled, false);
+    }
+});
+
+test('cached internet errors keep usable programmes visible and render diagnostics only as redacted text', async t => {
+    const now = Date.now();
+    const error = 'XMLTV_HTTP: Source <script>alert("x")</script> & https://user:secret@guide.example/guide.xml?token=private\u0000';
+    const response = { ...payload([channel('ZDF', 2, [event('Saved future programme', now + 600000,
+        now + 2400000, { source: 'xmltv' })])]), now, connected: false, status: 'partial',
+        internet: internet('cached', { error, automatic: false, lastUpdate: now - ui.HOUR }) };
+    const view = await mountedGuide(t, response);
+    const text = view.get('statusText').textContent;
+    assert.match(text, /Gespeicherte Programmdaten für 1 Sender bleiben verfügbar/u);
+    assert.match(text, /automatische EPG-Aktualisierung ist ausgeschaltet/u);
+    assert.match(text, /<script>alert\("x"\)<\/script> & \[URL\]/u);
+    assert.doesNotMatch(text, /secret|token|guide\.example|\u0000/u);
+    assert.equal(view.get('statusText').children.length, 0, 'The diagnostic does not create markup or links');
+    assert.equal(view.get('programmeTitle').textContent, 'Saved future programme');
+    assert.equal(view.get('programmeAction').disabled, false);
+});
+
+test('internet updates keep available data distinct from a TV refresh and explain manual-only mode in both languages', async t => {
+    for (const lang of ['de', 'en']) {
+        const view = await mountedGuide(t, { ...payload([]), connected: false, status: 'updating',
+            internet: internet('ready') }, lang);
+        assert.equal(view.get('guideStatus').dataset.tone, 'ready');
+        assert.match(view.get('statusText').textContent, lang === 'de' ? /Internet-EPG ist/u : /Internet EPG is available/u);
+        const manual = await mountedGuide(t, { ...payload([]), connected: false,
+            internet: internet('waiting', { automatic: false, channelsWithData: 0, matchedChannels: 0, lastUpdate: 0 }) }, lang);
+        assert.match(manual.get('statusText').textContent, lang === 'de' ? /Mit „EPG aktualisieren“/u : /Use “Refresh EPG”/u);
+        const loading = ui.internetPresentation(ui.normalizeGuide({ ...payload([]), connected: false,
+            internet: internet('loading') }), lang);
+        assert.equal(loading.tone, 'waiting');
+        assert.match(loading.message, lang === 'de' ? /gespeich|Gespeich/u : /Saved programme information/u);
+        for (const status of ['tvOnly', 'notConfigured']) {
+            const setup = ui.internetPresentation(ui.normalizeGuide({ ...payload([]), connected: false,
+                internet: internet(status, { mode: status === 'tvOnly' ? 'tv' : 'auto', matchedChannels: 0, channelsWithData: 0 }) }), lang);
+            assert.match(setup.message, lang === 'de' ? /Internet-EPG einrichten.*speichere/u : /Set up Internet EPG.*save/u);
+        }
+    }
 });
 
 test('guide sorts by numeric channel position, keeps names and has no generated programmes', () => {

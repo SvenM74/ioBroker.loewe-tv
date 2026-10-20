@@ -240,10 +240,32 @@
           "xs": 12,
           "sm": 6
         },
+        "_epgInternetSetup": {
+          "type": "sendTo",
+          "label": "Set up Internet EPG",
+          "command": "prepareInternetEpg",
+          "result": {
+            "internetEpgPrepared": "internetEpgPrepared"
+          },
+          "jsonData": "${JSON.stringify({url: data.epgXmltvUrl, source: data.epgSource, refreshInterval: data.epgRefreshInterval})}",
+          "useNative": true,
+          "doNotSave": true,
+          "showProcess": true,
+          "timeout": 8000,
+          "variant": "outlined",
+          "disabled": "!_alive",
+          "xs": 12,
+          "sm": 6
+        },
+        "_epgInternetSetupHelp": {
+          "type": "staticText",
+          "text": "Prepare automatic Internet EPG while the TV is off. Keep your existing XMLTV URL, or use the free EPGShare01 Germany feed when the URL is empty. Channel assignments stay unchanged. Check the source and save to activate. A missing or disabled refresh interval becomes one hour.",
+          "xs": 12
+        },
         "epgXmltvUrl": {
           "type": "text",
           "label": "XMLTV guide URL",
-          "help": "HTTP(S) URL to an XMLTV file or gzip-compressed XMLTV file. No provider is selected automatically. Existing saved URLs can be reused.",
+          "help": "HTTP(S) URL to an XMLTV or gzip file. Set up Internet EPG can fill in the EPGShare01 Germany URL. You can edit the address and keep your own source.",
           "default": "",
           "hidden": "!['auto', 'xmltv'].includes(data.epgSource)",
           "disabled": "data.epgEnabled === false",

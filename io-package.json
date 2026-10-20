@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "loewe-tv",
-    "version": "0.1.26",
+    "version": "0.1.27",
     "news": {
+      "0.1.27": {
+        "en": "Prepare Internet EPG from Admin with an editable Germany XMLTV preset while retaining existing source addresses and channel assignments. Match explicit national base/HD names for that provider and show separate Internet status while the TV is offline. Restore a legacy feed without a source mode. Verify offline startup, recording planning and queue restoration across restarts.",
+        "de": "Internet-EPG über Admin mit einer editierbaren Deutschland-XMLTV-Vorlage einrichten; vorhandene Quellenadressen und Senderzuordnungen erhalten. Festgelegte nationale Namen mit und ohne HD-Zusatz für diesen Anbieter zuordnen und Internetstatus bei getrenntem TV separat anzeigen. Ältere Feedkonfiguration ohne Quellenmodus wieder verwenden. Offline-Start, Aufnahmeplanung und Wiederherstellung vorgemerkter Aufträge prüfen."
+      },
       "0.1.26": {
         "en": "Automatically retain TV names from normal device and settings responses without requiring another manual TV search. Bind live names to the configured address and port, retain them offline, and retry initially empty names during a bounded number of later polls. Reload stored names on later TV-selection page requests after missed state events.",
         "de": "Fernsehernamen automatisch aus den regulären Geräte- und Einstellungsantworten übernehmen, ohne eine erneute manuelle TV-Suche vorauszusetzen. Live-Namen an die konfigurierte Adresse und den Steuerport binden, offline erhalten und anfangs leere Namen bei wenigen späteren Statusabfragen erneut lesen. Gespeicherte Namen bei späteren Aufrufen der TV-Auswahl nach verpassten Zustandsmeldungen nachladen."

@@ -5,10 +5,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
+const { Readable } = require('node:stream');
 const { AdapterRuntime } = require('../lib/adapter-runtime');
 const { parseChannelPage, parseTimerList, parseResponse } = require('../lib/loewe-client');
 const { runPowerOn } = require('../lib/power-on');
 const { createCache } = require('../lib/epg-data');
+const { loadXmltv } = require('../lib/epg-xmltv');
 const { TV_NAMES_STATE, parseTvNames, nameForTv } = require('../lib/tv-names');
 const EpgWebExtension = require('../lib/web-extension');
 
@@ -378,6 +380,101 @@ test('future programme asks for confirmation without a TV write; confirmed offli
     assert.equal(saved.jobs[0].programme.title, h.event.title);
     assert.equal(h.adapter.states.get('recordings.jobs').ack, true);
     assert.deepEqual(h.client.calls, [], 'Confirmation only stores the request; the worker runs separately');
+});
+
+test('automatic Internet EPG from a saved TV list supports durable offline recordings in both source modes', async t => {
+    const ui = require('../admin/epg');
+    const now = Date.UTC(2026, 9, 20, 12);
+    const url = 'https://guide.invalid/offline-recording.xml';
+    const xml = '<tv><channel id="external-fixture"><display-name>Fixture TV</display-name></channel>'
+        + '<programme channel="external-fixture" start="20261020140000 +0000" stop="20261020150000 +0000">'
+        + '<title>Internet programme while TV is off</title></programme></tv>';
+    const savedConfig = { host: '192.0.2.10', pollInterval: 0, channelRefreshInterval: 0, epgRefreshInterval: 0 };
+    const seed = await harness(t, savedConfig);
+    seed.runtime.channelObjects.acceptPage(parseChannelPage(await seed.client.getChannels('fastscan-fixture')), 'video');
+    await seed.runtime.channelObjects.whenIdle();
+    await seed.runtime.epg._initialization;
+    const priorStates = structuredClone([...seed.adapter.states]);
+    const priorObjects = structuredClone([...seed.adapter.objects]);
+    assert.ok(seed.adapter.states.get('channels.catalog'), 'The offline start must restore a real saved TV catalogue');
+    await seed.runtime.stop();
+
+    for (const epgSource of ['auto', 'xmltv']) {
+        let downloads = 0;
+        const config = { ...savedConfig, epgEnabled: true, epgRefreshInterval: 900, epgSource, epgXmltvUrl: url };
+        const options = { epgOptions: { now: () => now, xmltvLoader: async (requestedUrl, settings) => {
+            assert.equal(requestedUrl, url);
+            downloads++;
+            return loadXmltv(requestedUrl, { ...settings, fetchImpl: async () => ({
+                status: 200, headers: { 'content-type': 'application/xml', 'content-length': String(Buffer.byteLength(xml)) },
+                body: Readable.from([xml.slice(0, 41), xml.slice(41)]),
+            }) });
+        } } };
+        const restore = (states, objects) => (adapter, client) => {
+            for (const [id, value] of states) adapter.states.set(id, structuredClone(value));
+            for (const [id, value] of objects) adapter.objects.set(id, structuredClone(value));
+            client.hooks.request = () => { throw codedError('NETWORK', 'The synthetic TV is switched off'); };
+        };
+        const h = await harness(t, config, restore(priorStates, priorObjects), options);
+        await h.runtime.channelObjects.whenIdle();
+        await h.runtime.epg._initialization;
+        const service = h.runtime.channelObjects.services.get('channels.tv.Fixture_TV');
+        assert.ok(service);
+        assert.equal(h.runtime._connected, false);
+        assert.equal(downloads, 0, 'Opening the saved catalogue does not bypass the scheduled source fetch');
+        assert.deepEqual(h.client.calls, [], 'The saved TV list is restored without querying the switched-off TV');
+
+        const firstFetch = h.adapter.timers.get(h.runtime.epg._fetchTimer);
+        assert.ok(firstFetch, 'Offline startup must schedule the automatic Internet EPG fetch');
+        h.adapter.timers.delete(h.runtime.epg._fetchTimer);
+        firstFetch.fn();
+        await h.runtime.epg._fetchPromise;
+        assert.equal(downloads, 1);
+        const guide = await h.runtime.handleMessage('getEpgGuide');
+        const channel = guide.channels.find(row => row.id === service.id);
+        assert.equal(guide.connected, false);
+        assert.equal(channel.events.length, 1);
+        const event = channel.events[0];
+        assert.equal(event.source, 'xmltv');
+        assert.equal(ui.programmeAction(event, now, channel.available), 'record');
+        const selected = ui.programmeSelection(guide, channel, event);
+        const callsBefore = h.client.calls.length;
+        const preview = await h.runtime.handleMessage('selectEpgProgramme', selected);
+        assert.equal(preview.action, 'confirmRecording');
+        const queued = await h.runtime.handleMessage('recordEpgProgramme', { ...selected, confirmed: true });
+        assert.equal(queued.action, 'recordingQueued');
+        assert.equal(queued.job.status, 'queued');
+        assert.equal(queued.job.attempts, 0);
+        assert.equal(queued.job.channel.locator, service.locator, 'The XMLTV ID never replaces the registered TV locator');
+        assert.equal(queued.job.channel.mediaItemUuid, service.mediaItemUuid);
+        assert.equal(queued.job.deviceKey, h.runtime._recordingDeviceKey());
+        const saved = h.adapter.states.get('recordings.jobs');
+        assert.equal(saved.ack, true);
+        assert.equal(JSON.parse(saved.val).jobs[0].id, queued.job.id);
+        assert.equal(h.client.calls.length, callsBefore, 'Confirmation saves the journal before any transfer attempt');
+        await h.runtime.recordings._work();
+        assert.equal(h.runtime.recordings.snapshot().jobs[0].status, 'queued');
+        assert.equal(h.runtime.recordings.snapshot().jobs[0].attempts, 0);
+        assert.ok(h.client.calls.every(call => call.method === 'request'), 'Only read-only probes are allowed while offline');
+
+        const states = structuredClone([...h.adapter.states]);
+        const objects = structuredClone([...h.adapter.objects]);
+        await h.runtime.stop();
+        const restarted = await harness(t, config, restore(states, objects), options);
+        await restarted.runtime.channelObjects.whenIdle();
+        await restarted.runtime.epg._initialization;
+        const restoredGuide = await restarted.runtime.handleMessage('getEpgGuide');
+        const journal = await restarted.runtime.handleMessage('getRecordings');
+        assert.equal(restoredGuide.connected, false);
+        assert.equal(restoredGuide.channels.find(row => row.id === service.id).events[0].title, event.title);
+        assert.equal(journal.jobs.length, 1);
+        assert.equal(journal.jobs[0].id, queued.job.id);
+        assert.equal(journal.jobs[0].status, 'queued');
+        assert.equal(journal.jobs[0].channel.locator, service.locator);
+        assert.equal(downloads, 1, 'Programme data and the queued request restore before a new Internet fetch');
+        assert.deepEqual(restarted.client.calls, []);
+        await restarted.runtime.stop();
+    }
 });
 
 test('recording confirmation does not return until the actual journal write has completed', async t => {
